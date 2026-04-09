@@ -13,12 +13,17 @@ import lime.media.AudioBuffer;
 
 import flash.media.Sound;
 import flash.geom.Rectangle;
+import openfl.net.FileReference;
 
 import haxe.Json;
 import haxe.Exception;
 import haxe.io.Bytes;
 
+// Psych Engine
+#if PSYCH_ALLOWED
 import states.editors.content.MetaNote;
+
+#if VSLICE_ALLOWED
 import states.editors.content.VSlice;
 import states.editors.content.Prompt;
 import states.editors.content.*;
@@ -28,14 +33,21 @@ import backend.StageData;
 import backend.Highscore;
 import backend.Difficulty;
 
-import objects.Character;
-import objects.HealthIcon;
 import objects.Note;
 import objects.StrumNote;
+import objects.Character;
+import objects.HealthIcon;
+#end
+#end
 
+//Pico Engine and P Slice Team
+#if PICO_ALLOWED
+import lucas.states.funkin.scripts.backend.pslice.FreeplayMeta;
+#end
 using DateTools;
 
-typedef UndoStruct = {
+typedef UndoStruct =
+{
 	var action:UndoAction;
 	var data:Dynamic;
 }
@@ -82,6 +94,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		['Alt Idle Animation', "Sets a specified postfix after the idle animation name.\nYou can use this to trigger 'idle-alt' if you set\nValue 2 to -alt\n\nValue 1: Character to set (Dad, BF or GF)\nValue 2: New postfix (Leave it blank to disable)"],
 		['Screen Shake', "Value 1: Camera shake\nValue 2: HUD shake\n\nEvery value works as the following example: \"1, 0.05\".\nThe first number (1) is the duration.\nThe second number (0.05) is the intensity."],
 		['Change Character', "Value 1: Character to change (Dad, BF, GF)\nValue 2: New character's name"],
+		['Change Icon', "Value 1: Icon to change (Dad, BF, GF)\nValue 2: New Icon's name"],
 		['Change Scroll Speed', "Value 1: Scroll Speed Multiplier (1 is default)\nValue 2: Time it takes to change fully in seconds."],
 		['Set Property', "Value 1: Variable name\nValue 2: New value"],
 		['Play Sound', "Value 1: Sound file name\nValue 2: Volume (Default: 1), ranges from 0 to 1"]
@@ -90,7 +103,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	public static var keysArray:Array<FlxKey> = [ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT]; //Used for Vortex Editor
 	public static var SHOW_EVENT_COLUMN = true;
 	public static var GRID_COLUMNS_PER_PLAYER = 4;
-	public static var GRID_PLAYERS = 2;
+	public static var GRID_PLAYERS = 3; // BF + Dad + GF
 	public static var GRID_SIZE = 40;
 	final BACKUP_EXT = '.bkp';
 
@@ -243,7 +256,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		chartEditorSave = new FlxSave();
 		chartEditorSave.bind('chart_editor_data', CoolUtil.getSavePath());
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.scrollFactor.set();
 		add(bg);
@@ -273,7 +286,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		dummyArrow.scrollFactor.x = 0;
 		add(dummyArrow);
 
-		vortexIndicator = new FlxSprite(gridBg.x - GRID_SIZE, FlxG.height/2).loadGraphic(Paths.image('editors/vortex_indicator'));
+		vortexIndicator = new FlxSprite(gridBg.x - GRID_SIZE, FlxG.height/2).loadGraphic(Paths.image('editors/chartEditor/vortex_indicator'));
 		vortexIndicator.setGraphicSize(GRID_SIZE);
 		vortexIndicator.updateHitbox();
 		vortexIndicator.scrollFactor.set();
@@ -308,7 +321,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		for (i in 0...Std.int(GRID_PLAYERS * GRID_COLUMNS_PER_PLAYER))
 		{
-			var note:StrumNote = new StrumNote(startX + (GRID_SIZE * i), startY, i % GRID_COLUMNS_PER_PLAYER, 0);
+			// Troca visual BF (0-3) <-> Dad (4-7)
+			var visualI:Int = i;
+			if(i < GRID_COLUMNS_PER_PLAYER)
+				visualI = i + GRID_COLUMNS_PER_PLAYER;
+			else if(i < GRID_COLUMNS_PER_PLAYER * 2)
+				visualI = i - GRID_COLUMNS_PER_PLAYER;
+			var note:StrumNote = new StrumNote(startX + (GRID_SIZE * visualI), startY, i % GRID_COLUMNS_PER_PLAYER, 0);
 			note.scrollFactor.set();
 			note.playAnim('static');
 			note.alpha = 0.4;
@@ -329,7 +348,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var iconY:Float = 50;
 		if(SHOW_EVENT_COLUMN)
 		{
-			eventIcon = new FlxSprite(0, iconY).loadGraphic(Paths.image('editors/eventIcon'));
+			eventIcon = new FlxSprite(0, iconY).loadGraphic(Paths.image('editors/chartEditor/eventIcon'));
 			eventIcon.antialiasing = ClientPrefs.data.antialiasing;
 			eventIcon.alpha = 0.6;
 			eventIcon.setGraphicSize(30, 30);
@@ -349,6 +368,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		add(mustHitIndicator);
 
 		var gridStripes:Array<Int> = [];
+		// Mapeamento de posição visual → ID do personagem
+		// Posição 0 (esquerda) = Dad (ID 2), Posição 1 (direita) = BF (ID 1), Posição 2 = GF (ID 3)
+		var iconIDMap:Array<Int> = [2, 1, 3];
 		for (i in 0...GRID_PLAYERS)
 		{
 			if(columns > 0) gridStripes.push(columns);
@@ -361,7 +383,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			icon.scrollFactor.set();
 			icon.scale.set(0.3, 0.3);
 			icon.updateHitbox();
-			icon.ID = i+1;
+			icon.ID = iconIDMap[i];
 			add(icon);
 			icons.push(icon);
 			
@@ -385,13 +407,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		infoBox.getTab('Information').menu.add(infoText);
 		add(infoBox);
 
-		mainBox = new PsychUIBox(mainBoxPosition.x, mainBoxPosition.y, 300, 280, ['Charting', 'Data', 'Events', 'Note', 'Section', 'Song', 'Meta']);
+		mainBox = new PsychUIBox(mainBoxPosition.x, mainBoxPosition.y, 300, 280, ['Charting', 'Data', 'Events', 'Note', 'Section', 'Song', 'Meta', 'Strumline']);
 		mainBox.selectedName = 'Song';
 		mainBox.scrollFactor.set();
 		mainBox.cameras = [camUI];
 		add(mainBox);
 
-		autoSaveIcon = new FlxSprite(50).loadGraphic(Paths.image('editors/autosave'));
+		autoSaveIcon = new FlxSprite(50).loadGraphic(Paths.image('editors/chartEditor/autosave'));
 		autoSaveIcon.screenCenter(Y);
 		autoSaveIcon.scale.set(0.6, 0.6);
 		autoSaveIcon.antialiasing = ClientPrefs.data.antialiasing;
@@ -437,6 +459,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		addNoteTab();
 		addSectionTab();
 		addSongTab();
+		addMetaTab();
+		addStrumlineTab();
 		
 		////// for upper box
 		addFileTab();
@@ -445,6 +469,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		//
 
 		loadMusic();
+		loadMeta();
 		reloadNotesDropdowns();
 		if(!_shouldReset)
 		{
@@ -459,7 +484,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		updateGridVisibility();
 
 		// CHARACTERS FOR THE DROP DOWNS
-		var allCharacters:Array<String> = loadFileList('characters/', 'data/characterList.txt');
+		var allCharacters:Array<String> = loadFileList('data/characters/', 'data/characterList.txt');
 		var characterGameOverList = allCharacters.filter((name:String) -> (name.endsWith('-dead') || name.endsWith('-death')));
 		var characterList = allCharacters.filter((name:String) -> (!name.endsWith('-dead') && !name.endsWith('-death')));
 		playerDropDown.list = characterList;
@@ -475,7 +500,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 		gameOverCharDropDown.list = characterGameOverList;
 
-		stageDropDown.list = loadFileList('stages/', 'data/stageList.txt');
+		stageDropDown.list = loadFileList('data/stages/', 'data/stageList.txt');
 		onChartLoaded();
 
 		var tipText:FlxText = new FlxText(FlxG.width - 210, FlxG.height - 30, 200, 'Press F1 for Help', 20);
@@ -607,11 +632,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			offset: 0,
 
 			player1: 'bf',
-			player2: 'bf',
-			gfVersion: 'pico',
+			player2: 'bf-opponent',
+			gfVersion: 'none',
 			stage: 'stage',
 			format: 'psych_v1'
 		};
+		Reflect.setField(song, 'artist', 'unknown');
 		Song.chartPath = null;
 		loadChart(song);
 	}
@@ -1266,7 +1292,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						isFirst = false;
 					}
 
-					var diff:Int = nData - movingNotesLastData;
+					// noteData e movingNotesLastData são índices VISUAIS.
+					// A diff visual é a mesma no espaço lógico para BF/Dad
+					// porque a troca é simétrica (+N / -N), mas os limites
+					// devem ser checados no espaço lógico (songData[1]).
+					var logicalNData:Int = visualToLogicalData(nData);
+					var logicalLast:Int  = visualToLogicalData(movingNotesLastData);
+					var diff:Int = logicalNData - logicalLast;
 					var maxn:Int = (GRID_PLAYERS * GRID_COLUMNS_PER_PLAYER) - 1;
 					movingNotesMinData += diff;
 					movingNotesMaxData += diff;
@@ -1319,10 +1351,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 				else if(FlxG.mouse.x >= gridBg.x && FlxG.mouse.x < gridBg.x + gridBg.width)
 				{
+					var logicalNoteData:Int = noteData >= 0 ? visualToLogicalData(noteData) : noteData;
 					var closeNotes:Array<MetaNote> = curRenderedNotes.members.filter(function(note:MetaNote)
 					{
 						var chartY:Float = FlxG.mouse.y - note.chartY;
-						return ((note.isEvent && noteData < 0) || (!note.isEvent && note.songData[1] == noteData)) && chartY >= 0 && chartY < GRID_SIZE;
+						return ((note.isEvent && noteData < 0) || (!note.isEvent && note.songData[1] == logicalNoteData)) && chartY >= 0 && chartY < GRID_SIZE;
 					});
 					closeNotes.sort(function(a:MetaNote, b:MetaNote) return Math.abs(a.strumTime - FlxG.mouse.y) < Math.abs(b.strumTime - FlxG.mouse.y) ? 1 : -1);
 
@@ -1369,7 +1402,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							trace('Added note at time: $strumTime');
 							var didAdd:Bool = false;
 
-							var noteSetupData:Array<Dynamic> = [strumTime, noteData, 0];
+							var noteSetupData:Array<Dynamic> = [strumTime, visualToLogicalData(noteData), 0];
 							var typeSelected:String = noteTypes[noteTypeDropDown.selectedIndex].trim();
 							if(typeSelected != null && typeSelected.length > 0)
 								noteSetupData.push(typeSelected);
@@ -1796,6 +1829,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		Conductor.bpm = PlayState.SONG.bpm;
 	}
 
+	function loadMeta()
+	{
+		var songMeta:FreeplayMetaJSON = FreeplayMeta.getMeta(PlayState.SONG.song);
+		// Atualiza os inputs da aba Meta (se já criados)
+		if(artistInput   != null) artistInput.text   = songMeta.artist   != null ? songMeta.artist   : '';
+		// Sincroniza PlayState.SONG
+		if(songMeta.artist   != null && songMeta.artist.length   > 0) Reflect.setField(PlayState.SONG, 'artist', songMeta.artist);
+	}
+
 	function loadMusic(?killAudio:Bool = false)
 	{
 		setSongPlaying(false);
@@ -1965,12 +2007,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
-		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
+		var isGfNote:Bool = (note[1] >= GRID_COLUMNS_PER_PLAYER * 2); // 3ª strumline = GF
+
+		// noteType "GF Sing" força a nota a ser da GF, independente de mustHitSection
+		var isGfSingType:Bool = (note[3] != null && note[3] == 'GF Sing');
+
+		// Strumline 0 (cols 0-3) = Dad, Strumline 1 (cols 4-7) = BF
+		// Se for GF Sing, nunca é gottaHitNote — pertence à GF, não ao player
+		var gottaHitNote:Bool = (!isGfNote && !isGfSingType && note[1] >= GRID_COLUMNS_PER_PLAYER && note[1] < GRID_COLUMNS_PER_PLAYER * 2);
 
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 		swagNote.mustPress = gottaHitNote;
 		swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
-		swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
+
+		// gfNote=true se: está na strumline da GF, tem noteType GF Sing, ou a seção é da GF
+		swagNote.gfNote = isGfNote || isGfSingType || (section.gfSection && gottaHitNote == section.mustHitSection);
 		swagNote.noteType = note[3];
 		swagNote.scrollFactor.x = 0;
 		var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
@@ -2275,12 +2326,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(data == null) data = note.songData[1];
 
+		// Troca visual BF (0-3) <-> Dad (4-7) sem alterar o JSON
+		var visualData:Int = data;
+		if(data < GRID_COLUMNS_PER_PLAYER)
+			visualData = data + GRID_COLUMNS_PER_PLAYER;
+		else if(data < GRID_COLUMNS_PER_PLAYER * 2)
+			visualData = data - GRID_COLUMNS_PER_PLAYER;
+
 		var noteX:Float = gridBg.x + (GRID_SIZE - note.width) / 2;
 		if(SHOW_EVENT_COLUMN) noteX += GRID_SIZE;
 
-		noteX += GRID_SIZE * data;
+		noteX += GRID_SIZE * visualData;
 		note.x = noteX;
-		//trace(gridBg.x, noteX);
+	}
+
+	/**
+	 * Converte um índice de coluna VISUAL (posição na tela) para o dado LÓGICO
+	 * gravado em songData[1] / no JSON.
+	 *
+	 * positionNoteXByData() faz a troca BF(0-3) <-> Dad(4-7) apenas visualmente.
+	 * Qualquer valor lido do mouse (noteData) é um índice VISUAL e precisa
+	 * ser convertido antes de ser comparado com songData[1] ou gravado no JSON.
+	 *
+	 * GF (cols 8-11) não sofre troca — passa direto.
+	 */
+	function visualToLogicalData(visualData:Int):Int
+	{
+		if (visualData < GRID_COLUMNS_PER_PLAYER)
+			return visualData + GRID_COLUMNS_PER_PLAYER;        // visual 0-3  → lógico 4-7  (BF)
+		else if (visualData < GRID_COLUMNS_PER_PLAYER * 2)
+			return visualData - GRID_COLUMNS_PER_PLAYER;        // visual 4-7  → lógico 0-3  (Dad)
+		return visualData;                                       // visual 8-11 → lógico 8-11 (GF)
 	}
 
 	function positionNoteYOnTime(note:MetaNote, section:Int)
@@ -2297,10 +2373,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var characterData:Dynamic = {};
 	function updateJsonData():Void
 	{
+		// player1 = BF, player2 = Dad, player3 = GF
 		for (i in 1...GRID_PLAYERS+1)
 		{
-			//trace('adding iconP$i');
-			var data:CharacterFile = loadCharacterFile(Reflect.field(PlayState.SONG, 'player$i'));
+			var charField:String = i == 3 ? 'gfVersion' : 'player$i';
+			var data:CharacterFile = loadCharacterFile(Reflect.field(PlayState.SONG, charField));
 			Reflect.setField(characterData, 'iconP$i', data != null && data.healthicon != null ? data.healthicon : 'face');
 			Reflect.setField(characterData, 'vocalsP$i', data != null && data.vocals_file != null ? data.vocals_file : '');
 		}
@@ -2308,40 +2385,53 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	
 	var _lastSec:Int = -1;
 	var _lastGfSection:Null<Bool> = null;
+	var _lastMustHit:Null<Bool> = null; // cache para mustHitSection (necessário para o indicador)
 	function updateHeads(ignoreCheck:Bool = false):Void
 	{
 		var curSecData:SwagSection = PlayState.SONG.notes[curSec];
-		var isGfSection:Bool = (curSecData != null && curSecData.gfSection == true);
-		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) return; //optimization
+		var isGfSection:Bool    = (curSecData != null && curSecData.gfSection     == true);
+		var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
+
+		// Otimização: só recalcula se gfSection, mustHitSection ou a seção mudaram
+		if(_lastGfSection == isGfSection && _lastMustHit == mustHitSection && _lastSec == curSec && !ignoreCheck) return;
 
 		for (i in 0...GRID_PLAYERS)
 		{
 			var icon:HealthIcon = icons[i];
-			//trace('changing iconP${icon.ID}');
 			var iconName:String = Reflect.field(characterData, 'iconP${icon.ID}');
 			icon.changeIcon(iconName);
 		}
 
 		if(icons.length > 1)
 		{
-			var iconP1:HealthIcon = icons[0];
-			var iconP2:HealthIcon = icons[1];
-			var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
-			if (isGfSection)
-			{
-				if (mustHitSection)
-					iconP1.changeIcon('gf');
-				else
-					iconP2.changeIcon('gf');
-			}
+			var iconDad:HealthIcon = icons[0]; // Dad — posição esquerda (cols 0-3)
+			var iconBF:HealthIcon  = icons[1]; // BF  — posição direita  (cols 4-7)
 
-			if(mustHitSection)
-				mustHitIndicator.x = iconP1.x + iconP1.width/2;
+			// Indicador de câmera:
+			//   gfSection=true  → câmera foca na GF  → aponta para icons[2]
+			//   mustHitSection  → câmera foca no BF  → aponta para iconBF
+			//   caso contrário  → câmera foca no Dad → aponta para iconDad
+			if (isGfSection && icons.length > 2)
+			{
+				var iconGF:HealthIcon = icons[2];
+				mustHitIndicator.x = iconGF.x + iconGF.width / 2;
+			}
+			else if (mustHitSection)
+				mustHitIndicator.x = iconBF.x + iconBF.width / 2;
 			else
-				mustHitIndicator.x = iconP2.x + iconP2.width/2;
+				mustHitIndicator.x = iconDad.x + iconDad.width / 2;
 		}
+
+		// Ícone da GF: sempre mostra gfVersion — somente icons[2], nunca toca BF ou Dad
+		if(icons.length > 2)
+		{
+			var iconGF:HealthIcon = icons[2];
+			iconGF.changeIcon(Reflect.field(characterData, 'iconP3'));
+		}
+
 		_lastGfSection = isGfSection;
-		_lastSec = curSec;
+		_lastMustHit   = mustHitSection;
+		_lastSec       = curSec;
 	}
 
 	var playbackSlider:PsychUISlider;
@@ -3049,6 +3139,104 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				eventsList.push([file, desc]);
 			}
 
+			// ── Procura eventos específicos da música e dificuldade ──
+			if(PlayState.SONG != null)
+			{
+				var songName:String = Paths.formatToSongPath(PlayState.SONG.song);
+				var diffName:String = Paths.formatToSongPath(Difficulty.getDefault());
+				if(PlayState.storyDifficulty >= 0 && PlayState.storyDifficulty < Difficulty.list.length)
+					diffName = Paths.formatToSongPath(Difficulty.list[PlayState.storyDifficulty]);
+
+				// Caminhos a verificar (do mais específico ao mais geral):
+				// 1. data/songs/<songName>/events-<diffName>.json
+				// 2. data/songs/<songName>/events.json
+				// 3. data/<songName>/events-<diffName>.json
+				// 4. data/<songName>/events.json
+				var eventJsonPaths:Array<String> = [
+					'songs/$songName/events-$diffName',
+					'songs/$songName/events',
+					'$songName/events-$diffName',
+					'$songName/events',
+				];
+
+				for (ePath in eventJsonPaths)
+				{
+					var fullPath:String = Paths.getPath('data/$ePath.json', TEXT);
+					var exists:Bool = false;
+					#if MODS_ALLOWED
+					exists = FileSystem.exists(fullPath);
+					#else
+					exists = Assets.exists(fullPath);
+					#end
+
+					if(exists)
+					{
+						try
+						{
+							#if MODS_ALLOWED
+							var content:String = File.getContent(fullPath);
+							#else
+							var content:String = Assets.getText(fullPath);
+							#end
+							var parsed:Dynamic = haxe.Json.parse(content);
+							var extraEvents:Array<Dynamic> = cast parsed;
+							for (ev in extraEvents)
+							{
+								var evName:String = ev.name != null ? ev.name : (ev[0] != null ? ev[0] : '');
+								var evDesc:String = ev.description != null ? ev.description : (ev[1] != null ? ev[1] : '');
+								if(evName.length > 0 && !Lambda.exists(eventsList, function(e) return e[0] == evName))
+									eventsList.push([evName, evDesc]);
+							}
+							trace('[Events] Loaded extra events from: $ePath.json');
+						}
+						catch(e)
+						{
+							trace('[Events] Error loading $ePath.json: $e');
+						}
+						break; // Usa só o primeiro encontrado
+					}
+				}
+
+				// Também verifica na pasta do chart se Song.chartPath existir
+				if(Song.chartPath != null && Song.chartPath.length > 0)
+				{
+					var parentFolder:String = Song.chartPath.replace('\\', '/');
+					parentFolder = parentFolder.substr(0, Song.chartPath.lastIndexOf('/') + 1);
+
+					var chartEventPaths:Array<String> = [
+						'${parentFolder}events-$diffName.json',
+						'${parentFolder}events.json',
+					];
+
+					for (cePath in chartEventPaths)
+					{
+						if(FileSystem.exists(cePath))
+						{
+							try
+							{
+								var content:String = File.getContent(cePath);
+								var parsed:Dynamic = haxe.Json.parse(content);
+								var extraEvents:Array<Dynamic> = cast parsed;
+								for (ev in extraEvents)
+								{
+									var evName:String = ev.name != null ? ev.name : (ev[0] != null ? ev[0] : '');
+									var evDesc:String = ev.description != null ? ev.description : (ev[1] != null ? ev[1] : '');
+									if(evName.length > 0 && !Lambda.exists(eventsList, function(e) return e[0] == evName))
+										eventsList.push([evName, evDesc]);
+								}
+								trace('[Events] Loaded chart events from: $cePath');
+							}
+							catch(e)
+							{
+								trace('[Events] Error loading $cePath: $e');
+							}
+							break;
+						}
+					}
+				}
+			}
+			// ────────────────────────────────────────────────────────
+
 			for (id => event in defaultEvents)
 				if(!eventsList.contains(event))
 					eventsList.insert(id, event);
@@ -3296,6 +3484,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		girlfriendDropDown = new PsychUIDropDownMenu(objX, objY + 80, [''], function(id:Int, character:String)
 		{
 			PlayState.SONG.gfVersion = character;
+			updateJsonData();
+			updateHeads(true);
 			trace('selected $character');
 		});
 		
@@ -3315,6 +3505,242 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(girlfriendDropDown);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
+	}
+
+		var artistInput:PsychUIInputText;
+		var exportMetaBtn:PsychUIButton;
+
+	// ============================================
+	// STRUMLINE TAB
+	// Controla as 3 strumlines: BF, Dad e GF
+	// ============================================
+	function addStrumlineTab()
+	{
+		var tab_group = mainBox.getTab('Strumline').menu;
+		var objX = 10;
+		var objY = 10;
+
+		// ── Título ──────────────────────────────
+		tab_group.add(new FlxText(objX, objY, 280, 'Strumline Settings', 14));
+		objY += 24;
+
+		// ── Visibilidade das strumlines ──────────
+		tab_group.add(new FlxText(objX, objY, 280, 'Visibility:', 11));
+		objY += 16;
+
+		var showBFStrum = new PsychUICheckBox(objX, objY, 'Show BF Strumline', 150, null);
+		showBFStrum.checked = true;
+		showBFStrum.onClick = function()
+		{
+			for (i in 0...GRID_COLUMNS_PER_PLAYER)
+				if (strumLineNotes.members[i] != null)
+					strumLineNotes.members[i].visible = showBFStrum.checked;
+		};
+		tab_group.add(showBFStrum);
+		objY += 22;
+
+		var showDadStrum = new PsychUICheckBox(objX, objY, 'Show Dad Strumline', 150, null);
+		showDadStrum.checked = true;
+		showDadStrum.onClick = function()
+		{
+			for (i in GRID_COLUMNS_PER_PLAYER...GRID_COLUMNS_PER_PLAYER * 2)
+				if (strumLineNotes.members[i] != null)
+					strumLineNotes.members[i].visible = showDadStrum.checked;
+		};
+		tab_group.add(showDadStrum);
+		objY += 22;
+
+		var showGFStrum = new PsychUICheckBox(objX, objY, 'Show GF Strumline', 150, null);
+		showGFStrum.checked = true;
+		showGFStrum.onClick = function()
+		{
+			for (i in GRID_COLUMNS_PER_PLAYER * 2...GRID_COLUMNS_PER_PLAYER * 3)
+				if (strumLineNotes.members[i] != null)
+					strumLineNotes.members[i].visible = showGFStrum.checked;
+		};
+		tab_group.add(showGFStrum);
+		objY += 30;
+
+		// ── GF Strumline ─────────────────────────
+		tab_group.add(new FlxText(objX, objY, 280, 'GF Strumline:', 11));
+		objY += 16;
+
+		tab_group.add(new FlxText(objX, objY, 280,
+			'Notas na Strumline 3 usam\nnoteType "GF Sing" automaticamente.', 9));
+		objY += 30;
+
+		// Mover notas GF → Strumline 3 + força noteType GF Sing
+		var moveGFNotesBtn = new PsychUIButton(objX, objY, 'Move GF Notes → Strumline 3', function()
+		{
+			var sec = getCurChartSection();
+			if(sec == null) return;
+
+			var moved = 0;
+			for (note in notes)
+			{
+				if(note.strumTime < cachedSectionTimes[curSec]) continue;
+				var nextSecTime:Null<Float> = cachedSectionTimes[curSec + 1];
+				if(nextSecTime != null && note.strumTime >= (nextSecTime : Float)) continue;
+
+				if(note.gfNote && note.songData[1] < GRID_COLUMNS_PER_PLAYER * 2)
+				{
+					note.songData[1] = note.songData[1] % GRID_COLUMNS_PER_PLAYER + GRID_COLUMNS_PER_PLAYER * 2;
+					note.songData[3] = 'GF Sing';
+					note.noteType    = 'GF Sing';
+					positionNoteXByData(note);
+					moved++;
+				}
+			}
+			if(moved > 0)
+				showOutput('Moved ' + moved + ' GF note(s) to Strumline 3 with "GF Sing"!');
+			else
+				showOutput('No GF notes found in this section.', true);
+		}, 250);
+		tab_group.add(moveGFNotesBtn);
+		objY += 28;
+
+		// Restaurar notas Strumline 3 → seção normal
+		var restoreGFNotesBtn = new PsychUIButton(objX, objY, 'Restore GF Notes → Section', function()
+		{
+			var sec2 = getCurChartSection();
+			if(sec2 == null) return;
+
+			var moved = 0;
+			for (note in notes)
+			{
+				if(note.strumTime < cachedSectionTimes[curSec]) continue;
+				var nextSecTime:Null<Float> = cachedSectionTimes[curSec + 1];
+				if(nextSecTime != null && note.strumTime >= (nextSecTime : Float)) continue;
+
+				if(note.songData[1] >= GRID_COLUMNS_PER_PLAYER * 2)
+				{
+					var lane = note.songData[1] % GRID_COLUMNS_PER_PLAYER;
+					var mustHit = sec2.mustHitSection;
+					note.songData[1] = mustHit ? lane : lane + GRID_COLUMNS_PER_PLAYER;
+					note.gfNote = true;
+					if(note.songData[3] == 'GF Sing') note.songData[3] = '';
+					if(note.noteType    == 'GF Sing') note.noteType    = '';
+					positionNoteXByData(note);
+					moved++;
+				}
+			}
+			if(moved > 0)
+				showOutput('Restored ' + moved + ' GF note(s) to section!');
+			else
+				showOutput('No Strumline 3 notes found.', true);
+		}, 250);
+		tab_group.add(restoreGFNotesBtn);
+		objY += 30;
+
+		// ── Info ────────────────────────────────
+		tab_group.add(new FlxText(objX, objY, 280,
+			'Note data:\n  0-3  = BF\n  4-7  = Dad\n  8-11 = GF (Strumline 3)',
+			10
+		));
+	}
+
+	function addMetaTab()
+	{
+		var tab_group = mainBox.getTab('Meta').menu;
+
+		var lx = 10;
+		var ly = 15;
+		var inputW = 260;
+
+		// Carrega do meta.json da música atual via FreeplayMeta
+		var songMeta:FreeplayMetaJSON = FreeplayMeta.getMeta(PlayState.SONG.song);
+
+		// ── Artist ────────────────────────────────────────
+		tab_group.add(new FlxText(lx, ly, 0, 'Artist:', 12));
+		ly += 16;
+		artistInput = new PsychUIInputText(lx, ly, inputW, songMeta.artist != null ? songMeta.artist : '', 8);
+		artistInput.onChange = function(old:String, cur:String)
+		{
+			Reflect.setField(PlayState.SONG, 'artist', cur);
+		};
+		tab_group.add(artistInput);
+
+		// Sincroniza PlayState.SONG com o que foi carregado do meta.json
+		var _curArtist:String = Reflect.field(PlayState.SONG, 'artist');
+		Reflect.setField(PlayState.SONG, 'artist', songMeta.artist != null ? songMeta.artist : (_curArtist != null ? _curArtist : ''));
+
+		// ── Botões ────────────────────────────────────────
+		ly += 40;
+		exportMetaBtn = new PsychUIButton(lx, ly, 'Save meta.json', onMetaSaveClick, inputW);
+		exportMetaBtn.normalStyle.bgColor = 0xFF226622;
+		exportMetaBtn.normalStyle.textColor = FlxColor.WHITE;
+		tab_group.add(exportMetaBtn);
+
+		ly += 26;
+		var reloadMetaBtn = new PsychUIButton(lx, ly, 'Reload from meta.json', function()
+		{
+			loadMeta();
+			showOutput('Meta reloaded from meta.json!');
+		}, inputW);
+		tab_group.add(reloadMetaBtn);
+
+		ly += 34;
+		tab_group.add(new FlxText(lx, ly, inputW,
+			'Saved to:\ndata/<song>/meta.json', 10));
+	}
+
+	// Atualiza os campos do Meta tab com os dados do meta.json da música atual.
+	// Chamado em loadMeta() e pelo botão Reload.
+	// loadMeta() já existia e usa FreeplayMeta.getMeta() corretamente.
+
+	function onMetaSaveClick():Void
+	{
+		// Lê os valores atuais dos inputs
+		var artist:String = artistInput != null ? artistInput.text.trim() : '';
+
+		Reflect.setField(PlayState.SONG, 'artist', artist);
+
+		var meta:FreeplayMetaJSON = FreeplayMeta.getMeta(PlayState.SONG.song);
+		meta.artist = artist;
+
+		var data:String = haxe.Json.stringify(meta, null, '\t');
+
+		#if mobile
+		StorageUtil.saveContent('meta.json', data);
+		showOutput('meta.json saved!');
+		#else
+		// Salva diretamente na pasta da música se o chart já tem caminho
+		var songFolder:String = Paths.formatToSongPath(PlayState.SONG.song);
+		var savePath:String = 'data/$songFolder/meta.json';
+
+		#if MODS_ALLOWED
+		var modDir:String = Mods.currentModDirectory;
+		if(modDir != null && modDir.length > 0)
+			savePath = 'mods/$modDir/$savePath';
+		#end
+
+		try
+		{
+			var dir:String = savePath.substr(0, savePath.lastIndexOf('/'));
+			if(!sys.FileSystem.exists(dir)) sys.FileSystem.createDirectory(dir);
+			sys.io.File.saveContent(savePath, data);
+			showOutput('meta.json saved to: $savePath');
+			trace('[Meta] Saved: $savePath\n$data');
+		}
+		catch(e:haxe.Exception)
+		{
+			// Fallback: abre dialogo de salvar arquivo
+			showOutput('Could not auto-save, opening file dialog...', true);
+			if(data.length > 0)
+			{
+				var _file = new openfl.net.FileReference();
+				_file.save(data, 'meta.json');
+			}
+		}
+		#end
+	}
+
+	// Chamada ao sair da aba Meta (via UIEvent). Salva silenciosamente no PlayState.SONG.
+	// Não escreve o arquivo — só mantém os dados em memória até o próximo Save.
+	function autoSaveMeta():Void
+	{
+		if(artistInput != null) Reflect.setField(PlayState.SONG, 'artist', artistInput.text.trim());
+		trace('[Meta] Auto-saved to memory: artist="${Reflect.field(PlayState.SONG, 'artist')}"');
 	}
 
 	function addFileTab()
@@ -3699,18 +4125,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							artistInput.cameras = state.cameras;
 							artistInput.onChange = function(old:String, cur:String) pack.metadata.artist = cur;
 
-							var charterInput:PsychUIInputText = new PsychUIInputText(textX + 190, textY, 120, pack.metadata.charter, 8);
-							charterInput.cameras = state.cameras;
-							charterInput.onChange = function(old:String, cur:String) pack.metadata.charter = cur;
-							
-							var artistTxt:FlxText = new FlxText(artistInput.x, artistInput.y - 15, 100, 'Artist/Composer:');
+							var artistTxt:FlxText = new FlxText(artistInput.x, artistInput.y - 15, 100, 'Artist:');
 							artistTxt.cameras = state.cameras;
-							var charterTxt:FlxText = new FlxText(charterInput.x, charterInput.y - 15, 100, 'Charter:');
-							charterTxt.cameras = state.cameras;
 							state.add(artistTxt);
-							state.add(charterTxt);
 							state.add(artistInput);
-							state.add(charterInput);
 						}
 					));
 
@@ -3883,8 +4301,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						state.add(charterTxt);
 						state.add(difficultiesTxt);
 						state.add(artistInput);
-						state.add(charterInput);
-						state.add(difficultiesInput);
 					}
 				));
 			});
@@ -4035,7 +4451,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var btn:PsychUIButton = new PsychUIButton(btnX, btnY, '  Exit', function()
 		{
 			PlayState.chartingMode = false;
-			MusicBeatState.switchState(new states.editors.MasterEditorMenu());
+			MusicBeatState.switchState(new states.MasterEditorState());
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 			FlxG.mouse.visible = false;
 		}, btnWid);
@@ -4769,6 +5185,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			case PsychUIBox.CLICK_EVENT:
 				ignoreClickForThisFrame = true;
 				if(sender == upperBox) updateUpperBoxBg();
+				// Auto-save ao sair da aba Meta
+				if(sender == mainBox && mainBox.selectedName != 'Meta')
+					autoSaveMeta();
 
 			case PsychUIBox.MINIMIZE_EVENT:
 				if(sender == upperBox)
@@ -4894,7 +5313,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			try
 			{
-				var path:String = Paths.getPath('characters/' + char + '.json', TEXT);
+				var path:String = Paths.getPath('data/characters/' + char + '.json', TEXT);
 				#if MODS_ALLOWED
 				var unparsedJson = File.getContent(path);
 				#else
