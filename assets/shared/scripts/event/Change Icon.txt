@@ -1,0 +1,3 @@
+HOW TO USE (Chart Editor)
+  Value 1    : The target icon slot → "player" or "opponent"
+  Value 2    : The icon name ("bf", "dad", "bf-old", "faces")
