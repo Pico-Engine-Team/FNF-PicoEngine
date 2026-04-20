@@ -1,0 +1,15 @@
+[
+	{
+		"animations": [],
+		"hitsoundVolume": 1,
+		"causesMiss": true,
+		"missHealth": 0.0475,
+		"blockHit": false,
+		"hitHealth": 0.023,
+		"script": "",
+		"name": "New Note Type",
+		"ignoreNote": false,
+		"noteTexture": "",
+		"noteSkin": ""
+	}
+]
