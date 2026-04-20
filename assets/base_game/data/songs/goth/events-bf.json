@@ -1,0 +1,25 @@
+{
+  "events": [
+    [0, [["ZoomCamera", "0.9,100,cubeOut", ""], ["FocusCamera", "0,0,0", "70,cubeInOut"],["SetCameraBop", "4", "1"]]],
+    [6400, [["FocusCamera", "1,0,0", "25,cubeInOut"]]],
+    [12800, [["FocusCamera", "0,0,0", "25,cubeInOut"]]],
+    [19200, [["FocusCamera", "1,0,0", "10,CLASSIC"], ["ZoomCamera", "1,4,cubeOut", ""]]],
+    [25600, [["FocusCamera", "0,0,0", "10,CLASSIC"]]],
+    [32000, [["FocusCamera", "2,0,0", "7,CLASSIC"]]],
+    [35200, [["FocusCamera", "0,0,0", "20,cubeInOut"]]],
+    [38400, [["FocusCamera", "1,0,0", "4,CLASSIC"]]],
+    [41600, [["FocusCamera", "0,0,0", "4,CLASSIC"]]],
+    [44800, [["FocusCamera", "1,0,0", "16,cubeInOut"], ["ZoomCamera", "1.1,100,cubeOut", ""]]],
+    [51200, [["ZoomCamera", "1.15,100,cubeOut", ""], ["FocusCamera", "0,0,0", "34,cubeInOut"]]],
+    [55600, [["ZoomCamera", "1.2,6,cubeIn", ""]]],
+    [57520, [["FocusCamera", "2,0,0", "32,cubeInOut"]]],
+    [57550, [["ZoomCamera", "0.95,250,cubeInOut", ""]]],
+    [64000, [["ZoomCamera", "1.05,20,cubeInOut", ""], ["FocusCamera", "0,0,0", "16,cubeInOut"]]],
+    [70400, [["ZoomCamera", "1.15,500,cubeIn", ""], ["FocusCamera", "1,0,0", "25,cubeInOut"]]],
+    [76800, [["FocusCamera", "0,0,0", "50,cubeInOut"]]],
+    [83200, [["ZoomCamera", "1,2,cubeOut", ""]]],
+    [83600, [["ZoomCamera", "0.95,2,cubeOut", ""]]],
+    [84000, [["ZoomCamera", "0.9,2,cubeOut", ""]]],
+    [84400, [["ZoomCamera", "0.85,2,cubeOut", ""]]]
+  ]
+}
