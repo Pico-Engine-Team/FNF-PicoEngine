@@ -3,11 +3,10 @@ package psychlua;
 import backend.WeekData;
 import objects.Character;
 import backend.StageData;
+import substates.GameOverSubstate;
 
 import openfl.display.BlendMode;
 import Type.ValueType;
-
-import substates.GameOverSubstate;
 
 typedef LuaTweenOptions = {
 	type:FlxTweenType,
