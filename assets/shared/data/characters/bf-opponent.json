@@ -1,0 +1,102 @@
+{
+	"animations": [
+		{
+			"loop": false,
+			"offsets": [-28, 0],
+			"anim": "idle",
+			"fps": 24,
+			"name": "BF idle dance",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-24, 29],
+			"anim": "singUP",
+			"fps": 24,
+			"name": "BF NOTE UP0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-20, 21],
+			"anim": "singUP-alt",
+			"fps": 24,
+			"name": "upAlt",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-41, -52],
+			"anim": "singDOWN",
+			"fps": 24,
+			"name": "BF NOTE DOWN0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-43, -45],
+			"anim": "singDOWN-alt",
+			"fps": 24,
+			"name": "downAlt",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-62, -6],
+			"anim": "singLEFT",
+			"fps": 24,
+			"name": "BF NOTE LEFT0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-22, -7],
+			"anim": "singLEFT-alt",
+			"fps": 24,
+			"name": "leftAlt",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [23, -4],
+			"anim": "singRIGHT",
+			"fps": 24,
+			"name": "BF NOTE RIGHT0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [38, -4],
+			"anim": "singRIGHT-alt",
+			"fps": 24,
+			"name": "rightAlt",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [50, 42],
+			"anim": "hey",
+			"fps": 24,
+			"name": "Cheer",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-59, -13],
+			"anim": "dodge",
+			"fps": 24,
+			"name": "boyfriend dodge",
+			"indices": []
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/BOYFRIEND, characters/extraAnims/bf/Alt anims, characters/extraAnims/bf/BFCheer",
+	"position": [0, 350],
+	"healthicon": "bf",
+	"flip_x": true,
+	"healthbar_colors": [49, 176, 209],
+	"camera_position": [0, -50],
+	"sing_duration": 4,
+	"scale": 1
+}
