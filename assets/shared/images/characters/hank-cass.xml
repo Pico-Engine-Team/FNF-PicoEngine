@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><TextureAtlas imagePath="HANK.png">
+	<!-- Created with Adobe Animate version 22.0.0.93 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="hank down0000" x="596" y="1401" width="460" height="416" frameX="-10" frameY="0" frameWidth="482" frameHeight="416"/>
+	<SubTexture name="hank down0001" x="1056" y="1401" width="460" height="416" frameX="-10" frameY="0" frameWidth="482" frameHeight="416"/>
+	<SubTexture name="hank down0002" x="1516" y="1401" width="482" height="416"/>
+	<SubTexture name="hank down0003" x="1998" y="1401" width="482" height="416"/>
+	<SubTexture name="hank down0004" x="2480" y="1401" width="470" height="416" frameX="-11" frameY="0" frameWidth="482" frameHeight="416"/>
+	<SubTexture name="hank down0005" x="2950" y="1401" width="470" height="416" frameX="-11" frameY="0" frameWidth="482" frameHeight="416"/>
+	<SubTexture name="hank idle0000" x="0" y="514" width="397" height="457" frameX="-1" frameY="-3" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0001" x="0" y="514" width="397" height="457" frameX="-1" frameY="-3" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0002" x="397" y="514" width="397" height="455" frameX="-1" frameY="-5" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0003" x="3887" y="0" width="389" height="458" frameX="-5" frameY="-2" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0004" x="2778" y="514" width="403" height="436" frameX="-5" frameY="-24" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0005" x="3181" y="514" width="403" height="436" frameX="-5" frameY="-24" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0006" x="2382" y="514" width="396" height="444" frameX="0" frameY="-16" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0007" x="2382" y="514" width="396" height="444" frameX="0" frameY="-16" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0008" x="794" y="514" width="385" height="455" frameX="-7" frameY="-5" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0009" x="794" y="514" width="385" height="455" frameX="-7" frameY="-5" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0010" x="3113" y="0" width="387" height="460" frameX="-5" frameY="0" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0011" x="3500" y="0" width="387" height="460" frameX="-5" frameY="0" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0012" x="1179" y="514" width="404" height="453" frameX="-5" frameY="-7" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0013" x="1583" y="514" width="404" height="453" frameX="-5" frameY="-7" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank idle0014" x="1987" y="514" width="395" height="453" frameX="0" frameY="-7" frameWidth="409" frameHeight="460"/>
+	<SubTexture name="hank left0000" x="3811" y="971" width="596" height="423" frameX="0" frameY="-7" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank left0001" x="0" y="1401" width="596" height="423" frameX="0" frameY="-7" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank left0002" x="3584" y="514" width="581" height="430" frameX="-8" frameY="0" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank left0003" x="0" y="971" width="581" height="430" frameX="-8" frameY="0" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank left0004" x="581" y="971" width="580" height="430" frameX="-9" frameY="0" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank left0005" x="1161" y="971" width="580" height="430" frameX="-9" frameY="0" frameWidth="596" frameHeight="430"/>
+	<SubTexture name="hank right0000" x="1741" y="971" width="520" height="429"/>
+	<SubTexture name="hank right0001" x="2261" y="971" width="520" height="429"/>
+	<SubTexture name="hank right0002" x="2781" y="971" width="515" height="426" frameX="-4" frameY="-2" frameWidth="520" frameHeight="429"/>
+	<SubTexture name="hank right0003" x="3296" y="971" width="515" height="426" frameX="-4" frameY="-2" frameWidth="520" frameHeight="429"/>
+	<SubTexture name="hank right0004" x="3420" y="1401" width="512" height="416" frameX="-4" frameY="-12" frameWidth="520" frameHeight="429"/>
+	<SubTexture name="hank right0005" x="3932" y="1401" width="512" height="416" frameX="-4" frameY="-12" frameWidth="520" frameHeight="429"/>
+	<SubTexture name="hank up0000" x="0" y="0" width="387" height="514" frameX="-24" frameY="0" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hank up0001" x="387" y="0" width="387" height="514" frameX="-24" frameY="0" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hank up0002" x="1457" y="0" width="409" height="495" frameX="-10" frameY="-18" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hank up0003" x="1866" y="0" width="409" height="495" frameX="-10" frameY="-18" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hank up0004" x="2275" y="0" width="419" height="491" frameX="0" frameY="-22" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hank up0005" x="2694" y="0" width="419" height="491" frameX="0" frameY="-22" frameWidth="419" frameHeight="514"/>
+	<SubTexture name="hey!0000" x="774" y="0" width="683" height="498"/>
+</TextureAtlas>
