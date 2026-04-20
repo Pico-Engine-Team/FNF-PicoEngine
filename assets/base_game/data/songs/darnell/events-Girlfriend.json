@@ -1,0 +1,12 @@
+{
+	"events": [
+		[
+			123870.967741936,
+			[
+				["Play Animation", "hey", "bf"],
+				["Play Animation", "cheer", "gf"]
+			]
+		]
+	],
+	"format": "psych_v1"
+}
