@@ -1,0 +1,87 @@
+{
+	"animations": [
+		{
+			"offsets": [0, 0],
+			"indices": [],
+			"fps": 24,
+			"anim": "idle",
+			"loop": false,
+			"name": "PICO IDLE"
+		},
+		{
+			"offsets": [-60, 6],
+			"indices": [],
+			"fps": 24,
+			"anim": "singUP",
+			"loop": false,
+			"name": "PICO UP"
+		},
+		{
+			"offsets": [0, -134],
+			"indices": [],
+			"fps": 24,
+			"anim": "singDOWN",
+			"loop": false,
+			"name": "PICO DOWN"
+		},
+		{
+			"offsets": [112, -76],
+			"indices": [],
+			"fps": 24,
+			"anim": "singLEFT",
+			"loop": false,
+			"name": "PICO LEFT"
+		},
+		{
+			"offsets": [-155, -47],
+			"indices": [],
+			"fps": 24,
+			"anim": "singRIGHT",
+			"loop": false,
+			"name": "PICO RIGHT"
+		},
+		{
+			"offsets": [-58, 40],
+			"indices": [],
+			"fps": 24,
+			"anim": "singUPmiss",
+			"loop": false,
+			"name": "PICO MISS UP"
+		},
+		{
+			"offsets": [13, -133],
+			"indices": [],
+			"fps": 24,
+			"anim": "singDOWNmiss",
+			"loop": false,
+			"name": "PICO MISS DOWN"
+		},
+		{
+			"offsets": [115, -81],
+			"indices": [],
+			"fps": 24,
+			"anim": "singLEFTmiss",
+			"loop": false,
+			"name": "PICO MISS LEFT"
+		},
+		{
+			"offsets": [-152, -44],
+			"indices": [],
+			"fps": 24,
+			"anim": "singRIGHTmiss",
+			"loop": false,
+			"name": "PICO MISS RIGHT"
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/pico/MAJIN_PICO",
+	"position": [-110, 200],
+	"healthicon": "exe/pico-majin",
+	"flip_x": true,
+	"healthbar_colors": [86, 41, 175],
+	"camera_position": [120, 110],
+	"sing_duration": 4,
+	"scale": 1,
+	"_editor_isPlayer": true
+}

@@ -1,0 +1,127 @@
+{
+	"animations": [
+		{
+			"offsets": [0, 0],
+			"indices": [],
+			"fps": 24,
+			"anim": "danceLeft",
+			"loop": false,
+			"name": "gfDanceLeft"
+		},
+		{
+			"offsets": [-13, 0],
+			"indices": [],
+			"fps": 24,
+			"anim": "danceRight",
+			"loop": false,
+			"name": "gfDanceRight"
+		},
+		{
+			"offsets": [0, 26],
+			"indices": [],
+			"fps": 24,
+			"anim": "singUP",
+			"loop": false,
+			"name": "gfUp"
+		},
+		{
+			"offsets": [2, -30],
+			"indices": [],
+			"fps": 24,
+			"anim": "singDOWN",
+			"loop": false,
+			"name": "gfDown"
+		},
+		{
+			"offsets": [-108, -38],
+			"indices": [],
+			"fps": 24,
+			"anim": "singRIGHT",
+			"loop": false,
+			"name": "gfRight"
+		},
+		{
+			"offsets": [40,  -1],
+			"indices": [],
+			"fps": 24,
+			"anim": "singLEFT",
+			"loop": false,
+			"name": "gfLeft"
+		},
+		{
+			"offsets": [-55, -19],
+			"indices": [],
+			"fps": 24,
+			"anim": "preAttack",
+			"loop": false,
+			"name": "gfPreAttack"
+		},
+		{
+			"offsets": [315, -25],
+			"indices": [],
+			"fps": 24,
+			"anim": "attack",
+			"loop": false,
+			"name": "gfAttack"
+		},
+		{
+			"offsets": [-59, -44],
+			"indices": [],
+			"fps": 24,
+			"anim": "hurt",
+			"loop": false,
+			"name": "gfHurt"
+		},
+		{
+			"offsets": [-26, 1],
+			"indices": [],
+			"fps": 24,
+			"anim": "hey",
+			"loop": false,
+			"name": "gfHey"
+		},
+		{
+			"offsets": [-13, 39],
+			"indices": [],
+			"fps": 24,
+			"anim": "singUPmiss",
+			"loop": false,
+			"name": "gfMISSUp"
+		},
+		{
+			"offsets": [-6, -34],
+			"indices": [],
+			"fps": 24,
+			"anim": "singDOWNmiss",
+			"loop": false,
+			"name": "gfMISSDown"
+		},
+		{
+			"offsets": [-98, -53],
+			"indices": [],
+			"fps": 24,
+			"anim": "singRIGHTmiss",
+			"loop": false,
+			"name": "gfMISSRight"
+		},
+		{
+			"offsets": [42, -32],
+			"indices": [],
+			"fps": 24,
+			"anim": "singLEFTmiss",
+			"loop": false,
+			"name": "gfMISSLeft"
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/gf/Sprinklez/GF-Sprinklez-v3",
+	"position": [20, 230],
+	"healthicon": "gf",
+	"flip_x": true,
+	"healthbar_colors": [165, 0, 77],
+	"camera_position": [290, -10],
+	"sing_duration": 4,
+	"scale": 1,
+	"_editor_isPlayer": true
+}

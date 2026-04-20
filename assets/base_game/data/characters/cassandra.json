@@ -1,0 +1,54 @@
+{
+	"animations": [
+		{
+			"loop": false,
+			"offsets": [0, 0],
+			"anim": "idle",
+			"fps": 24,
+			"name": "CASS-IDLE",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [23, 34],
+			"anim": "singUP",
+			"fps": 24,
+			"name": "CASS-UP",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [38, -71],
+			"anim": "singDOWN",
+			"fps": 24,
+			"name": "CASS-DOWN",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [47, 0],
+			"anim": "singLEFT",
+			"fps": 24,
+			"name": "CASS-LEFT",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-13, 0],
+			"anim": "singRIGHT",
+			"fps": 24,
+			"name": "CASS-RIGHT",
+			"indices": []
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/extraCharacters/cassandra/cassandra",
+	"position": [-10, 180],
+	"healthicon": "face",
+	"flip_x": false,
+	"healthbar_colors": [161, 161, 161],
+	"camera_position": [0, 50],
+	"sing_duration": 4,
+	"scale": 1
+}

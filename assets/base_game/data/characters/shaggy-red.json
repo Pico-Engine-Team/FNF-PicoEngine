@@ -1,0 +1,55 @@
+{
+	"animations": [
+		{
+			"loop": false,
+			"offsets": [-35, 315],
+			"anim": "idle",
+			"fps": 24,
+			"name": "IdleDance",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-41, 295],
+			"anim": "singDOWN",
+			"fps": 24,
+			"name": "SingDown",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-35, 331],
+			"anim": "singUP",
+			"fps": 24,
+			"name": "SingUp",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-14, 311],
+			"anim": "singLEFT",
+			"fps": 24,
+			"name": "SingRight",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-40, 302],
+			"anim": "singRIGHT",
+			"fps": 24,
+			"name": "SingLeft",
+			"indices": []
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/vsmattredshag",
+	"position": [20, 360],
+	"healthicon": "Red-Shaggy",
+	"flip_x": true,
+	"healthbar_colors": [209, 26, 26],
+	"camera_position": [50, -380],
+	"sing_duration": 4,
+	"scale": 1,
+	"_editor_isPlayer": false
+}

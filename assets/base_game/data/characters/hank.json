@@ -1,0 +1,63 @@
+{
+	"animations": [
+		{
+			"loop": false,
+			"offsets": [0, 10],
+			"anim": "idle",
+			"fps": 24,
+			"name": "hank idle",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [106, -22],
+			"anim": "singLEFT",
+			"fps": 24,
+			"name": "hank right0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [30, -33],
+			"anim": "singDOWN",
+			"fps": 24,
+			"name": "hank down0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [-9, 64],
+			"anim": "singUP",
+			"fps": 24,
+			"name": "hank up0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, -18],
+			"anim": "singRIGHT",
+			"fps": 24,
+			"name": "hank left0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, -18],
+			"anim": "hey",
+			"fps": 24,
+			"name": "hank hey",
+			"indices": []
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/hank-cass",
+	"position": [0, 0],
+	"healthicon": "hank-weekend2",
+	"flip_x": true,
+	"healthbar_colors": [78, 53, 70],
+	"camera_position": [0, 0],
+	"sing_duration": 8,
+	"scale": 1,
+	"_editor_isPlayer": false
+}
