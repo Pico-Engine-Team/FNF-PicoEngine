@@ -1,0 +1,209 @@
+{
+	"events": [
+		[
+			0,
+			[
+				["Cam Boom Speed", "1", "1"],
+				["Slow Camera Zoom", "1.3", "0.01"]
+			]
+		],
+		[
+			83.3333333333333,
+			[
+				["Slow Camera Zoom", "0.8", "3"]
+			]
+		],
+		[
+			9666.66666666667,
+			[
+				["Camera Set Target", "D", ""]
+			]
+		],
+		[
+			10000,
+			[
+				["cinematic", "true,100", "0.3"],
+				["Zoom Camera", "1.3", ""],
+				["Play Animation", "angry", "Dad"]
+			]
+		],
+		[
+			10666.6666666667,
+			[
+				["cinematic", "false", "0.01"],
+				["Zoom Camera", "0.8", ""],
+				["Flash Camera", "1", ""],
+				["Cam Boom Speed", "1", "1.3"]
+			]
+		],
+		[
+			10670.1388888889,
+			[
+				["Change Character", "Dad", "mouse-angry"]
+			]
+		],
+		[
+			32000,
+			[
+				["Flash Camera", "1", ""],
+				["cinematic", "true,100", "1"],
+				["Cam Boom Speed", "1", "1"],
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			42666.6666666667,
+			[
+				["Zoom Camera", "0.9", ""]
+			]
+		],
+		[
+			53333.3333333334,
+			[
+				["Zoom Camera", "0.8", ""],
+				["Flash Camera", "1", ""],
+				["cinematic", "false", "1"],
+				["Play Animation", "1", ""],
+				["Cam Boom Speed", "4", "1"]
+			]
+		],
+		[
+			62666.6666666667,
+			[
+				["Play Animation", "2", ""]
+			]
+		],
+		[
+			63333.3333333334,
+			[
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			64000,
+			[
+				["Cam Boom Speed", "1", "1"],
+				["Flash Camera", "1", ""],
+				["Zoom Camera", "0.8", ""]
+			]
+		],
+		[
+			86666.6666666666,
+			[
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			87333.3333333333,
+			[
+				["Play Sound", "BURP", "1"],
+				["Play Animation", "burp", "BF"],
+				["Play Sound", "BURP", "1"]
+			]
+		],
+		[
+			88000,
+			[
+				["Zoom Camera", "0.8", ""]
+			]
+		],
+		[
+			89333.3333333333,
+			[
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			90000,
+			[
+				["Play Animation", "burp", "BF"],
+				["Play Sound", "BURP", "0.65"]
+			]
+		],
+		[
+			90003.4722222222,
+			[
+				["Play Sound", "BURP", "1"]
+			]
+		],
+		[
+			90666.6666666666,
+			[
+				["Zoom Camera", "0.8", ""]
+			]
+		],
+		[
+			92000,
+			[
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			92666.6666666666,
+			[
+				["Play Sound", "BURP", "0.65"],
+				["Play Animation", "burp", "BF"]
+			]
+		],
+		[
+			92670.1388888888,
+			[
+				["Play Sound", "BURP", "1"]
+			]
+		],
+		[
+			93333.3333333333,
+			[
+				["Zoom Camera", "0.8", ""]
+			]
+		],
+		[
+			94666.6666666666,
+			[
+				["Zoom Camera", "1.1", ""]
+			]
+		],
+		[
+			95333.3333333333,
+			[
+				["Play Sound", "BURP", "1"]
+			]
+		],
+		[
+			95336.8055555555,
+			[
+				["Play Animation", "burp", "BF"]
+			]
+		],
+		[
+			95340.2777777777,
+			[
+				["Play Sound", "BURP", "1"]
+			]
+		],
+		[
+			95999.9999999999,
+			[
+				["Flash Camera", "1", ""],
+				["Cam Boom Speed", "2", "1"],
+				["cinematic", "true,90", "1"],
+				["Zoom Camera", "0.95", ""]
+			]
+		],
+		[
+			106666.666666667,
+			[
+				["Play Animation", "1", ""],
+				["Flash Camera", "2", ""],
+				["Zoom Camera", "0.8", ""]
+			]
+		],
+		[
+			115750,
+			[
+				["Play Animation", "blackii", ""]
+			]
+		]
+	],
+	"format": "psych_v1"
+}
