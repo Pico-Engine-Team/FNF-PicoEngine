@@ -1,0 +1,24 @@
+{
+	"songs":
+	[
+		["Satin Panties", "mom", [216, 85, 142]],
+		["High", "mom", [216, 85, 142]]
+	],
+	
+	"weekCharacters":
+	[
+		"mom",
+		"bf",
+		"gf"
+	],
+	
+	"weekBackground": "limo",
+	"storyName": "MOMMY MUST MURDER",
+	"weekBefore": "week3",
+	"weekName": "Week 4",
+	"startUnlocked": true,
+
+	"hideStoryMode": false,
+	"hideFreeplay": false,
+	"difficulties": "Pico, Darnell"
+}

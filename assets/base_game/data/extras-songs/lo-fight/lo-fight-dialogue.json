@@ -1,0 +1,20 @@
+{
+	"dialogue": [
+		{
+			"sound": "",
+			"speed": 0.05,
+			"portrait": "pico-player",
+			"boxState": "normal",
+			"expression": "gun",
+			"text": "I'm gonna pop this right between your eyes and make you go boom."
+		},
+		{
+			"sound": "",
+			"speed": 0.05,
+			"portrait": "pico",
+			"boxState": "normal",
+			"expression": "talk",
+			"text": "ermm what the sigma?"
+		}
+	]
+}

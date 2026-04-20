@@ -1,0 +1,17 @@
+{
+	"events": [
+		[
+			44751.0373443983,
+			[
+				["PlayAnimation", "boyfriend", "true"]
+			]
+		],
+		[
+			61182.5726141079,
+			[
+				["PlayAnimation", "boyfriend", "true"]
+			]
+		]
+	],
+	"format": "psych_v1_convert"
+}

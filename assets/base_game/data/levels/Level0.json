@@ -1,0 +1,26 @@
+{
+	"storyName": "",
+	"difficulties": "normal, hard, pico-remix, darnell",
+	"hideFreeplay": false,
+	"weekBackground": "stage",
+	"weekBefore": "tutorial",
+	"startUnlocked": true,
+	"weekCharacters": [
+		"gf",
+		"bf",
+		""
+	],
+	"songs": [
+		[
+			"Tutorial",
+			"gf",
+			[
+				165,
+				0,
+				77
+			]
+		]
+	],
+	"hideStoryMode": false,
+	"weekName": "Tutorial"
+}

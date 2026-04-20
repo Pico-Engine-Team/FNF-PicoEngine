@@ -1,0 +1,24 @@
+{
+	"songs":
+	[
+		["Ugh", "tankman", [225, 225, 225]],
+		["Guns", "tankman", [225, 225, 225]],
+		["Stress", "tankman", [225, 225, 225]]
+	],
+
+	"weekCharacters":
+	[
+		"tankman",
+		"bf",
+		"gf"
+	],
+
+	"weekBackground": "tank",
+	"storyName": "Tankman ft. JohnnyUtah",
+	"difficulties": "normal,hard",
+	"weekName": "Week 7",
+	"hideStoryMode": false,
+	"hideFreeplay": false,
+	"weekBefore": "week6",
+	"startUnlocked": true
+}

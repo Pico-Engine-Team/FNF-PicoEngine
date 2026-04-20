@@ -1,0 +1,26 @@
+{
+	"songs":
+	[
+		["Darnell", "darnell", [115, 94, 176]],
+		["Lit Up", "darnell", [115, 94, 176]],
+		["2Hot", "darnell", [115, 94, 176]],
+		["Blazin", "darnell", [115, 94, 176]]
+	],
+
+	"weekCharacters":
+	[
+		"darnell",
+		"pico-player",
+		"nene"
+	],
+
+	"weekBackground": "phillystreets",
+	"storyName": "Due Debts",
+	"weekBefore": "",
+	"weekName": "Weekend 1",
+	"startUnlocked": true,
+
+	"difficulties": "Normal, Hard, Erect, Nightmare, Boyfriend, Girlfriend, Girlfriend-Remix",
+	"hideStoryMode": false,
+	"hideFreeplay": false
+}
