@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="GF_Dead.png">
+	<!-- Created with Adobe Animate version 23.0.12.187 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="deathConfirm0000" x="10" y="10" width="378" height="562"/>
+	<SubTexture name="deathConfirm0001" x="398" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0002" x="782" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0003" x="1166" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0004" x="1550" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0005" x="1934" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0006" x="2318" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0007" x="2702" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0008" x="3086" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0009" x="3470" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0010" x="3854" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0011" x="4238" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0012" x="4622" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0013" x="5006" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0014" x="5390" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0015" x="5774" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0016" x="6158" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0017" x="6542" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0018" x="6926" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0019" x="7310" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0020" x="7694" y="10" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0021" x="10" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0022" x="394" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0023" x="778" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0024" x="1162" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0025" x="1546" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0026" x="1930" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0027" x="2314" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0028" x="2698" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathConfirm0029" x="3082" y="582" width="374" height="562" frameX="-1" frameY="0" frameWidth="378" frameHeight="562"/>
+	<SubTexture name="deathLoop0000" x="3466" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0001" x="3850" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0002" x="4234" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0003" x="4618" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0004" x="5002" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0005" x="5386" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0006" x="5770" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0007" x="6154" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0008" x="6538" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0009" x="6922" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0010" x="7306" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0011" x="7690" y="582" width="374" height="562"/>
+	<SubTexture name="deathLoop0012" x="10" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0013" x="394" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0014" x="778" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0015" x="1162" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0016" x="1546" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0017" x="1930" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0018" x="2314" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0019" x="2698" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0020" x="3082" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0021" x="3466" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0022" x="3850" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0023" x="4234" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0024" x="4618" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0025" x="5002" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0026" x="5386" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0027" x="5770" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0028" x="6154" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0029" x="6538" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0030" x="6922" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0031" x="7306" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0032" x="7690" y="1154" width="374" height="562"/>
+	<SubTexture name="deathLoop0033" x="10" y="1726" width="374" height="562"/>
+	<SubTexture name="firstDeath0000" x="394" y="1726" width="378" height="542" frameX="-26" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0001" x="782" y="1726" width="396" height="542" frameX="-6" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0002" x="1188" y="1726" width="396" height="542" frameX="-6" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0003" x="1594" y="1726" width="402" height="542" frameX="0" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0004" x="2006" y="1726" width="402" height="542" frameX="0" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0005" x="2418" y="1726" width="402" height="542" frameX="0" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0006" x="2830" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0007" x="3215" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0008" x="3600" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0009" x="3985" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0010" x="4370" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0011" x="4755" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0012" x="5140" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0013" x="5525" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0014" x="5910" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0015" x="6295" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0016" x="6680" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0017" x="7065" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0018" x="7450" y="1726" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0019" x="10" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0020" x="395" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0021" x="780" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0022" x="1165" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0023" x="1550" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0024" x="1935" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0025" x="2320" y="2298" width="375" height="542" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0026" x="2705" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0027" x="3090" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0028" x="3475" y="2298" width="375" height="559" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0029" x="3860" y="2298" width="375" height="559" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0030" x="4245" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0031" x="4630" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0032" x="5015" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0033" x="5400" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0034" x="5785" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0035" x="6170" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0036" x="6555" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0037" x="6940" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0038" x="7325" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0039" x="7710" y="2298" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0040" x="10" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0041" x="395" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0042" x="780" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0043" x="1165" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0044" x="1550" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0045" x="1935" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0046" x="2320" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0047" x="2705" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0048" x="3090" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0049" x="3475" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0050" x="3860" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0051" x="4245" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0052" x="4630" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0053" x="5015" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0054" x="5400" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0055" x="5785" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+	<SubTexture name="firstDeath0056" x="6170" y="2870" width="375" height="562" frameX="-27" frameY="0" frameWidth="404" frameHeight="562"/>
+</TextureAtlas>
