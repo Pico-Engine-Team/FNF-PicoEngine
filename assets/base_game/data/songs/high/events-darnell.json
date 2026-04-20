@@ -1,0 +1,317 @@
+{
+	"events": [
+		[
+			3840,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			4800,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			5280,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			5760,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			6720,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			7200,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			7680,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			8640,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			9120,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			9600,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			10560,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			11520,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			12480,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			12960,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			13440,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			14400,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			14880,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			15360,
+			[
+				["ZoomCamera", "16", "expo"]
+			]
+		],
+		[
+			16320,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			16800,
+			[
+				["ZoomCamera", "8", "expo"]
+			]
+		],
+		[
+			17280,
+			[
+				["ZoomCamera", "4", "INSTANT"]
+			]
+		],
+		[
+			17290,
+			[
+				["ZoomCamera", "4", "expo"]
+			]
+		],
+		[
+			17760,
+			[
+				["ZoomCamera", "4", "INSTANT"]
+			]
+		],
+		[
+			17770,
+			[
+				["ZoomCamera", "4", "expo"]
+			]
+		],
+		[
+			18240,
+			[
+				["ZoomCamera", "4", "INSTANT"]
+			]
+		],
+		[
+			18250,
+			[
+				["ZoomCamera", "4", "expo"]
+			]
+		],
+		[
+			18720,
+			[
+				["ZoomCamera", "4", "INSTANT"]
+			]
+		],
+		[
+			18730,
+			[
+				["ZoomCamera", "4", "expo"]
+			]
+		],
+		[
+			34080,
+			[
+				["ZoomCamera", "8", "expoOut"]
+			]
+		],
+		[
+			34320,
+			[
+				["SetCameraBop", "1", "1.5"]
+			]
+		],
+		[
+			42360,
+			[
+				["ZoomCamera", "32", "expoOut"]
+			]
+		],
+		[
+			45960,
+			[
+				["ZoomCamera", "smoothStepInOut", "32"]
+			]
+		],
+		[
+			48960,
+			[
+				["ZoomCamera", "quadOut", "6"]
+			]
+		],
+		[
+			49440,
+			[
+				["ZoomCamera", "6", "quadOut"]
+			]
+		],
+		[
+			49680,
+			[
+				["SetCameraBop", "0", "1"]
+			]
+		],
+		[
+			49920,
+			[
+				["ZoomCamera", "quadOut", "8"]
+			]
+		],
+		[
+			57240,
+			[
+				["SetCameraBop", "4", "1"]
+			]
+		],
+		[
+			59160,
+			[
+				["SetCameraBop", "2", "1.3"]
+			]
+		],
+		[
+			61080,
+			[
+				["SetCameraBop", "2", "1.5"]
+			]
+		],
+		[
+			63120,
+			[
+				["SetCameraBop", "1", "1.7"]
+			]
+		],
+		[
+			65040,
+			[
+				["SetCameraBop", "1", "1.5"]
+			]
+		],
+		[
+			65280,
+			[
+				["ZoomCamera", "4", "INSTANT"]
+			]
+		],
+		[
+			76680,
+			[
+				["ZoomCamera", "32", "smoothStepInOut"]
+			]
+		],
+		[
+			79680,
+			[
+				["ZoomCamera", "6", "expoOut"]
+			]
+		],
+		[
+			80400,
+			[
+				["SetCameraBop", "2", "1.2"]
+			]
+		],
+		[
+			80640,
+			[
+				["ZoomCamera", "32", "INSTANT"]
+			]
+		],
+		[
+			81120,
+			[
+				["ZoomCamera", "32", "INSTANT"]
+			]
+		],
+		[
+			81600,
+			[
+				["ZoomCamera", "32", "INSTANT"]
+			]
+		],
+		[
+			84600,
+			[
+				["ZoomCamera", "sineOut", "32"]
+			]
+		],
+		[
+			88440,
+			[
+				["ZoomCamera", "expoOut", "32"]
+			]
+		],
+		[
+			92280,
+			[
+				["ZoomCamera", "32", "sineOut"]
+			]
+		],
+		[
+			96000,
+			[
+				["ZoomCamera", "32", "INSTANT"]
+			]
+		]
+	],
+	"format": "psych_v1_convert"
+}
