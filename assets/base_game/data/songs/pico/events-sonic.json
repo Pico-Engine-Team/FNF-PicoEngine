@@ -1,0 +1,185 @@
+{
+	"events": [
+		[
+			0,
+			[
+				["ScrollSpeed", "1", "opponent"]
+			]
+		],
+		[
+			0,
+			[
+				["ZoomCamera", "32", "cubeInOut"]
+			]
+		],
+		[
+			3233.33333333333,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			19200,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			22633.3333333333,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			28000,
+			[
+				["ZoomCamera", "INSTANT", "24"]
+			]
+		],
+		[
+			28700,
+			[
+				["SetCameraBop", "1", "1.7"]
+			]
+		],
+		[
+			28800,
+			[
+				["ZoomCamera", "expoOut", "16"]
+			]
+		],
+		[
+			31200,
+			[
+				["ZoomCamera", "expoOut", "10"]
+			]
+		],
+		[
+			32000,
+			[
+				["ZoomCamera", "expoOut", "16"]
+			]
+		],
+		[
+			34400,
+			[
+				["ZoomCamera", "expoOut", "10"]
+			]
+		],
+		[
+			35400,
+			[
+				["ZoomCamera", "expoOut", "16"]
+			]
+		],
+		[
+			37600,
+			[
+				["ZoomCamera", "expoOut", "10"]
+			]
+		],
+		[
+			38400,
+			[
+				["ZoomCamera", "expoOut", "16"]
+			]
+		],
+		[
+			40800,
+			[
+				["ZoomCamera", "expoOut", "10"]
+			]
+		],
+		[
+			41433.3333333333,
+			[
+				["SetCameraBop", "4", "1"]
+			]
+		],
+		[
+			41800,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			48000,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			54600,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			61400,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		],
+		[
+			64600,
+			[
+				["ZoomCamera", "expoOut", "20"]
+			]
+		],
+		[
+			66200,
+			[
+				["ZoomCamera", "expoOut", "12"]
+			]
+		],
+		[
+			67200,
+			[
+				["ZoomCamera", "16", "expoOut"]
+			]
+		],
+		[
+			69600,
+			[
+				["ZoomCamera", "10", "expoOut"]
+			]
+		],
+		[
+			70400,
+			[
+				["ZoomCamera", "16", "expoOut"]
+			]
+		],
+		[
+			73800,
+			[
+				["ZoomCamera", "16", "expoOut"]
+			]
+		],
+		[
+			76000,
+			[
+				["ZoomCamera", "10", "expoOut"]
+			]
+		],
+		[
+			76800,
+			[
+				["ZoomCamera", "16", "expoOut"]
+			]
+		],
+		[
+			79200,
+			[
+				["ZoomCamera", "10", "expoOut"]
+			]
+		],
+		[
+			80000,
+			[
+				["ZoomCamera", "expoOut", "24"]
+			]
+		]
+	],
+	"format": "psych_v1_convert"
+}
