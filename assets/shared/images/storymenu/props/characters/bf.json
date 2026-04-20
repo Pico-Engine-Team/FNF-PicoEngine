@@ -1,0 +1,9 @@
+{
+	"idle_anim": "M BF Idle",
+	"image": "Menu_BF",
+	"position": [0, 0],
+	"flipX": false,
+	"antialiasing": true,
+	"scale": 1,
+	"confirm_anim": "M bf HEY"
+}
