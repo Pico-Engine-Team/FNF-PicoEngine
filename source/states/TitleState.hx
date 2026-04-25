@@ -14,7 +14,7 @@ import openfl.display.Bitmap;
 import openfl.display.BitmapData;
 import shaders.ColorSwap;
 
-import backend.MusicBeatSubstate;
+import backend.MusicBeatState;
 
 // Pico Engine
 import lucas.states.funkin.scripts.menus.MainMenuState;
