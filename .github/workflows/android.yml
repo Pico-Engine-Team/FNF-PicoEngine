@@ -1,4 +1,4 @@
---quiet: Build Android
+name: Build Android
 
 on:
   push:
