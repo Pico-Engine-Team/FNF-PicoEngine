@@ -16,7 +16,7 @@ import shaders.ColorSwap;
 
 // Pico Engine
 import lucas.states.funkin.scripts.menus.MainMenuState;
-import lucas.states.funkin.scripts.modes.StoryMenuState;
+import lucas.states.funkin.scripts.modes.StoryModeState;
 
 typedef TitleData =
 {
