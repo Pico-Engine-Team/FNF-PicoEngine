@@ -1,7 +1,7 @@
 package lucas.states.funkin.scripts.backend;
 
 #if android
-import android.content.Context;
+import lime.system.System as LimeSystem;
 #end
 
 import flixel.graphics.FlxGraphic;
@@ -77,7 +77,7 @@ class Main extends Sprite
 
 		// Credits to MAJigsaw77 (he's the og author for this code)
 		#if android
-		Sys.setCwd(Path.addTrailingSlash(Context.getExternalFilesDir()));
+Sys.setCwd(Path.addTrailingSlash(LimeSystem.applicationStorageDirectory));
 		#elseif ios
 		Sys.setCwd(lime.system.System.applicationStorageDirectory);
 		#end
