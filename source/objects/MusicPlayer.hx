@@ -5,7 +5,7 @@ import flixel.ui.FlxBar;
 import flixel.util.FlxStringUtil;
 
 // Pico Engine
-import lucas.states.funkin.scripts.menus.FreeplayState;
+import lucas.states.funkin.scripts.menus.FreeplayMenuState;
 
 /**
  * Music player used for Freeplay
