@@ -13,6 +13,7 @@ import flixel.FlxCamera;
 import flixel.text.FlxText;
 
 import backend.WeekData;
+import objects.Alphabet;
 
 import flixel.input.keyboard.FlxKey;
 import flixel.graphics.frames.FlxAtlasFrames;
