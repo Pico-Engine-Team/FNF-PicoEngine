@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="scrap platform.png">
+	<!-- Created with Adobe Animate version 20.5.0.29329 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="Animated BG0000" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0001" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0002" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0003" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0004" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0005" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0006" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0007" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0008" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0009" x="0" y="2605" width="2668" height="2654"/>
+	<SubTexture name="Animated BG0010" x="0" y="2605" width="2668" height="2654"/>
+	<SubTexture name="Animated BG0011" x="0" y="2605" width="2668" height="2654"/>
+	<SubTexture name="Animated BG0012" x="2668" y="2605" width="2664" height="2349" frameX="0" frameY="-305" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0013" x="2668" y="2605" width="2664" height="2349" frameX="0" frameY="-305" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0014" x="2668" y="2605" width="2664" height="2349" frameX="0" frameY="-305" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0015" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0016" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0017" x="0" y="0" width="2619" height="2402" frameX="0" frameY="-252" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0018" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0019" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0020" x="2619" y="0" width="2617" height="2494" frameX="0" frameY="-160" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0021" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0022" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0023" x="5236" y="0" width="2651" height="2605" frameX="0" frameY="-49" frameWidth="2668" frameHeight="2654"/>
+	<SubTexture name="Animated BG0024" x="0" y="2605" width="2668" height="2654"/>
+	<SubTexture name="Animated BG0025" x="0" y="2605" width="2668" height="2654"/>
+	<SubTexture name="Animated BG0026" x="0" y="2605" width="2668" height="2654"/>
+</TextureAtlas>

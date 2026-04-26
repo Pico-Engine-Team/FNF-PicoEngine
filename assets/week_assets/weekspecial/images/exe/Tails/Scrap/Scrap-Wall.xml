@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="scrap wall.png">
+	<!-- Created with Adobe Animate version 20.5.0.29329 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="uyo0000" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0001" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0002" x="1762" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0003" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0004" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0005" x="3524" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0006" x="3524" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0007" x="5286" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0008" x="5286" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0009" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0010" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0011" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0012" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0013" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0014" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0015" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0016" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0017" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0018" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0019" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0020" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0021" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0022" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0023" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0024" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0025" x="0" y="0" width="1762" height="2223"/>
+	<SubTexture name="uyo0026" x="0" y="0" width="1762" height="2223"/>
+</TextureAtlas>
