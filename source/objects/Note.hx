@@ -1,5 +1,7 @@
 package objects;
 
+import flixel.util.FlxColor;
+
 import backend.animation.PsychAnimationController;
 import backend.NoteTypesConfig;
 

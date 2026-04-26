@@ -5,7 +5,7 @@ import objects.Character;
 
 // Pico Engine
 import lucas.states.funkin.scripts.menus.MainMenuState;
-import lucas.states.funkin.scripts.menus.FreeplayState;
+import lucas.states.funkin.scripts.menus.FreeplayMenuState;
 
 class MasterEditorMenu extends MusicBeatState
 {
