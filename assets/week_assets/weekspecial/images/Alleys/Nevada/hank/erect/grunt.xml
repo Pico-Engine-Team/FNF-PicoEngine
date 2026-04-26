@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><TextureAtlas imagePath="grunt.png">
+	<!-- Created with Adobe Animate version 22.0.0.93 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="foreground grunts0000" x="0" y="1020" width="361" height="506" frameX="0" frameY="-4" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0001" x="0" y="1020" width="361" height="506" frameX="0" frameY="-4" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0002" x="0" y="2030" width="362" height="499" frameX="-1" frameY="-11" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0003" x="0" y="2030" width="362" height="499" frameX="-1" frameY="-11" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0004" x="0" y="1526" width="359" height="504" frameX="-3" frameY="-6" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0005" x="0" y="1526" width="359" height="504" frameX="-3" frameY="-6" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0006" x="0" y="0" width="358" height="510" frameX="-4" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0007" x="0" y="0" width="358" height="510" frameX="-4" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0008" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0009" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0010" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0011" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0012" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0013" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+	<SubTexture name="foreground grunts0014" x="0" y="510" width="359" height="510" frameX="-3" frameY="0" frameWidth="363" frameHeight="510"/>
+</TextureAtlas>

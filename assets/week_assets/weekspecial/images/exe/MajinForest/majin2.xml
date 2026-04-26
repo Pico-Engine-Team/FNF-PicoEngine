@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="majin2.png">
+	<!-- Created with Adobe Animate version 20.5.0.29329 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="majinl0000" x="0" y="0" width="1501" height="449" frameX="-5" frameY="-13" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0001" x="0" y="0" width="1501" height="449" frameX="-5" frameY="-13" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0002" x="1501" y="0" width="1506" height="447" frameX="-3" frameY="-9" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0003" x="1501" y="0" width="1506" height="447" frameX="-3" frameY="-9" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0004" x="0" y="449" width="1508" height="428" frameX="-2" frameY="-1" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0005" x="0" y="449" width="1508" height="428" frameX="-2" frameY="-1" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0006" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0007" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0008" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0009" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0010" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0011" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0012" x="1508" y="449" width="1512" height="418" frameX="0" frameY="0" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0013" x="0" y="877" width="1506" height="428" frameX="-3" frameY="-3" frameWidth="1512" frameHeight="462"/>
+	<SubTexture name="majinl0014" x="0" y="877" width="1506" height="428" frameX="-3" frameY="-3" frameWidth="1512" frameHeight="462"/>
+</TextureAtlas>

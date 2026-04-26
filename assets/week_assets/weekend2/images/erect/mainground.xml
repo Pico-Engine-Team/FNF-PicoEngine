@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="mainground.png">
+	<!-- Created with Adobe Animate version 22.0.0.93 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="mainground0000" x="0" y="0" width="1618" height="766"/>
+	<SubTexture name="mainground0001" x="0" y="0" width="1618" height="766"/>
+	<SubTexture name="mainground0002" x="1618" y="0" width="1618" height="766"/>
+	<SubTexture name="mainground0003" x="1618" y="0" width="1618" height="766"/>
+	<SubTexture name="mainground0004" x="0" y="766" width="1618" height="766"/>
+	<SubTexture name="mainground0005" x="0" y="766" width="1618" height="766"/>
+	<SubTexture name="mainground0006" x="1618" y="766" width="1618" height="766"/>
+	<SubTexture name="mainground0007" x="1618" y="766" width="1618" height="766"/>
+	<SubTexture name="mainground0008" x="0" y="1532" width="1618" height="766"/>
+	<SubTexture name="mainground0009" x="1618" y="1532" width="1618" height="766"/>
+</TextureAtlas>
