@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><TextureAtlas imagePath="agent.png">
+	<!-- Created with Adobe Animate version 22.0.0.93 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="agent0000" x="199" y="179" width="210" height="175" frameX="-2" frameY="-4" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0001" x="199" y="179" width="210" height="175" frameX="-2" frameY="-4" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0002" x="0" y="356" width="201" height="173" frameX="-2" frameY="-6" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0003" x="0" y="356" width="201" height="173" frameX="-2" frameY="-6" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0004" x="201" y="356" width="198" height="173" frameX="-1" frameY="-6" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0005" x="201" y="356" width="198" height="173" frameX="-1" frameY="-6" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0006" x="0" y="179" width="199" height="177" frameX="0" frameY="-2" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0007" x="0" y="179" width="199" height="177" frameX="0" frameY="-2" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0008" x="0" y="0" width="205" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0009" x="0" y="0" width="205" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0010" x="205" y="0" width="208" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0011" x="205" y="0" width="208" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0012" x="205" y="0" width="208" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0013" x="205" y="0" width="208" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+	<SubTexture name="agent0014" x="205" y="0" width="208" height="179" frameX="0" frameY="0" frameWidth="212" frameHeight="179"/>
+</TextureAtlas>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><TextureAtlas imagePath="fatfuck.png">
+	<!-- Created with Adobe Animate version 22.0.0.93 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="hotdoggrunt0000" x="0" y="0" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0001" x="0" y="0" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0002" x="0" y="433" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0003" x="0" y="433" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0004" x="0" y="866" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0005" x="0" y="866" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0006" x="0" y="1299" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0007" x="0" y="1299" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0008" x="0" y="1732" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0009" x="0" y="1732" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0010" x="0" y="2165" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0011" x="0" y="2165" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0012" x="0" y="2165" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0013" x="0" y="2165" width="354" height="433"/>
+	<SubTexture name="hotdoggrunt0014" x="0" y="0" width="354" height="433"/>
+</TextureAtlas>
