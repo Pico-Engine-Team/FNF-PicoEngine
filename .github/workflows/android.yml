@@ -86,7 +86,7 @@ jobs:
           | haxelib run lime setup android
 
       - name: Build Android (release)
-        run: haxelib run lime build android -release
+  run: haxelib run lime build android -release --haxeflag=--macro --haxeflag="include('import')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
