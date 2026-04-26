@@ -1,5 +1,17 @@
 package states;
 
+import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
+import flixel.math.FlxPoint;
+import flixel.math.FlxMath;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import flixel.sound.FlxSound;
+import flixel.FlxCamera;
+import flixel.text.FlxText;
+
 import backend.WeekData;
 
 import flixel.input.keyboard.FlxKey;
