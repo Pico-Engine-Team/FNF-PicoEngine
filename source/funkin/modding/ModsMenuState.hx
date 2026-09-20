@@ -2,7 +2,7 @@ package funkin.modding;
 
 import funkin.data.WeekData;
 import funkin.modding.Mods;
-import funkin.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.freeplay.FreeplayMenuState;
 import funkin.data.objects.AttachedSprite;
 import funkin.states.options.data.ModSettingsSubState;
 
@@ -323,7 +323,7 @@ class ModsMenuState extends MusicBeatState
 				}
 				FlxG.camera.fade(FlxColor.BLACK, 0.5, false, FlxG.resetGame, false);
 			}
-			else MusicBeatState.switchState(new funkin.menus.MainMenuState());
+			else MusicBeatState.switchState(new funkin.states.menus.MainMenuState());
 
 			persistentUpdate = false;
 			FlxG.autoPause = ClientPrefs.data.autoPause;
@@ -814,14 +814,21 @@ class ModItem extends FlxSpriteGroup
 		super();
 
 		this.folder = folder;
-		pack = Mods.getPack(folder);
+		var packInfo = Mods.getPackInfo(folder);
+		pack = packInfo != null ? packInfo.raw : Mods.getPack(folder);
 
-		var path:String = Paths.mods('$folder/data/settings.json');
+		// Mod-only settings: scripts/states/mods/modSettings.json
+		// Legacy fallbacks: data/modSettings.json, data/settings.json
+		var path:String = Paths.mods('$folder/scripts/states/mods/modSettings.json');
+		if(!FileSystem.exists(path))
+			path = Paths.mods('$folder/data/modSettings.json');
+		if(!FileSystem.exists(path))
+			path = Paths.mods('$folder/data/settings.json');
 		if(FileSystem.exists(path))
 		{
 			try
 			{
-				//trace('trying to load settings: $folder');
+				//trace('trying to load mod settings: $folder');
 				settings = tjson.TJSON.parse(File.getContent(path));
 			}
 			catch(e:Dynamic)
@@ -851,18 +858,16 @@ class ModItem extends FlxSpriteGroup
 		add(text);
 
 		var isPixel = false;
-		var file:String = Paths.mods('$folder/pack.png');
-		if (!FileSystem.exists(file))
-		{
-			file = Paths.mods('$folder/pack-pixel.png');
+		var iconName:String = (packInfo != null && packInfo.icon != null) ? packInfo.icon : null;
+		var file:String = Mods.resolveModIconPath(folder, iconName);
+		if(file != null && StringTools.endsWith(file.toLowerCase(), '-pixel.png'))
 			isPixel = true;
-		}
-		
+
 		var bmp:BitmapData = null;
-		if (FileSystem.exists(file)) bmp = BitmapData.fromFile(file);
+		if (file != null && FileSystem.exists(file)) bmp = BitmapData.fromFile(file);
 		else isPixel = false;
 
-		if(FileSystem.exists(file))
+		if(file != null && FileSystem.exists(file))
 		{
 			icon.loadGraphic(Paths.cacheBitmap(file, bmp), true, 150, 150);
 			if(isPixel) icon.antialiasing = false;
@@ -872,8 +877,23 @@ class ModItem extends FlxSpriteGroup
 		icon.updateHitbox();
 		
 		this.name = folder;
-		if(pack != null)
+		if(packInfo != null)
 		{
+			if(packInfo.name != null && packInfo.name.length > 0) this.name = packInfo.name;
+			if(packInfo.description != null) this.desc = packInfo.description;
+			if(packInfo.color != null && packInfo.color.length >= 3)
+			{
+				this.bgColor = FlxColor.fromRGB(
+					packInfo.color[0],
+					packInfo.color[1],
+					packInfo.color[2]
+				);
+			}
+			this.mustRestart = packInfo.restart;
+		}
+		else if(pack != null)
+		{
+			// Legacy pack.json flat fields
 			if(pack.name != null) this.name = pack.name;
 			if(pack.description != null) this.desc = pack.description;
 			if(pack.iconFramerate != null) this.iconFps = pack.iconFramerate;

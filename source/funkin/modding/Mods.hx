@@ -11,7 +11,12 @@ typedef ModsList =
 };
 
 /**
- * Normalized mod metadata (Psych pack.json + V-Slice / Polymod style aliases).
+ * Normalized mod metadata.
+ * Supports:
+ *   - Pico Engine meta_mod.json (preferred)
+ *   - Psych pack.json
+ *   - V-Slice mod.json / meta.json
+ *   - Polymod _polymod_meta.json
  */
 typedef ModPackInfo =
 {
@@ -23,7 +28,14 @@ typedef ModPackInfo =
 	var runsGlobally:Bool;
 	var restart:Bool;
 	var apiVersion:String;
-	var format:String; // "psych" | "vslice" | "polymod" | "unknown"
+	var format:String; // "pico" | "psych" | "vslice" | "polymod" | "unknown"
+	@:optional var icon:String;
+	@:optional var category:String;
+	@:optional var scripts:Array<String>;
+	@:optional var mainScript:String;
+	@:optional var credits:Array<String>;
+	@:optional var discordRichPresence:Bool;
+	@:optional var discordAppId:String;
 	@:optional var raw:Dynamic;
 };
 
@@ -33,14 +45,20 @@ typedef ModPackInfo =
  * Load priority (highest → lowest) when resolving a file:
  *   1. currentModDirectory
  *   2. other enabled mods (modsList order, top of list = higher priority)
- *   3. global-running mods (pack.runsGlobally)
+ *   3. global-running mods (runsGlobally)
  *   4. mods/ root loose files
  *   5. base game assets
  *
- * pack.json compatibility:
- *   - Psych Engine (name, description, runsGlobally, color, restart)
- *   - V-Slice / Funkin-style (title, meta.description, etc.)
- *   - Polymod (_polymod_meta.json / mod.json)
+ * Metadata files (first found wins):
+ *   1. meta_mod.json  (Pico format)
+ *   2. pack.json      (Psych)
+ *   3. mod.json       (V-Slice)
+ *   4. _polymod_meta.json
+ *   5. meta.json
+ *
+ * Icon files:
+ *   mod_icon.png / mod_icon-pixel.png  (Pico)
+ *   pack.png / pack-pixel.png          (Psych legacy)
  */
 class Mods
 {
@@ -117,6 +135,63 @@ class Mods
 	inline public static function getDisabled():Array<String>
 		return parseList().disabled.copy();
 
+	/** Unique mod_Category values from enabled mods (and known folders). */
+	public static function getModCategories(?includeEmpty:Bool = false):Array<String>
+	{
+		var cats:Array<String> = [];
+		#if MODS_ALLOWED
+		var folders:Array<String> = getModDirectories();
+		for (mod in getEnabled())
+			if(mod != null && mod.length > 0 && !folders.contains(mod))
+				folders.push(mod);
+		for (folder in folders)
+		{
+			var info:ModPackInfo = getPackInfo(folder);
+			var c:String = (info != null && info.category != null) ? info.category.trim() : '';
+			if(c.length < 1)
+			{
+				if(includeEmpty && !cats.contains('Uncategorized'))
+					cats.push('Uncategorized');
+				continue;
+			}
+			// normalize display
+			var key:String = c;
+			var found:Bool = false;
+			for (existing in cats)
+			{
+				if(existing.toLowerCase() == key.toLowerCase())
+				{
+					found = true;
+					break;
+				}
+			}
+			if(!found) cats.push(key);
+		}
+		#end
+		return cats;
+	}
+
+	/** Mods that belong to a category (case-insensitive). Empty category = Uncategorized. */
+	public static function getModsInCategory(category:String):Array<String>
+	{
+		var out:Array<String> = [];
+		if(category == null) return out;
+		var want:String = category.trim().toLowerCase();
+		#if MODS_ALLOWED
+		for (folder in getModDirectories())
+		{
+			var info:ModPackInfo = getPackInfo(folder);
+			var c:String = (info != null && info.category != null && info.category.trim().length > 0)
+				? info.category.trim().toLowerCase()
+				: 'uncategorized';
+			if(c == want || (want == 'uncategorized' && c == 'uncategorized'))
+				out.push(folder);
+		}
+		#end
+		return out;
+	}
+
+
 	/**
 	 * Full load order for overrides (highest priority first).
 	 * Does not include base game — only mod folders.
@@ -126,11 +201,9 @@ class Mods
 		var order:Array<String> = [];
 		var enabled:Array<String> = parseList().enabled;
 
-		// Current mod always on top when set
 		if(hasCurrent() && !order.contains(currentModDirectory))
 			order.push(currentModDirectory);
 
-		// Enabled list: top of file = higher priority when topModHighestPriority
 		var enabledOrder:Array<String> = enabled.copy();
 		if(!topModHighestPriority)
 			enabledOrder.reverse();
@@ -203,6 +276,37 @@ class Mods
 		return folders;
 	}
 
+	/**
+	 * Resolve mod icon file path (absolute).
+	 * Tries: mod_Icon from meta, mod_icon.png, mod_icon-pixel.png, pack.png, pack-pixel.png
+	 */
+	public static function resolveModIconPath(folder:String, ?iconName:String = null):String
+	{
+		#if MODS_ALLOWED
+		if(folder == null || folder.length < 1) return null;
+		var candidates:Array<String> = [];
+		if(iconName != null && iconName.length > 0)
+		{
+			var base:String = iconName;
+			if(StringTools.endsWith(base.toLowerCase(), '.png'))
+				base = base.substr(0, base.length - 4);
+			candidates.push(Paths.mods(folder + '/' + base + '.png'));
+			candidates.push(Paths.mods(folder + '/' + base + '-pixel.png'));
+			candidates.push(Paths.mods(folder + '/images/' + base + '.png'));
+		}
+		candidates.push(Paths.mods(folder + '/mod_icon.png'));
+		candidates.push(Paths.mods(folder + '/mod_icon-pixel.png'));
+		candidates.push(Paths.mods(folder + '/pack.png'));
+		candidates.push(Paths.mods(folder + '/pack-pixel.png'));
+		for (p in candidates)
+		{
+			if(p != null && FileSystem.exists(p))
+				return p;
+		}
+		#end
+		return null;
+	}
+
 	// ---------- Global mods ----------
 
 	inline public static function pushGlobalMods():Array<String>
@@ -237,7 +341,7 @@ class Mods
 		return list;
 	}
 
-	// ---------- Text merge (unchanged behaviour, priority aware) ----------
+	// ---------- Text merge ----------
 
 	inline public static function mergeAllTextsNamed(path:String, ?defaultDirectory:String = null, allowDuplicates:Bool = false)
 	{
@@ -269,16 +373,13 @@ class Mods
 	/**
 	 * Collect existing file paths. Order:
 	 * base → week → global mods → mods root → enabled (low→high) → current (last = wins if consumer uses last)
-	 * For "first hit wins", use resolvePath() instead.
 	 */
 	inline public static function directoriesWithFile(path:String, fileToFind:String, mods:Bool = true)
 	{
 		var foldersToCheck:Array<String> = [];
-		// Main / base folder
 		if(FileSystem.exists(path + fileToFind))
 			foldersToCheck.push(path + fileToFind);
 
-		// Week folder
 		if(Paths.currentLevel != null && Paths.currentLevel != path)
 		{
 			var pth:String = Paths.getFolderPath(fileToFind, Paths.currentLevel);
@@ -289,7 +390,6 @@ class Mods
 		#if MODS_ALLOWED
 		if(mods)
 		{
-			// Global mods (lower than active list)
 			for(mod in Mods.getGlobalMods())
 			{
 				var folder:String = Paths.mods(mod + '/' + fileToFind);
@@ -297,16 +397,13 @@ class Mods
 					foldersToCheck.push(folder);
 			}
 
-			// mods/ root
 			var folder:String = Paths.mods(fileToFind);
 			if(FileSystem.exists(folder) && !foldersToCheck.contains(folder))
 				foldersToCheck.push(folder);
 
-			// Enabled mods low → high so current can be pushed last
 			var enabled:Array<String> = parseList().enabled.copy();
 			if(topModHighestPriority)
 			{
-				// list top is highest: push from bottom to top so top ends last
 				var i:Int = enabled.length - 1;
 				while(i >= 0)
 				{
@@ -333,7 +430,6 @@ class Mods
 				}
 			}
 
-			// Current mod last (highest when last-wins)
 			if(Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0)
 			{
 				var curFolder:String = Paths.mods(Mods.currentModDirectory + '/' + fileToFind);
@@ -345,9 +441,9 @@ class Mods
 		return foldersToCheck;
 	}
 
-	// ---------- Pack / metadata (Psych + V-Slice + Polymod) ----------
+	// ---------- Pack / metadata ----------
 
-	/** Raw pack.json Dynamic (legacy API). */
+	/** Raw metadata Dynamic (legacy API). */
 	public static function getPack(?folder:String = null):Dynamic
 	{
 		var info:ModPackInfo = getPackInfo(folder);
@@ -380,12 +476,17 @@ class Mods
 	static function loadPackInfo(folder:String):ModPackInfo
 	{
 		#if MODS_ALLOWED
-		// Candidate meta files (Psych / V-Slice / Polymod)
+		// Pico meta_mod.json first, then legacy formats
 		var candidates:Array<String> = [
+			Paths.mods(folder + '/meta_mod.json'),
 			Paths.mods(folder + '/pack.json'),
 			Paths.mods(folder + '/mod.json'),
 			Paths.mods(folder + '/_polymod_meta.json'),
-			Paths.mods(folder + '/meta.json')
+			Paths.mods(folder + '/meta.json'),
+			// Codename Engine style
+			Paths.mods(folder + '/data/config.json'),
+			Paths.mods(folder + '/config.json'),
+			Paths.mods(folder + '/modpack.json')
 		];
 
 		for (path in candidates)
@@ -410,7 +511,6 @@ class Mods
 			}
 		}
 		#end
-		// Minimal fallback so callers always get something for existing folders
 		return {
 			folder: folder,
 			name: folder,
@@ -421,6 +521,13 @@ class Mods
 			restart: false,
 			apiVersion: '',
 			format: 'unknown',
+			icon: null,
+			category: null,
+			scripts: null,
+			mainScript: null,
+			credits: null,
+			discordRichPresence: false,
+			discordAppId: null,
 			raw: null
 		};
 	}
@@ -429,42 +536,118 @@ class Mods
 	{
 		var format:String = 'unknown';
 		var lowerPath:String = path != null ? path.toLowerCase() : '';
-		if(StringTools.endsWith(lowerPath, 'pack.json')) format = 'psych';
+		if(StringTools.endsWith(lowerPath, 'meta_mod.json')) format = 'pico';
+		else if(StringTools.endsWith(lowerPath, 'pack.json')) format = 'psych';
 		else if(StringTools.endsWith(lowerPath, '_polymod_meta.json')) format = 'polymod';
 		else if(StringTools.endsWith(lowerPath, 'mod.json')) format = 'vslice';
 		else if(StringTools.endsWith(lowerPath, 'meta.json')) format = 'vslice';
+		else if(StringTools.endsWith(lowerPath, 'config.json') || StringTools.endsWith(lowerPath, 'modpack.json')) format = 'codename';
 
-		var name:String = strField(data, ['name', 'title', 'modName', 'id']);
+		// Nested Pico sections (objects or arrays-of-pairs tolerated via helpers)
+		var assts:Dynamic = Reflect.field(data, 'mod_assts');
+		if(assts == null) assts = Reflect.field(data, 'mod_assets');
+		var modData:Dynamic = Reflect.field(data, 'mod_data');
+		var scriptsRaw:Dynamic = Reflect.field(data, 'mod_scripts');
+		var creditsRaw:Dynamic = Reflect.field(data, 'mod_Credits');
+		if(creditsRaw == null) creditsRaw = Reflect.field(data, 'mod_credits');
+
+		var name:String = null;
+		var description:String = null;
+		var mainScript:String = null;
+		var version:String = null;
+		var apiVersion:String = null;
+		var icon:String = null;
+		var category:String = null;
+		var runsGlobally:Bool = false;
+		var restart:Bool = false;
+		var discordRP:Bool = false;
+		var discordAppId:String = null;
+		var color:Array<Int> = [255, 255, 255];
+		var scripts:Array<String> = null;
+		var credits:Array<String> = null;
+
+		// --- Pico meta_mod.json ---
+		if(format == 'pico' || assts != null || modData != null)
+		{
+			if(format == 'unknown') format = 'pico';
+
+			name = nestedStr(assts, ['mod_Name', 'name', 'title']);
+			description = nestedStr(assts, ['mod_Description', 'description', 'desc']);
+			mainScript = nestedStr(assts, ['mod_Scripts', 'mod_Script', 'mainScript']);
+
+			version = nestedStr(modData, ['mod_Version', 'version']);
+			apiVersion = nestedStr(modData, ['modAPI', 'apiVersion', 'api_version']);
+			icon = nestedStr(modData, ['mod_Icon', 'icon']);
+			category = nestedStr(modData, ['mod_Category', 'category', 'modCategory', 'type']);
+			runsGlobally = nestedBool(modData, ['runsGlobally', 'runs_globally', 'global', 'alwaysActive'], false);
+			restart = nestedBool(modData, ['restart', 'requiresRestart'], false);
+			discordRP = nestedBool(modData, ['Discord_rich_Presence', 'discordRichPresence', 'discord_rich_presence'], false);
+			discordAppId = nestedStr(modData, ['Discord_App_ID', 'discordAppId', 'discord_app_id', 'discordID']);
+
+			var colorRaw:Dynamic = nestedField(modData, ['mod_Color', 'color', 'badgeColor']);
+			color = parseColor(colorRaw);
+
+			scripts = parseStringList(scriptsRaw);
+			credits = parseStringList(creditsRaw);
+		}
+
+		// --- Flat Psych / V-Slice / Polymod fallbacks ---
+		if(name == null) name = strField(data, ['name', 'title', 'modName', 'id']);
 		if(name == null) name = folder;
 
-		var description:String = strField(data, ['description', 'desc']);
 		if(description == null)
 		{
-			var meta:Dynamic = Reflect.field(data, 'meta');
-			if(meta != null) description = strField(meta, ['description', 'desc']);
+			description = strField(data, ['description', 'desc']);
+			if(description == null)
+			{
+				var meta:Dynamic = Reflect.field(data, 'meta');
+				if(meta != null) description = strField(meta, ['description', 'desc']);
+			}
 		}
 		if(description == null) description = '';
 
-		var version:String = strField(data, ['version', 'modVersion', 'api_version']);
-		if(version == null) version = '';
-
-		var apiVersion:String = strField(data, ['apiVersion', 'api_version', 'compatibleWith']);
-		if(apiVersion == null) apiVersion = '';
-
-		var runsGlobally:Bool = boolField(data, ['runsGlobally', 'runs_globally', 'global', 'alwaysActive'], false);
-		var restart:Bool = boolField(data, ['restart', 'requiresRestart'], false);
-
-		var color:Array<Int> = [255, 255, 255];
-		var colorRaw:Dynamic = Reflect.field(data, 'color');
-		if(colorRaw == null) colorRaw = Reflect.field(data, 'badgeColor');
-		if(Std.isOfType(colorRaw, Array))
+		if(version == null || version.length < 1)
 		{
-			var arr:Array<Dynamic> = cast colorRaw;
-			color = [];
-			for (i in 0...Std.int(Math.min(3, arr.length)))
-				color.push(Std.parseInt(Std.string(arr[i])));
-			while(color.length < 3) color.push(255);
+			version = strField(data, ['version', 'modVersion', 'api_version']);
+			if(version == null) version = '';
 		}
+
+		if(apiVersion == null || apiVersion.length < 1)
+		{
+			apiVersion = strField(data, ['apiVersion', 'api_version', 'compatibleWith', 'modAPI']);
+			if(apiVersion == null) apiVersion = '';
+		}
+
+		if(!runsGlobally)
+			runsGlobally = boolField(data, ['runsGlobally', 'runs_globally', 'global', 'alwaysActive'], false);
+		if(!restart)
+			restart = boolField(data, ['restart', 'requiresRestart'], false);
+
+		if(color == null || (color[0] == 255 && color[1] == 255 && color[2] == 255))
+		{
+			var c:Array<Int> = parseColor(Reflect.field(data, 'color'));
+			if(c != null) color = c;
+			else
+			{
+				c = parseColor(Reflect.field(data, 'badgeColor'));
+				if(c != null) color = c;
+			}
+		}
+		if(color == null) color = [255, 255, 255];
+
+		if(category == null || category.length < 1)
+			category = strField(data, ['mod_Category', 'category', 'modCategory', 'type', 'modType']);
+
+		if(icon == null)
+			icon = strField(data, ['mod_Icon', 'icon', 'iconName']);
+
+		if(mainScript == null)
+			mainScript = strField(data, ['mod_Scripts', 'mainScript', 'script']);
+
+		if(scripts == null)
+			scripts = parseStringList(Reflect.field(data, 'mod_scripts'));
+		if(credits == null)
+			credits = parseStringList(Reflect.field(data, 'mod_Credits'));
 
 		return {
 			folder: folder,
@@ -476,8 +659,93 @@ class Mods
 			restart: restart,
 			apiVersion: apiVersion,
 			format: format,
+			icon: icon,
+			category: category,
+			scripts: scripts,
+			mainScript: mainScript,
+			credits: credits,
+			discordRichPresence: discordRP,
+			discordAppId: discordAppId,
 			raw: data
 		};
+	}
+
+	static function nestedField(obj:Dynamic, names:Array<String>):Dynamic
+	{
+		if(obj == null) return null;
+		// Object style
+		for (n in names)
+		{
+			if(Reflect.hasField(obj, n))
+				return Reflect.field(obj, n);
+		}
+		// Tolerant: if obj is Array of dynamics, skip
+		return null;
+	}
+
+	static function nestedStr(obj:Dynamic, names:Array<String>):String
+	{
+		var v:Dynamic = nestedField(obj, names);
+		if(v == null) return null;
+		var s:String = Std.string(v).trim();
+		return (s.length > 0 && s.toLowerCase() != 'null') ? s : null;
+	}
+
+	static function nestedBool(obj:Dynamic, names:Array<String>, def:Bool):Bool
+	{
+		var v:Dynamic = nestedField(obj, names);
+		if(v == true || v == false) return v;
+		if(v != null)
+		{
+			var s:String = Std.string(v).toLowerCase();
+			if(s == 'true' || s == '1') return true;
+			if(s == 'false' || s == '0') return false;
+		}
+		return def;
+	}
+
+	static function parseColor(colorRaw:Dynamic):Array<Int>
+	{
+		if(colorRaw == null) return null;
+		if(Std.isOfType(colorRaw, Array))
+		{
+			var arr:Array<Dynamic> = cast colorRaw;
+			var color:Array<Int> = [];
+			for (i in 0...Std.int(Math.min(3, arr.length)))
+				color.push(Std.parseInt(Std.string(arr[i])));
+			while(color.length < 3) color.push(255);
+			return color;
+		}
+		var s:String = Std.string(colorRaw).trim();
+		if(StringTools.startsWith(s, '#'))
+		{
+			try
+			{
+				var c:Int = Std.parseInt('0x' + s.substr(1));
+				return [(c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF];
+			}
+			catch(e:Dynamic) {}
+		}
+		return null;
+	}
+
+	static function parseStringList(v:Dynamic):Array<String>
+	{
+		if(v == null) return null;
+		if(Std.isOfType(v, Array))
+		{
+			var out:Array<String> = [];
+			for (item in (cast v:Array<Dynamic>))
+			{
+				if(item == null) continue;
+				var s:String = Std.string(item).trim();
+				if(s.length > 0) out.push(s);
+			}
+			return out.length > 0 ? out : null;
+		}
+		var asStr:String = Std.string(v).trim();
+		if(asStr.length < 1) return null;
+		return [asStr];
 	}
 
 	static function strField(obj:Dynamic, names:Array<String>):String
