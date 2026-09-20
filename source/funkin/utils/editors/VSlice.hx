@@ -262,9 +262,9 @@ class VSlice
 				speed: scrollSpeed,
 				offset: 0,
 
-				player1: metadata.playData.characters.player,
-				player2: metadata.playData.characters.opponent,
-				gfVersion: metadata.playData.characters.girlfriend,
+				player: metadata.playData.characters.player,
+				girlfriend: metadata.playData.characters.girlfriend,
+				opponent: metadata.playData.characters.opponent,
 				stage: stage,
 				format: 'psych_v1_convert'
 			}
@@ -449,9 +449,9 @@ class VSlice
 			playData: {
 				difficulties: diffs,
 				characters: {
-					player: songData.player1,
-					girlfriend: songData.gfVersion != null ? songData.gfVersion : '', //there is no problem if gf don't exist with it 
-					opponent: songData.player2
+					player: songData.player,
+					girlfriend: songData.girlfriend != null ? songData.girlfriend : '', //there is no problem if gf don't exist with it 
+					opponent: songData.opponent
 				},
 				noteStyle: !PlayState.isPixelStage ? 'funkin' : 'pixel',
 				stage: stage
