@@ -1,6 +1,6 @@
 package funkin.substates;
 
-import funkin.menus.MainMenuState;
+import funkin.states.menus.MainMenuState;
 import funkin.states.TitleState;
 
 import flixel.tweens.FlxTween;
@@ -14,7 +14,8 @@ class OutdatedSubState extends MusicBeatSubstate
 	var bg:FlxSprite;
 	var warnText:FlxText;
 
-	override function create() {
+	override function create()
+	{
 		super.create();
 		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		bg.scrollFactor.set();
