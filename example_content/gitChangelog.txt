@@ -1,0 +1,130 @@
+v2.26.6 - legacy Build
+# Addition
+- Add ClientPrefs.data.SliceHub to save the VSlice Hub Option
+- Add ClientPrefs.data.noteHold for the Hold Note option
+- Add Script `shared/scripts/game/VSliceHealthBar.lua`
+- Add Lua variables from ClientPrefs (noteskinsCharacters, comboEnabled, noteHold) 
+# Feature
+-  VSlice Hub now controls the VSlice Styled health bar through Options
+-  VSliceHealthBar now repositions icons and score on the HUD
+# Adjustment
+- Exposed SliceHub/sliceHub to Lua in FunkinLua.hx
+- Adjusted health bar score text using PSlice Engine LegacyScoreBar.hx behavior
+- Adjusted PicoEngineSubState.hx to use SliceHub correctly
+- Adjusted  SliceHub/sliceHub remains exposed to Lua through FunkinLua.hx
+- Adjusted MaxCombo.lua now reads the injected comboEnabled Lua variable.
+- Updated both shared and base_game MaxCombo.lua copies.
+# Removal
+- Removed Meta and Strumline Tab from ChartingState.hx
+- Removed automatic loadMeta and metadata auto-save when switching tabs
+# Bugfix
+- Fixed Null Object Reference in Bar.hx
+- Fixed Null Object Reference in HoldNoteCover.hx
+- Fixed crash in CheckboxThingie.hx when opening Pico Engine options
+- Fixed crash handler saving log files with `":"` in the filename on Windows
+- Fixed checkboxanim atlas fallback
+- Fixed comboEnabled not being exposed to Lua scripts
+- Fixed noteskinsCharacters not being exposed to Lua scripts
+- Fixed noteHold not being exposed to Lua scripts
+- Fixed MaxCombo.lua using the old backend.ClientPrefs path
+- Fixed MaxCombo.lua running even when comboEnabled was disable
+# Improvement
+- Pico Engine Options preferences now save through ClientPrefs and are usable by Lua scripts
+- Validated the Windows build after the preference fixes
+v2.26.7 - Pre Release
+Nothing new for now
+**Full Changelog** -  https://github.com/Pico-Engine-Team/FNF-Pico-Engine/compare/2.26.6...2.26.7-pre-release
+v2.26.7 - Snapshot
+# Addition
+- Rank.hx as the single source for rank and accuracy formatting
+- animPlayerOffsets / addPlayerOffset / getAnimPlayerOffset on Character
+- "Offsets" and "Player Offsets" lists in the Character Editor
+- Misses on the Freeplay scoreBG (FreeplayMenuState and FreeplayExtraSongsState)
+- Null-safe loading for note splashes and atlases
+# Feature
+- New Rank system (P, S+, S, A, B, C, D, F) based on accuracy
+- Accuracy on the PlayState HUD in the format:
+  Score: X | Misses: Y | Accuracy: Z% [Rank]
+- BETADCIU-style playerOffsets (separate offsets for player and opponent sides)
+- player_position and player_camera_position support in character JSON
+- playerOffsets support in CharacterEditorState
+- Read/write playerOffsets when saving a character
+# Improvement
+- noteStyle priority: character.noteStyle > SONG.noteStyle > default
+- Custom note/splash paths under pico_assets (including data/)
+- Splashes respect mustPress / character side
+- Freeplay restored to Psych-style scoreBG layout with misses
+# Adjustment
+- PlayState scoreTxt no longer uses the old ratingStuff array
+- Freeplay scoreText: BEST SCORE + (accuracy%) + MISSES
+- newAnim now creates playerOffsets: [0.0, 0.0]
+- Explicit Int → Float conversion for playerOffsets in the editor
+# Bugfix
+- Null Object Reference crash in FlxAtlasFrames when loading a missing splash
+- getNoteSkinAtlas / noteSkinAtlasExists no longer crash if PNG/XML is missing
+- NoteSplash.loadSplash wrapped with try/catch and safe fallback
+- Compile error "Int should be Float" in CharacterEditorState (playerOffsets)
+- Freeplay score/highscore and variation handling (earlier fixes)
+# Removal
+- ratingStuff from PlayState (replaced by Rank.hx)
+- Rank.formatFreeplayBox usage in Freeplay (multi-line Rank layout)
+# Refactor
+- RecalculateRating / updateScore integrated with Rank.applyToPlayState
+- Animation offset loading unified (offsets vs playerOffsets based on isPlayer)
+# Tweak
+- Freeplay scoreBG/scoreText size and position closer to Psych Engine
+- playerOffsets literals use 0.0 for Float typing
+v2.26.7
+# Addition
+- Dual preload system: scripts/songs/preload.json and scripts/songs/preload.lua
+- Preload Lua hooks: onPreloadStart / onPreloadFinish
+- Paths.video for video_cutscene and Paths.image for objects_preload
+- noteStyle Lua scripts loaded from scripts/states/notestyle/<name>.lua
+- New Events for Chart Editor: Change Notestyle, Change Stage, Change Rating Skin
+- MaxCombo.lua HUD option via ClientPrefs.data.comboEnabled
+- Total Notes Hits counter (hit / total) In MaxCombo.lua
+- Dev Mode entry in options PicoEngineSubState.hx
+- Engine note types wired into ChartingState, PlayState, and Note (Beatbox, Bullet, Recharge, etc)
+# Feature
+- noteStyle JSON v2 with noteSkin_assets, holdNote_assets, Strumline_assets, and Splash_data
+- Runtime note/hold/strum/splash animations driven by noteStyle JSON prefixes
+- Scale controlled by Strumline_assets.strum_scale only
+- Splash skin path noteSplashes/noteSplashes-vanilla
+- MaxCombo.lua New Display: Combo: 0 (Max: 0) plus Misses and Total Notes Hits
+- Achievements.hx menu split by category pages (Psych / Pico / Default)
+# Overhaul
+- Preload path moved to scripts/songs/ (no longer chart-local only)
+- Splash pipeline uses Splash_data + data/splashes/ only
+- Note style resolution centralized in NoteData while Note stays closer to Psych Engine flow
+# Removal
+- noteSplash.json dependency
+- Preload fields: noteStyles, sounds, version, songs, music, images
+- Top-level note_scale and hold_scale from noteStyle JSON
+# Adjustment
+- Score text hides Misses when comboEnabled is true (Misses shown by MaxCombo HUD)
+- Default funkin splash set to noteSplashes/noteSplashes-vanilla
+- Note/hold scale inherits from strum_scale
+# Amendment
+- noteStyle schema updated to nested hold/strum asset blocks
+- Event Value 1 / Value 2 rules for Change Notestyle, Change Stage, and Change Rating Skin
+# Improvement
+- LoadingScreenState.hx + FunkinLuaProgramming.hx preload integration
+- Character and shared noteStyle JSON templates (funkin, pixel, bf)
+- Strum animation key normalization (leftStatic → static0, etc.)
+# Optimization
+- Reduced hitching during song load and general runtime
+- Memory leak mitigations for long sessions
+# Refactor
+- NoteData.hx parser for nested noteStyle v2 and legacy fallback
+- Mods loading path tweaks for Pico Engine
+- Note.hx animation load prefers noteStyle JSON, then Psych config fallback
+# Bugfix
+- Unbraced try/catch in PlayState noteStyle script loader
+- Missing Note / NoteSplash imports in EnginePerformance
+- StrumNote / NoteSplash / HoldNoteCover compile issues after noteStyle v2
+- Opponent / style reload edge cases during late August fixes
+# Tweak
+- MaxCombo Misses color/alpha behavior
+- Combo number hidden support kept compatible with noteStyle UI numbers
+# Suggestion
+- Use Change Notestyle mid-song when swapping styles so notes, strums, and splashes fully reload
