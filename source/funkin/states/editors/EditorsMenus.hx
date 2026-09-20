@@ -1,7 +1,7 @@
 package funkin.states.editors;
 
 import funkin.data.WeekData;
-import funkin.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.freeplay.FreeplayMenuState;
 import funkin.data.objects.game.characters.Character;
 
 class EditorsMenus extends MusicBeatState
@@ -89,9 +89,8 @@ class EditorsMenus extends MusicBeatState
 
 		if (controls.BACK)
 		{
-			MusicBeatState.switchState(new funkin.menus.MainMenuState());
+			MusicBeatState.switchState(new funkin.states.menus.MainMenuState());
 		}
-
 		if (controls.ACCEPT)
 		{
 			switch(options[curSelected])
