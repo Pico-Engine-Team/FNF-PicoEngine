@@ -32,6 +32,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	{
 		super();
 
+		if(optionsArray == null) optionsArray = [];
 		if(title == null) title = 'Options';
 		if(rpcTitle == null) rpcTitle = 'Options Menu';
 		
@@ -70,6 +71,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		descText.borderSize = 2.4;
 		add(descText);
 
+		if(optionsArray == null) optionsArray = [];
 		for (i in 0...optionsArray.length)
 		{
 			var optionText:Alphabet = new Alphabet(220, 260, optionsArray[i].name, false);
@@ -81,10 +83,18 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 			if(optionsArray[i].type == BOOL)
 			{
-				var checkbox:CheckboxThingie = new CheckboxThingie(optionText.x - 105, optionText.y, Std.string(optionsArray[i].getValue()) == 'true');
-				checkbox.sprTracker = optionText;
-				checkbox.ID = i;
-				checkboxGroup.add(checkbox);
+				var checkbox:CheckboxThingie = null;
+				try
+				{
+					checkbox = new CheckboxThingie(optionText.x - 105, optionText.y, Std.string(optionsArray[i].getValue()) == 'true');
+					checkbox.sprTracker = optionText;
+					checkbox.ID = i;
+					checkboxGroup.add(checkbox);
+				}
+				catch(e:Dynamic)
+				{
+					trace('[BaseOptionsMenu] Checkbox failed for option ' + optionsArray[i].name + ': ' + e);
+				}
 			}
 			else
 			{
@@ -475,6 +485,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	
 	function changeSelection(change:Int = 0)
 	{
+		if(optionsArray == null || optionsArray.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, optionsArray.length - 1);
 
 		descText.text = optionsArray[curSelected].description;
