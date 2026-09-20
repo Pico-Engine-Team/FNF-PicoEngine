@@ -20,7 +20,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		boyfriend.visible = false;
 
 		var option:Option = new Option('Quality',
-			'If checked, disables some background details,\ndecreases loading times and improves performance.', //Description
+			'If checked, disables some background details,\ndecreases loading times and improves performance.',
 			'Quality',
 			STRING,
 			['Low', 'High']);
@@ -30,22 +30,29 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			'If unchecked, disables anti-aliasing, increases performance\nat the cost of sharper visuals.',
 			'antialiasing',
 			BOOL);
-		option.onChange = onChangeAntiAliasing; //Changing onChange is only needed if you want to make a special interaction after it changes the value
+		option.onChange = onChangeAntiAliasing;
 		addOption(option);
-		antialiasingOption = optionsArray.length-1;
+		antialiasingOption = optionsArray.length - 1;
 
-		var option:Option = new Option('Shaders', //Name
-			"If unchecked, disables shaders.\nIt's used for some visual effects, and also CPU intensive for weaker PCs.", //Description
+		var option:Option = new Option('Shaders',
+			"If unchecked, disables shaders.\nIt's used for some visual effects, and also CPU intensive for weaker PCs.",
 			'shaders',
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('GPU Caching', //Name
-			"If checked, allows the GPU to be used for caching textures, decreasing RAM usage.\nDon't turn this on if you have a shitty Graphics Card.", //Description
+		var option:Option = new Option('GPU Caching',
+			"If checked, allows the GPU to be used for caching textures, decreasing RAM usage.\nDon't turn this on if you have a shitty Graphics Card.",
 			'cacheOnGPU',
 			BOOL);
 		addOption(option);
-		
+
+		var option:Option = new Option('Asset Preload',
+			"Pre-load assets to reduce hitching.\nOff = minimal\nSong = music, png/xml, stage, characters when entering a song\nFull = also preload common menu/UI on boot",
+			'assetPreload',
+			STRING,
+			['Off', 'Song', 'Full']);
+		addOption(option);
+
 		#if !html5
 		var option:Option = new Option('Framerate',
 			"Pretty self explanatory, isn't it?",
@@ -55,7 +62,6 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 		final refreshRate:Int = FlxG.stage.application.window.displayMode.refreshRate;
 		option.minValue = 30;
-		option.maxValue = 240;
 		option.maxValue = 1000;
 		option.defaultValue = Std.int(FlxMath.bound(refreshRate, option.minValue, option.maxValue));
 		option.displayFormat = '%v FPS';
@@ -67,7 +73,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			'vsync',
 			STRING,
 			['Adaptive', 'ON', 'OFF']);
-			option.onChange = onChangeVSync;
+		option.onChange = onChangeVSync;
 		addOption(option);
 
 		super();
@@ -89,17 +95,19 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 	{
 		#if desktop
 		var displayRefresh:Int = 60;
-
 		if (FlxG.stage != null && FlxG.stage.application != null && FlxG.stage.application.window != null)
 		{
 			try {
-				if (FlxG.stage.application.window.displayMode != null) displayRefresh = FlxG.stage.application.window.displayMode.refreshRate;
-				// Map VSync option to window.frameRate since Window has no 'vsync' field
+				if (FlxG.stage.application.window.displayMode != null)
+					displayRefresh = FlxG.stage.application.window.displayMode.refreshRate;
 				switch (ClientPrefs.data.vsync)
 				{
-					case 'On': FlxG.stage.application.window.frameRate = displayRefresh;
-					case 'Adaptive': FlxG.stage.application.window.frameRate = Math.max(ClientPrefs.data.framerate, displayRefresh);
-					default: FlxG.stage.application.window.frameRate = ClientPrefs.data.framerate;
+					case 'On' | 'ON':
+						FlxG.stage.application.window.frameRate = displayRefresh;
+					case 'Adaptive':
+						FlxG.stage.application.window.frameRate = Std.int(Math.max(ClientPrefs.data.framerate, displayRefresh));
+					default:
+						FlxG.stage.application.window.frameRate = ClientPrefs.data.framerate;
 				}
 			} catch (e:Dynamic) {
 				trace('Error applying VSync/frameRate: ' + e);
