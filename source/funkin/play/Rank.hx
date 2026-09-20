@@ -1,31 +1,41 @@
 package funkin.play;
 
 /**
- * Accuracy + Rank system (substitui o ratingStuff antigo na UI).
+ * Accuracy + Rank system.
  *
- * Display style (freeplay):
- *   HIGHSCORE: 0 [N/A]
- *   ACCURACY: 0% [N/A]
+ * Rank ladder (highest first):
+ *   P+  100%
+ *   P   97%
+ *   S   95%
+ *   A   90%
+ *   B   80%
+ *   C   70%
+ *   E   0%
+ *
+ * HUD style:
+ *   Accuracy (98.5% P+)
+ *
+ * Freeplay box:
+ *   HIGHSCORE: 12345 [P+]
  *   MISSES: 0
  */
 class Rank
 {
 	/**
-	 * Equivalent to old ratingStuff, but with letter ranks.
-	 * Format: [rankName, minAccuracy]  (0.0 - 1.0, highest first)
+	 * [rankName, minAccuracy]  (0.0 - 1.0, highest first)
+	 * No FC suffixes — rank letter only.
 	 */
 	public static var ratingStuff:Array<Dynamic> = [
-		['P',  1.0],
-		['S+', 0.99],
+		['P+', 1.0],
+		['P',  0.97],
 		['S',  0.95],
 		['A',  0.90],
 		['B',  0.80],
 		['C',  0.70],
-		['D',  0.60],
-		['F',  0.0]
+		['E',  0.0]
 	];
 
-	/** Returns letter rank from accuracy (0.0 - 1.0). Empty/invalid → N/A */
+	/** Letter rank from accuracy (0.0 - 1.0). Empty/invalid → N/A */
 	public static function getRank(accuracy:Float, ?misses:Int = -1, ?fullCombo:Bool = false):String
 	{
 		if (accuracy < 0 || Math.isNaN(accuracy))
@@ -35,7 +45,7 @@ class Rank
 			return 'N/A';
 
 		var clamped:Float = Math.max(0, Math.min(1, accuracy));
-		var rank:String = 'F';
+		var rank:String = 'E';
 
 		for (i in 0...ratingStuff.length)
 		{
@@ -50,9 +60,7 @@ class Rank
 			}
 		}
 
-		if ((fullCombo || misses == 0) && (rank == 'P' || rank == 'S+' || rank == 'S'))
-			return rank + ' (FC)';
-
+		// FC removed — only the rank letter
 		return rank;
 	}
 
@@ -73,17 +81,22 @@ class Rank
 	}
 
 	/**
-	 * Freeplay score box (multi-line), same style as the reference image:
-	 * HIGHSCORE: 12345 [S]
-	 * ACCURACY: 98.5% [S]
-	 * MISSES: 2
+	 * HUD Accuracy block: Accuracy (98.5% P+)
+	 */
+	public static function formatAccuracyWithRank(accuracy:Float, ?misses:Int = -1):String
+	{
+		var accStr:String = formatAccuracy(accuracy);
+		var rank:String = getRank(accuracy, misses);
+		return 'Accuracy (' + accStr + '% ' + rank + ')';
+	}
+
+	/**
+	 * Freeplay score box:
+	 * HIGHSCORE: 12345 [P+]
+	 * MISSES: 0
 	 */
 	public static function formatFreeplayBox(score:Int, accuracy:Float, misses:Int, ?difficulty:String = null):String
 	{
-		// Freeplay box (tudo na mesma caixa):
-		// HIGHSCORE: 68816 [S (FC)]
-		// MISSES: 0
-		// < PICO >
 		var rank:String = (score <= 0 && (accuracy <= 0 || Math.isNaN(accuracy))) ? 'N/A' : getRank(accuracy, misses);
 		var missStr:String = Std.string(Std.int(Math.max(0, misses)));
 
@@ -98,7 +111,7 @@ class Rank
 
 	public static function formatShort(accuracy:Float, ?misses:Int = -1):String
 	{
-		return formatAccuracy(accuracy) + '% [' + getRank(accuracy, misses) + ']';
+		return formatAccuracy(accuracy) + '% ' + getRank(accuracy, misses);
 	}
 
 	public static function getRankColor(rank:String):Int
@@ -106,28 +119,30 @@ class Rank
 		var clean:String = rank;
 		if (clean.indexOf(' ') > -1)
 			clean = clean.split(' ')[0];
+		// strip accidental (FC) if old data remains
+		if (clean.indexOf('(') > -1)
+			clean = clean.split('(')[0].trim();
 
 		return switch (clean)
 		{
-			case 'P':  0xFFFF66FF;
-			case 'S+': 0xFFFFD700;
+			case 'P+': 0xFFFF66FF;
+			case 'P':  0xFFFF99FF;
 			case 'S':  0xFFFFFF00;
 			case 'A':  0xFF00FF88;
 			case 'B':  0xFF66B2FF;
 			case 'C':  0xFFFFAA00;
-			case 'D':  0xFFFF6600;
-			case 'F':  0xFFFF3333;
+			case 'E':  0xFFFF3333;
 			case 'N/A': 0xFFAAAAAA;
 			default:   0xFFFFFFFF;
 		};
 	}
 
 	/**
-	 * Hook for PlayState.RecalculateRating.
-	 * ratingName = Rank.applyToPlayState(ratingPercent, songMisses);
+	 * PlayState.RecalculateRating → ratingName
+	 * Rank letter only (no FC).
 	 */
 	public static function applyToPlayState(accuracy:Float, songMisses:Int = 0):String
 	{
-		return getRank(accuracy, songMisses, songMisses == 0 && accuracy > 0);
+		return getRank(accuracy, songMisses, false);
 	}
 }

@@ -2,9 +2,9 @@ package funkin.play;
 
 class Difficulty
 {
-	public static final defaultList:Array<String> = ['Normal', 'Hard'];
-	public static final defaultVariationList:Array<String> = ['Erect', 'Nightmare', 'Erect-Remix', 'Nightmare-Remix', 'Remix', 'Mix', 'Old', 'Neo'];
-	public static final defaultCharacterVariationList:Array<String> = ['Pico', 'Boyfriend', 'Girlfriend', 'Darnell', 'Nene', 'Spooky', 'Agoti'];
+	public static final defaultList:Array<String> = ['Easy', 'Normal', 'Hard'];
+	public static final defaultVariationList:Array<String> = ['Erect', 'Nightmare', 'Erect Remix', 'Nightmare Remix', 'Remix', 'Legacy', 'Neo'];
+	public static final defaultCharacterVariationList:Array<String> = ['Pico', 'Pico Legacy', 'BF', 'BF Legacy', 'GF', 'GF Legacy', 'Darnell', 'Darnell legacy', 'Nene', 'Nene Legacy', 'Spooky', 'Spooky Legacy', 'Agoti', 'Agoti Legacy'];
 
 	private static final defaultDifficulty:String = 'Normal';
 	public static var list:Array<String> = defaultList.copy();
@@ -109,35 +109,16 @@ class Difficulty
 		return false;
 	}
 
+	/**
+	 * Week files no longer store difficulties (meta.json owns that).
+	 * Always resets to the engine default list.
+	 * Prefer FreeplaySongData / SongMeta difficulties when available.
+	 */
 	public static function loadFromWeek(?week:funkin.data.WeekData, ?freeplay:Bool = false):Void
 	{
-		if (week == null)
-			week = funkin.data.WeekData.getCurrentWeek();
-
-		var difficultyText:String = null;
-		if(week != null)
-		{
-			difficultyText = freeplay ? week.freeplayDifficulties : week.storyDifficulties;
-			if(difficultyText == null || difficultyText.trim().length == 0)
-				difficultyText = week.difficulties;
-		}
-
-		if (week == null || difficultyText == null || difficultyText.trim().length == 0)
-		{
-			resetList();
-			return;
-		}
-
-		var diffs:Array<String> = [];
-
-		for (diff in difficultyText.split(','))
-		{
-			var cleanDiff:String = diff.trim();
-			if (cleanDiff.length > 0)
-				diffs.push(cleanDiff);
-		}
-
-		list = diffs.length > 0 ? diffs : defaultList.copy();
+		// Legacy week.difficulties / storyDifficulties / freeplayDifficulties removed.
+		// Use default list; callers with meta should call Difficulty.copyFrom(metaDiffs).
+		resetList();
 	}
 
 	inline public static function resetList():Void

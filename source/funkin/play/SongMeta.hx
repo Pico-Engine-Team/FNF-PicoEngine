@@ -4,10 +4,44 @@ import haxe.Json;
 
 /**
  * Song metadata (meta.json / meta.txt).
- * Describes the song for Freeplay / Pause / chart fill-in.
- * Highscores stay Psych Engine (Highscore) — meta never saves scores.
+ * Highscores stay Psych (Highscore) — meta never saves scores.
  *
- * Preferred format: ClientPrefs.data.songMetaFormat = "auto" | "json" | "txt"
+ * Preferred location (new layout):
+ *   assets/songs/<song>/meta.json
+ *   assets/songs/<song>/meta.txt
+ *
+ * Extra freeplay:
+ *   assets/data/extra-songs/<song>/meta.json
+ *   assets/data/extra-songs/<song>/meta.txt
+ *
+ * Legacy still accepted:
+ *   data/songs/<song>/meta.json
+ *   data/<song>/meta.json
+ *
+ * Flat JSON example (Pico):
+ * {
+ *   "player": "bf",
+ *   "girlfriend": "gf",
+ *   "opponent": "dad",
+ *   "stage": "mainStage",
+ *   "noteStyle": "funkin",
+ *   "songName": "bopeebo",
+ *   "displayName": "Bopeebo",
+ *   "difficulties": ["easy", "normal", "hard"],
+ *   "songVariations": ["Pico", "Darnell"],
+ *   "charter": [],
+ *   "composers": [],
+ *   "freeplayIcon": "dad",
+ *   "freeplayColor": "#9271FD",
+ *   "needsVoices": false,
+ *   "useModCharts": false,
+ *   "opponentMod": false,
+ *   "bpm": 120,
+ *   "instSuffix": "-pico",
+ *   "vocalsSuffix": "-erect",
+ *   "vocalPlayerSuffix": "-bf",
+ *   "vocalOpponentSuffix": "-pico"
+ * }
  */
 class SongMeta
 {
@@ -27,10 +61,24 @@ class SongMeta
 	public var girlfriend:String = null;
 	public var difficulties:Array<String> = null;
 	public var variations:Array<String> = null;
+	/** Active variation id (e.g. "pico") */
+	public var songVariation:String = null;
 	public var bpm:Null<Float> = null;
 	public var pauseSong:String = null;
 	public var enableSongScripts:Null<Bool> = null;
 	public var useModcharts:Null<Bool> = null;
+	public var needsVoices:Null<Bool> = null;
+	public var opponentMode:Null<Bool> = null;
+	public var freeplayIcon:String = null;
+	public var freeplayColor:String = null;
+	/** e.g. "-pico" → Inst-pico.ogg */
+	public var instSuffix:String = null;
+	/** e.g. "-erect" when single Voices track */
+	public var vocalsSuffix:String = null;
+	/** e.g. "-bf" → Voices-bf.ogg */
+	public var vocalPlayerSuffix:String = null;
+	/** e.g. "-pico" → Voices-pico.ogg */
+	public var vocalOpponentSuffix:String = null;
 
 	public var loadedFormat:String = null;
 	public var loadedPath:String = null;
@@ -55,8 +103,17 @@ class SongMeta
 		return FORMAT_AUTO;
 	}
 
-	/** Load meta for song folder id (e.g. "bopeebo"). */
-	public static function load(songFolder:String, ?formatOverride:String = null):SongMeta
+	/**
+	 * Load meta for song folder id (e.g. "bopeebo").
+	 * @param variation     optional: loads meta-<variation>.json first (e.g. meta-pico.json)
+	 * @param extraFreeplay also search assets/data/extra-songs/<song>/
+	 *
+	 * Priority:
+	 *   1) meta-<variation>.json / meta-<variation>.txt  (if variation set)
+	 *   2) meta.json / meta.txt
+	 * Variation fields overlay base meta when both exist.
+	 */
+	public static function load(songFolder:String, ?formatOverride:String = null, ?extraFreeplay:Bool = false, ?variation:String = null):SongMeta
 	{
 		if(songFolder == null || songFolder.trim().length < 1)
 			return null;
@@ -70,18 +127,77 @@ class SongMeta
 			? [FORMAT_TXT, FORMAT_JSON]
 			: [FORMAT_JSON, FORMAT_TXT];
 
+		var variationKey:String = normalizeVariationKey(variation);
+		var baseMeta:SongMeta = null;
+		var variationMeta:SongMeta = null;
+
 		for (fmt in order)
 		{
-			var meta:SongMeta = (fmt == FORMAT_JSON) ? loadJson(folder) : loadTxt(folder);
-			if(meta != null)
-				return meta;
+			if(baseMeta == null)
+				baseMeta = (fmt == FORMAT_JSON) ? loadJson(folder, extraFreeplay, null) : loadTxt(folder, extraFreeplay, null);
+			if(variationKey != null && variationMeta == null)
+				variationMeta = (fmt == FORMAT_JSON) ? loadJson(folder, extraFreeplay, variationKey) : loadTxt(folder, extraFreeplay, variationKey);
 		}
-		return null;
+
+		if(variationMeta != null && baseMeta != null)
+		{
+			overlayMeta(baseMeta, variationMeta);
+			baseMeta.loadedPath = variationMeta.loadedPath;
+			baseMeta.loadedFormat = variationMeta.loadedFormat;
+			return baseMeta;
+		}
+		if(variationMeta != null)
+			return variationMeta;
+		return baseMeta;
 	}
 
-	static function loadJson(folder:String):SongMeta
+	/** "Pico" / "pico" / "meta-pico" → "pico" */
+	public static function normalizeVariationKey(?variation:String):String
 	{
-		for (path in jsonPaths(folder))
+		if(variation == null) return null;
+		var v:String = Paths.formatToSongPath(variation.trim());
+		if(v.length < 1) return null;
+		if(v == 'default' || v == 'none') return null;
+		if(StringTools.startsWith(v, 'meta-'))
+			v = v.substr(5);
+		return v.length > 0 ? v : null;
+	}
+
+	/** Copy non-null fields from overlay onto base (variation wins). */
+	static function overlayMeta(base:SongMeta, overlay:SongMeta):Void
+	{
+		if(base == null || overlay == null) return;
+		if(overlay.songName != null) base.songName = overlay.songName;
+		if(overlay.displayName != null) base.displayName = overlay.displayName;
+		if(overlay.artist != null) base.artist = overlay.artist;
+		if(overlay.charter != null) base.charter = overlay.charter;
+		if(overlay.album != null) base.album = overlay.album;
+		if(overlay.stage != null) base.stage = overlay.stage;
+		if(overlay.noteStyle != null) base.noteStyle = overlay.noteStyle;
+		if(overlay.player != null) base.player = overlay.player;
+		if(overlay.opponent != null) base.opponent = overlay.opponent;
+		if(overlay.girlfriend != null) base.girlfriend = overlay.girlfriend;
+		if(overlay.difficulties != null) base.difficulties = overlay.difficulties;
+		// keep base songVariations list unless overlay explicitly sets it
+		if(overlay.variations != null) base.variations = overlay.variations;
+		if(overlay.songVariation != null) base.songVariation = overlay.songVariation;
+		if(overlay.bpm != null) base.bpm = overlay.bpm;
+		if(overlay.pauseSong != null) base.pauseSong = overlay.pauseSong;
+		if(overlay.enableSongScripts != null) base.enableSongScripts = overlay.enableSongScripts;
+		if(overlay.useModcharts != null) base.useModcharts = overlay.useModcharts;
+		if(overlay.needsVoices != null) base.needsVoices = overlay.needsVoices;
+		if(overlay.opponentMode != null) base.opponentMode = overlay.opponentMode;
+		if(overlay.freeplayIcon != null) base.freeplayIcon = overlay.freeplayIcon;
+		if(overlay.freeplayColor != null) base.freeplayColor = overlay.freeplayColor;
+		if(overlay.instSuffix != null) base.instSuffix = overlay.instSuffix;
+		if(overlay.vocalsSuffix != null) base.vocalsSuffix = overlay.vocalsSuffix;
+		if(overlay.vocalPlayerSuffix != null) base.vocalPlayerSuffix = overlay.vocalPlayerSuffix;
+		if(overlay.vocalOpponentSuffix != null) base.vocalOpponentSuffix = overlay.vocalOpponentSuffix;
+	}
+
+	static function loadJson(folder:String, extraFreeplay:Bool, ?variationKey:String):SongMeta
+	{
+		for (path in jsonPaths(folder, extraFreeplay, variationKey))
 		{
 			var raw:String = readText(path);
 			if(raw == null || raw.trim().length < 1) continue;
@@ -103,9 +219,9 @@ class SongMeta
 		return null;
 	}
 
-	static function loadTxt(folder:String):SongMeta
+	static function loadTxt(folder:String, extraFreeplay:Bool, ?variationKey:String):SongMeta
 	{
-		for (path in txtPaths(folder))
+		for (path in txtPaths(folder, extraFreeplay, variationKey))
 		{
 			var raw:String = readText(path);
 			if(raw == null || raw.trim().length < 1) continue;
@@ -127,22 +243,67 @@ class SongMeta
 		return null;
 	}
 
-	static function jsonPaths(folder:String):Array<String>
+	/**
+	 * Search order (variation set):
+	 *   assets/songs/<song>/meta-<variation>.json
+	 *   assets/data/extra-songs/<song>/meta-<variation>.json
+	 *   legacy data/.../meta-<variation>.json
+	 * Then base meta.json in the same roots.
+	 */
+	static function jsonPaths(folder:String, extraFreeplay:Bool, ?variationKey:String):Array<String>
 	{
-		return [
-			'data/songs/$folder/meta.json',
-			'data/$folder/meta.json',
-			'data/songs/$folder/$folder-metadata.json',
-			'data/$folder/$folder-metadata.json'
-		];
+		var list:Array<String> = [];
+		var fileName:String = (variationKey != null && variationKey.length > 0)
+			? ('meta-' + variationKey + '.json')
+			: 'meta.json';
+
+		// NEW layout
+		try list.push(Paths.getPath(folder + '/' + fileName, TEXT, 'songs', true)) catch(e:Dynamic) {}
+		list.push('assets/songs/' + folder + '/' + fileName);
+
+		// Extra freeplay
+		try list.push(Paths.getPath('extra-songs/' + folder + '/' + fileName, TEXT, 'data', true)) catch(e:Dynamic) {}
+		list.push('assets/data/extra-songs/' + folder + '/' + fileName);
+
+		// Legacy
+		list.push('data/songs/' + folder + '/' + fileName);
+		list.push('data/' + folder + '/' + fileName);
+		if(variationKey == null)
+		{
+			list.push('data/songs/' + folder + '/' + folder + '-metadata.json');
+			list.push('data/' + folder + '/' + folder + '-metadata.json');
+		}
+
+		return uniquePaths(list);
 	}
 
-	static function txtPaths(folder:String):Array<String>
+	static function txtPaths(folder:String, extraFreeplay:Bool, ?variationKey:String):Array<String>
 	{
-		return [
-			'data/songs/$folder/meta.txt',
-			'data/$folder/meta.txt'
-		];
+		var list:Array<String> = [];
+		var fileName:String = (variationKey != null && variationKey.length > 0)
+			? ('meta-' + variationKey + '.txt')
+			: 'meta.txt';
+
+		try list.push(Paths.getPath(folder + '/' + fileName, TEXT, 'songs', true)) catch(e:Dynamic) {}
+		list.push('assets/songs/' + folder + '/' + fileName);
+
+		try list.push(Paths.getPath('extra-songs/' + folder + '/' + fileName, TEXT, 'data', true)) catch(e:Dynamic) {}
+		list.push('assets/data/extra-songs/' + folder + '/' + fileName);
+
+		list.push('data/songs/' + folder + '/' + fileName);
+		list.push('data/' + folder + '/' + fileName);
+		return uniquePaths(list);
+	}
+
+	static function uniquePaths(list:Array<String>):Array<String>
+	{
+		var out:Array<String> = [];
+		for (p in list)
+		{
+			if(p == null || p.length < 1) continue;
+			if(!out.contains(p)) out.push(p);
+		}
+		return out;
 	}
 
 	static function readText(path:String):String
@@ -177,7 +338,7 @@ class SongMeta
 		return null;
 	}
 
-	/** Parse V-Slice-like or flat JSON. */
+	/** Parse flat Pico meta.json or V-Slice-like nested JSON. */
 	public static function fromDynamic(data:Dynamic):SongMeta
 	{
 		if(data == null) return null;
@@ -185,39 +346,50 @@ class SongMeta
 
 		meta.songName = strField(data, ['songName', 'song', 'name']);
 		meta.displayName = strField(data, ['displayName', 'display', 'title']);
-		meta.artist = strField(data, ['artist', 'composer']);
-		meta.charter = strField(data, ['charter', 'chartAuthor', 'author']);
+		meta.artist = joinStringOrArray(data, ['artist', 'composer', 'composers']);
+		meta.charter = joinStringOrArray(data, ['charter', 'chartAuthor', 'author']);
 		meta.album = strField(data, ['album']);
 		meta.bpm = floatField(data, ['bpm']);
 		meta.pauseSong = strField(data, ['pauseSong', 'pauseMusic']);
 		meta.enableSongScripts = boolField(data, ['enableSongScripts']);
-		meta.useModcharts = boolField(data, ['useModcharts']);
+		meta.useModcharts = boolField(data, ['useModcharts', 'useModCharts']);
+		meta.needsVoices = boolField(data, ['needsVoices']);
+		meta.opponentMode = boolField(data, ['opponentMod', 'opponentMode']);
+		meta.freeplayIcon = strField(data, ['freeplayIcon', 'icon']);
+		meta.freeplayColor = strField(data, ['freeplayColor', 'color']);
+		meta.instSuffix = strField(data, ['instSuffix', 'instrumentalSuffix']);
+		meta.vocalsSuffix = strField(data, ['vocalsSuffix', 'voicesSuffix']);
+		meta.vocalPlayerSuffix = strField(data, ['vocalPlayerSuffix', 'playerVocalsSuffix']);
+		meta.vocalOpponentSuffix = strField(data, ['vocalOpponentSuffix', 'opponentVocalsSuffix']);
 
+		// Nested playData (V-Slice style)
 		var playData:Dynamic = Reflect.field(data, 'playData');
 		if(playData != null)
 		{
-			meta.stage = strField(playData, ['stage']);
-			meta.noteStyle = strField(playData, ['noteStyle', 'noteSkin']);
-			meta.difficulties = stringArrayField(playData, ['difficulties']);
-			meta.variations = stringArrayField(playData, ['songVariations', 'variations']);
+			if(meta.stage == null) meta.stage = strField(playData, ['stage']);
+			if(meta.noteStyle == null) meta.noteStyle = strField(playData, ['noteStyle', 'noteSkin']);
+			if(meta.difficulties == null) meta.difficulties = stringArrayField(playData, ['difficulties']);
+			if(meta.variations == null) meta.variations = stringArrayField(playData, ['songVariations', 'variations']);
 			if(meta.album == null) meta.album = strField(playData, ['album']);
 
 			var chars:Dynamic = Reflect.field(playData, 'characters');
 			if(chars != null)
 			{
-				meta.player = strField(chars, ['player', 'bf', 'player1']);
-				meta.opponent = strField(chars, ['opponent', 'dad', 'player2']);
-				meta.girlfriend = strField(chars, ['girlfriend', 'gf', 'gfVersion']);
+				if(meta.player == null) meta.player = strField(chars, ['player', 'bf', 'player1']);
+				if(meta.opponent == null) meta.opponent = strField(chars, ['opponent', 'dad', 'player2']);
+				if(meta.girlfriend == null) meta.girlfriend = strField(chars, ['girlfriend', 'gf', 'gfVersion']);
 			}
 		}
 
+		// Flat Pico format
 		if(meta.stage == null) meta.stage = strField(data, ['stage']);
 		if(meta.noteStyle == null) meta.noteStyle = strField(data, ['noteStyle', 'noteSkin']);
-		if(meta.player == null) meta.player = strField(data, ['player1', 'player', 'bf']);
-		if(meta.opponent == null) meta.opponent = strField(data, ['player2', 'opponent', 'dad']);
-		if(meta.girlfriend == null) meta.girlfriend = strField(data, ['gfVersion', 'girlfriend', 'gf']);
+		if(meta.player == null) meta.player = strField(data, ['player', 'player1', 'bf']);
+		if(meta.opponent == null) meta.opponent = strField(data, ['opponent', 'player2', 'dad']);
+		if(meta.girlfriend == null) meta.girlfriend = strField(data, ['girlfriend', 'gfVersion', 'gf']);
 		if(meta.difficulties == null) meta.difficulties = stringArrayField(data, ['difficulties']);
-		if(meta.variations == null) meta.variations = stringArrayField(data, ['variations', 'songVariations']);
+		if(meta.variations == null) meta.variations = stringArrayField(data, ['songVariations', 'variations']);
+		if(meta.songVariation == null) meta.songVariation = strField(data, ['songVariation', 'variation']);
 
 		if(meta.bpm == null)
 		{
@@ -235,9 +407,6 @@ class SongMeta
 
 	/**
 	 * meta.txt: key=value per line (# comments)
-	 * displayName=My Song
-	 * difficulties=easy,normal,hard
-	 * variations=erect,pico
 	 */
 	public static function fromTxt(raw:String):SongMeta
 	{
@@ -261,15 +430,22 @@ class SongMeta
 		var meta:SongMeta = new SongMeta();
 		meta.songName = mapGet(map, ['songname', 'song', 'name']);
 		meta.displayName = mapGet(map, ['displayname', 'display', 'title']);
-		meta.artist = mapGet(map, ['artist', 'composer']);
+		meta.artist = mapGet(map, ['artist', 'composer', 'composers']);
 		meta.charter = mapGet(map, ['charter', 'chartauthor', 'author']);
 		meta.album = mapGet(map, ['album']);
 		meta.stage = mapGet(map, ['stage']);
 		meta.noteStyle = mapGet(map, ['notestyle', 'noteskin']);
-		meta.player = mapGet(map, ['player1', 'player', 'bf']);
-		meta.opponent = mapGet(map, ['player2', 'opponent', 'dad']);
-		meta.girlfriend = mapGet(map, ['gfversion', 'girlfriend', 'gf']);
+		meta.player = mapGet(map, ['player', 'player1', 'bf']);
+		meta.opponent = mapGet(map, ['opponent', 'player2', 'dad']);
+		meta.girlfriend = mapGet(map, ['girlfriend', 'gfversion', 'gf']);
+		meta.songVariation = mapGet(map, ['songvariation', 'variation']);
 		meta.pauseSong = mapGet(map, ['pausesong', 'pausemusic']);
+		meta.freeplayIcon = mapGet(map, ['freeplayicon', 'icon']);
+		meta.freeplayColor = mapGet(map, ['freeplaycolor', 'color']);
+		meta.instSuffix = mapGet(map, ['instsuffix']);
+		meta.vocalsSuffix = mapGet(map, ['vocalssuffix', 'voicessuffix']);
+		meta.vocalPlayerSuffix = mapGet(map, ['vocalplayersuffix']);
+		meta.vocalOpponentSuffix = mapGet(map, ['vocalopponentsuffix']);
 
 		var bpmStr:String = mapGet(map, ['bpm']);
 		if(bpmStr != null)
@@ -285,13 +461,16 @@ class SongMeta
 
 		var scripts:String = mapGet(map, ['enablesongscripts']);
 		if(scripts != null) meta.enableSongScripts = (scripts.toLowerCase() == 'true' || scripts == '1');
-		var mods:String = mapGet(map, ['usemodcharts']);
+		var mods:String = mapGet(map, ['usemodcharts', 'usemodcharts']);
 		if(mods != null) meta.useModcharts = (mods.toLowerCase() == 'true' || mods == '1');
+		var voices:String = mapGet(map, ['needsvoices']);
+		if(voices != null) meta.needsVoices = (voices.toLowerCase() == 'true' || voices == '1');
+		var opp:String = mapGet(map, ['opponentmod', 'opponentmode']);
+		if(opp != null) meta.opponentMode = (opp.toLowerCase() == 'true' || opp == '1');
 
 		return meta;
 	}
 
-	/** Build meta snapshot from a loaded chart. */
 	public static function fromSong(song:Dynamic):SongMeta
 	{
 		if(song == null) return new SongMeta();
@@ -308,9 +487,16 @@ class SongMeta
 		meta.pauseSong = strVal(Reflect.field(song, 'pauseSong'));
 		meta.bpm = floatField(song, ['bpm']);
 		meta.enableSongScripts = boolField(song, ['enableSongScripts']);
-		meta.useModcharts = boolField(song, ['useModcharts']);
+		meta.useModcharts = boolField(song, ['useModcharts', 'useModCharts']);
+		meta.needsVoices = boolField(song, ['needsVoices']);
 		meta.difficulties = stringArrayField(song, ['freeplayDifficulties', 'difficulties']);
 		meta.variations = stringArrayField(song, ['songVariations', 'variations']);
+		meta.songVariation = strVal(Reflect.field(song, 'songVariation'));
+		if(meta.songVariation == null) meta.songVariation = strVal(Reflect.field(song, 'variation'));
+		meta.instSuffix = strVal(Reflect.field(song, 'instSuffix'));
+		meta.vocalsSuffix = strVal(Reflect.field(song, 'vocalsSuffix'));
+		meta.vocalPlayerSuffix = strVal(Reflect.field(song, 'vocalPlayerSuffix'));
+		meta.vocalOpponentSuffix = strVal(Reflect.field(song, 'vocalOpponentSuffix'));
 		return meta;
 	}
 
@@ -323,7 +509,6 @@ class SongMeta
 		if(song == null || meta == null) return;
 
 		setIf(song, 'displayName', meta.displayName, overwriteExisting);
-		// Do NOT overwrite chart song id with display name
 		setIf(song, 'artist', meta.artist, overwriteExisting);
 		setIf(song, 'charter', meta.charter, overwriteExisting);
 		setIf(song, 'stage', meta.stage, overwriteExisting);
@@ -352,6 +537,11 @@ class SongMeta
 			if(overwriteExisting || Reflect.field(song, 'useModcharts') == null)
 				Reflect.setField(song, 'useModcharts', meta.useModcharts);
 		}
+		if(meta.needsVoices != null)
+		{
+			if(overwriteExisting || Reflect.field(song, 'needsVoices') == null)
+				Reflect.setField(song, 'needsVoices', meta.needsVoices);
+		}
 		if(meta.difficulties != null && meta.difficulties.length > 0)
 		{
 			if(overwriteExisting || Reflect.field(song, 'freeplayDifficulties') == null)
@@ -361,7 +551,24 @@ class SongMeta
 		{
 			if(overwriteExisting || Reflect.field(song, 'songVariations') == null)
 				Reflect.setField(song, 'songVariations', meta.variations.copy());
+			if(overwriteExisting || Reflect.field(song, 'variations') == null)
+				Reflect.setField(song, 'variations', meta.variations.copy());
 		}
+		if(meta.songVariation != null && meta.songVariation.length > 0)
+		{
+			if(overwriteExisting || emptyField(Reflect.field(song, 'songVariation')))
+			{
+				Reflect.setField(song, 'songVariation', meta.songVariation);
+				Reflect.setField(song, 'variation', meta.songVariation);
+			}
+		}
+
+		// Audio suffixes (keep leading "-" if provided: "-pico")
+		setIf(song, 'instSuffix', meta.instSuffix, overwriteExisting);
+		setIf(song, 'vocalsSuffix', meta.vocalsSuffix, overwriteExisting);
+		setIf(song, 'vocalPlayerSuffix', meta.vocalPlayerSuffix, overwriteExisting);
+		setIf(song, 'vocalOpponentSuffix', meta.vocalOpponentSuffix, overwriteExisting);
+		try Paths.applyAudioSuffixesFromMeta(meta) catch(e:Dynamic) {}
 	}
 
 	public function getDisplayName(?fallback:String = null):String
@@ -388,32 +595,34 @@ class SongMeta
 		return [];
 	}
 
+	/** Pico flat meta.json matching your format */
 	public function toJsonString():String
 	{
-		var playData:Dynamic = {};
-		if(stage != null) Reflect.setField(playData, 'stage', stage);
-		if(noteStyle != null) Reflect.setField(playData, 'noteStyle', noteStyle);
-		if(difficulties != null) Reflect.setField(playData, 'difficulties', difficulties);
-		if(variations != null) Reflect.setField(playData, 'songVariations', variations);
-		if(album != null) Reflect.setField(playData, 'album', album);
-
-		var chars:Dynamic = {};
-		if(player != null) Reflect.setField(chars, 'player', player);
-		if(opponent != null) Reflect.setField(chars, 'opponent', opponent);
-		if(girlfriend != null) Reflect.setField(chars, 'girlfriend', girlfriend);
-		if(Reflect.fields(chars).length > 0)
-			Reflect.setField(playData, 'characters', chars);
-
-		var root:Dynamic = { version: '1.0.0' };
+		var root:Dynamic = {};
+		if(player != null) Reflect.setField(root, 'player', player);
+		if(girlfriend != null) Reflect.setField(root, 'girlfriend', girlfriend);
+		if(opponent != null) Reflect.setField(root, 'opponent', opponent);
+		if(stage != null) Reflect.setField(root, 'stage', stage);
+		if(noteStyle != null) Reflect.setField(root, 'noteStyle', noteStyle);
 		if(songName != null) Reflect.setField(root, 'songName', songName);
 		if(displayName != null) Reflect.setField(root, 'displayName', displayName);
-		if(artist != null) Reflect.setField(root, 'artist', artist);
-		if(charter != null) Reflect.setField(root, 'charter', charter);
+		if(difficulties != null) Reflect.setField(root, 'difficulties', difficulties);
+		if(variations != null) Reflect.setField(root, 'songVariations', variations);
+		if(songVariation != null) Reflect.setField(root, 'songVariation', songVariation);
+		Reflect.setField(root, 'charter', charter != null && charter.length > 0 ? [charter] : []);
+		Reflect.setField(root, 'composers', artist != null && artist.length > 0 ? [artist] : []);
+		if(freeplayIcon != null) Reflect.setField(root, 'freeplayIcon', freeplayIcon);
+		if(freeplayColor != null) Reflect.setField(root, 'freeplayColor', freeplayColor);
+		if(needsVoices != null) Reflect.setField(root, 'needsVoices', needsVoices);
+		if(useModcharts != null) Reflect.setField(root, 'useModCharts', useModcharts);
+		if(opponentMode != null) Reflect.setField(root, 'opponentMod', opponentMode);
 		if(bpm != null) Reflect.setField(root, 'bpm', bpm);
 		if(pauseSong != null) Reflect.setField(root, 'pauseSong', pauseSong);
+		if(instSuffix != null) Reflect.setField(root, 'instSuffix', instSuffix);
+		if(vocalsSuffix != null) Reflect.setField(root, 'vocalsSuffix', vocalsSuffix);
+		if(vocalPlayerSuffix != null) Reflect.setField(root, 'vocalPlayerSuffix', vocalPlayerSuffix);
+		if(vocalOpponentSuffix != null) Reflect.setField(root, 'vocalOpponentSuffix', vocalOpponentSuffix);
 		if(enableSongScripts != null) Reflect.setField(root, 'enableSongScripts', enableSongScripts);
-		if(useModcharts != null) Reflect.setField(root, 'useModcharts', useModcharts);
-		Reflect.setField(root, 'playData', playData);
 		return Json.stringify(root, null, '\t');
 	}
 
@@ -432,15 +641,24 @@ class SongMeta
 		add('album', album);
 		add('stage', stage);
 		add('noteStyle', noteStyle);
-		add('player1', player);
-		add('player2', opponent);
-		add('gfVersion', girlfriend);
+		add('player', player);
+		add('opponent', opponent);
+		add('girlfriend', girlfriend);
+		add('songVariation', songVariation);
 		if(difficulties != null) add('difficulties', difficulties.join(','));
 		if(variations != null) add('variations', variations.join(','));
 		if(bpm != null) add('bpm', Std.string(bpm));
 		add('pauseSong', pauseSong);
+		add('freeplayIcon', freeplayIcon);
+		add('freeplayColor', freeplayColor);
 		if(enableSongScripts != null) add('enableSongScripts', enableSongScripts ? 'true' : 'false');
-		if(useModcharts != null) add('useModcharts', useModcharts ? 'true' : 'false');
+		if(useModcharts != null) add('useModCharts', useModcharts ? 'true' : 'false');
+		if(needsVoices != null) add('needsVoices', needsVoices ? 'true' : 'false');
+		if(opponentMode != null) add('opponentMod', opponentMode ? 'true' : 'false');
+		add('instSuffix', instSuffix);
+		add('vocalsSuffix', vocalsSuffix);
+		add('vocalPlayerSuffix', vocalPlayerSuffix);
+		add('vocalOpponentSuffix', vocalOpponentSuffix);
 		return lines.join('\n') + '\n';
 	}
 
@@ -472,6 +690,31 @@ class SongMeta
 		for (name in names)
 		{
 			var v:Dynamic = Reflect.field(obj, name);
+			var s:String = strVal(v);
+			if(s != null) return s;
+		}
+		return null;
+	}
+
+	/** Accept string or array of strings (charter / composers). */
+	static function joinStringOrArray(obj:Dynamic, names:Array<String>):String
+	{
+		if(obj == null) return null;
+		for (name in names)
+		{
+			var v:Dynamic = Reflect.field(obj, name);
+			if(v == null) continue;
+			if(Std.isOfType(v, Array))
+			{
+				var parts:Array<String> = [];
+				for (item in (cast v:Array<Dynamic>))
+				{
+					var s:String = strVal(item);
+					if(s != null) parts.push(s);
+				}
+				if(parts.length > 0) return parts.join(', ');
+				continue;
+			}
 			var s:String = strVal(v);
 			if(s != null) return s;
 		}

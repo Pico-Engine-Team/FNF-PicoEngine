@@ -9,9 +9,7 @@ class Highscore
 	public static var songRating:Map<String, Float> = new Map<String, Float>();
 	public static var songMisses:Map<String, Int> = new Map<String, Int>();
 	public static var songDeaths:Map<String, Int> = new Map<String, Int>();
-
-	/** Suffix used in save keys for Opponent Mode scores */
-	public static inline var OPPONENT_SUFFIX:String = '-opponent';
+	public static inline var OPPONENT_SUFFIX:String = '-opponent'; /** Suffix used in save keys for Opponent Mode scores */
 
 	public static function resetSong(song:String, diff:Int = 0, ?variation:String = null, ?week:WeekData = null, ?freeplay:Bool = false, ?opponentMode:Bool = false):Void
 	{
