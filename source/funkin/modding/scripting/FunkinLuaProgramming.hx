@@ -15,8 +15,8 @@ import funkin.data.objects.game.characters.Character;
 import funkin.states.PauseState;
 import funkin.states.GameOverState;
 
-import funkin.menus.MainMenuState;
-import funkin.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.MainMenuState;
+import funkin.states.menus.freeplay.FreeplayMenuState;
 
 import openfl.Lib;
 import openfl.utils.Assets;
@@ -178,9 +178,9 @@ class FunkinLuaProgramming
 			set('defaultGirlfriendX', game.GF_X);
 			set('defaultGirlfriendY', game.GF_Y);
 
-			set('boyfriendName', game.boyfriend != null ? game.boyfriend.curCharacter : PlayState.SONG.player1);
-			set('dadName', game.dad != null ? game.dad.curCharacter : PlayState.SONG.player2);
-			set('gfName', game.gf != null ? game.gf.curCharacter : PlayState.SONG.gfVersion);
+			set('boyfriendName', game.boyfriend != null ? game.boyfriend.curCharacter : PlayState.SONG.player);
+			set('dadName', game.dad != null ? game.dad.curCharacter : PlayState.SONG.girlfriend);
+			set('gfName', game.gf != null ? game.gf.curCharacter : PlayState.SONG.opponent);
 		}
 
 		// Other settings
