@@ -1,6 +1,6 @@
 package funkin.states.options;
 
-class OptionsState extends MusicBeatState
+class OptionsMenuState extends MusicBeatState
 {
 	var options:Array<String> = [
 	'Note Colors',
@@ -99,7 +99,7 @@ class OptionsState extends MusicBeatState
 			{
 				// Stop current menu (options) music and play the main menu music
 				FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
-				MusicBeatState.switchState(new funkin.menus.MainMenuState());
+				MusicBeatState.switchState(new funkin.states.menus.MainMenuState());
 			}
 		}
 		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
