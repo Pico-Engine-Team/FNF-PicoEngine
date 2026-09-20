@@ -1,6 +1,5 @@
-# Friday Night Funkin': - Pico Engine
+# Friday Night Funkin' Pico Engine
 ![FNFModBanner](art/banner.png)
-
 <div align='center'>
 <table>
   <tr>
@@ -9,7 +8,6 @@
   </tr>
 </table>
 </div>
-
 <p align="center"><img src="https://img.shields.io/badge/-HAXE-262626.svg?logo=haxe&style=for-the-badge">
 
 # You can also play this title at the following links
@@ -48,6 +46,5 @@ If you enjoy this project and would like to support its development, here are so
 - **[GitHub Sponsors](https://github.com/sponsors/Lucas62944)** - Support the development directly on GitHub
 - **[itch.io](https://lucas-sanches.itch.io/funkin-pico)** - Play and support the game on itch.io
 - Every contribution helps keep this project alive and enables us to add more features and improvements!
-
 -----
 <p align="center"><a href="#readme-top">Back To Top</a></p>
