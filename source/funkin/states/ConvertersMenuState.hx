@@ -10,7 +10,7 @@ import flash.net.FileFilter;
 import haxe.Json;
 import haxe.Exception;
 
-class ConvertersState extends MusicBeatState
+class ConvertersMenuState extends MusicBeatState
 {
 	static inline var PAGE_MAIN:String = 'main';
 	static inline var PAGE_CHARTS:String = 'charts';
