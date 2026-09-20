@@ -4,7 +4,20 @@ import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import haxe.Json;
 
-typedef WeekFile = {
+/**
+ * Week file (levels/*.json).
+ *
+ * Song list only identifies which songs belong to the week.
+ * Difficulties, freeplay icon and color come from each song's meta.json
+ * (assets/songs/<song>/meta.json) — not from the week file.
+ *
+ * songs entry formats still accepted for compatibility:
+ *   "Bopeebo"
+ *   ["Bopeebo"]
+ *   ["Bopeebo", "dad", [146, 113, 253]]  // icon/color ignored if meta exists
+ */
+typedef WeekFile =
+{
 	var songs:Array<Dynamic>;
 	var weekCharacters:Array<String>;
 	var weekBackground:String;
@@ -15,10 +28,7 @@ typedef WeekFile = {
 	var hiddenUntilUnlocked:Bool;
 	var hideStoryMode:Bool;
 	var hideFreeplay:Bool;
-	var difficulties:String;
 	@:optional var hideStorySongs:Array<String>;
-	@:optional var storyDifficulties:String;
-	@:optional var freeplayDifficulties:String;
 	@:optional var section:Dynamic;
 	@:optional var sections:Dynamic;
 }
@@ -42,22 +52,19 @@ class WeekData
 	public var hideStoryMode:Bool;
 	public var hideFreeplay:Bool;
 	public var hideStorySongs:Array<String>;
-	public var difficulties:String;
-	public var storyDifficulties:String;
-	public var freeplayDifficulties:String;
 	public var section:Dynamic;
 	public var sections:Dynamic;
 	public var fileName:String;
 
-	public static function createWeekFile():WeekFile 
+	public static function createWeekFile():WeekFile
 	{
-		var weekFile:WeekFile = {
-				songs: [
-					["Bopeebo", "dad", [146, 113, 253]],
-					["Fresh", "dad", [146, 113, 253]],
-					["Dad Battle", "dad", [146, 113, 253]]
-				],
-
+		var weekFile:WeekFile =
+		{
+			songs: [
+				"Bopeebo",
+				"Fresh",
+				"Dad Battle"
+			],
 			weekCharacters: ['dad', 'bf', 'gf'],
 			weekBackground: 'stage',
 			weekBefore: '',
@@ -68,19 +75,15 @@ class WeekData
 			hideStoryMode: false,
 			hideFreeplay: false,
 			hideStorySongs: [],
-			difficulties: 'Easy, Normal, Hard',
-			storyDifficulties: 'Easy, Normal, Hard',
-			freeplayDifficulties: 'Easy, Normal, Hard',
-			section: ['storyMode', 'freeplay', 'extra']
+			section: ['storyMode', 'freeplay']
 		};
 		return weekFile;
 	}
 
-	// HELP: Is there any way to convert a WeekFile to WeekData without having to put all variables there manually? I'm kind of a noob in haxe lmao
-	public function new(weekFile:WeekFile, fileName:String) {
-		// here ya go - MiguelItsOut
+	public function new(weekFile:WeekFile, fileName:String)
+	{
 		for (field in Reflect.fields(weekFile))
-			if(Reflect.fields(this).contains(field)) // Reflect.hasField() won't fucking work :/
+			if (Reflect.fields(this).contains(field))
 				Reflect.setProperty(this, field, Reflect.getProperty(weekFile, field));
 
 		this.fileName = fileName;
@@ -89,21 +92,53 @@ class WeekData
 
 	public static function getWeekSongName(song:Dynamic):String
 	{
-		if(song == null) return '';
-		if(Std.isOfType(song, Array))
+		if (song == null) return '';
+		if (Std.isOfType(song, Array))
 		{
 			var data:Array<Dynamic> = cast song;
-			if(data.length > 0 && data[0] != null) return Std.string(data[0]);
+			if (data.length > 0 && data[0] != null) return Std.string(data[0]);
 		}
 		return Std.string(song);
+	}
+
+	/** Optional legacy icon from week song entry [name, icon, color] — meta overrides in freeplay */
+	public static function getWeekSongIcon(song:Dynamic, ?fallback:String = 'face'):String
+	{
+		if (Std.isOfType(song, Array))
+		{
+			var data:Array<Dynamic> = cast song;
+			if (data.length > 1 && data[1] != null)
+			{
+				var icon:String = Std.string(data[1]).trim();
+				if (icon.length > 0) return icon;
+			}
+		}
+		return fallback;
+	}
+
+	/** Optional legacy color from week song entry — meta freeplayColor overrides */
+	public static function getWeekSongColor(song:Dynamic, ?fallback:Array<Int> = null):Array<Int>
+	{
+		if (fallback == null) fallback = [146, 113, 253];
+		if (Std.isOfType(song, Array))
+		{
+			var data:Array<Dynamic> = cast song;
+			if (data.length > 2 && data[2] != null && Std.isOfType(data[2], Array))
+			{
+				var c:Array<Dynamic> = cast data[2];
+				if (c.length >= 3)
+					return [Std.int(c[0]), Std.int(c[1]), Std.int(c[2])];
+			}
+		}
+		return fallback;
 	}
 
 	public static function parseHiddenStorySongs(value:Dynamic):Array<String>
 	{
 		var output:Array<String> = [];
-		if(value == null) return output;
+		if (value == null) return output;
 
-		if(Std.isOfType(value, Array))
+		if (Std.isOfType(value, Array))
 		{
 			var array:Array<Dynamic> = cast value;
 			for (item in array)
@@ -125,21 +160,21 @@ class WeekData
 	public static function setHiddenStorySongs(week:Dynamic, value:Dynamic):Array<String>
 	{
 		var hidden:Array<String> = parseHiddenStorySongs(value);
-		if(week != null) Reflect.setField(week, 'hideStorySongs', hidden);
+		if (week != null) Reflect.setField(week, 'hideStorySongs', hidden);
 		return hidden;
 	}
 
 	public static function visibleStorySongs(week:Dynamic):Array<Dynamic>
 	{
 		var output:Array<Dynamic> = [];
-		if(week == null) return output;
+		if (week == null) return output;
 
 		var rawSongs:Dynamic = Reflect.field(week, 'songs');
-		if(rawSongs == null || !Std.isOfType(rawSongs, Array)) return output;
+		if (rawSongs == null || !Std.isOfType(rawSongs, Array)) return output;
 
 		var songs:Array<Dynamic> = cast rawSongs;
 		for (song in songs)
-			if(!isStorySongHidden(week, song))
+			if (!isStorySongHidden(week, song))
 				output.push(song);
 		return output;
 	}
@@ -158,14 +193,14 @@ class WeekData
 		var formattedSong:String = Paths.formatToSongPath(songName);
 		for (hidden in parseHiddenStorySongs(week != null ? Reflect.field(week, 'hideStorySongs') : null))
 		{
-			if(Paths.formatToSongPath(hidden) == formattedSong)
+			if (Paths.formatToSongPath(hidden) == formattedSong)
 				return true;
 		}
 
-		if(Std.isOfType(song, Array))
+		if (Std.isOfType(song, Array))
 		{
 			var data:Array<Dynamic> = cast song;
-			if(data.length > 3 && dynamicBool(data[3]))
+			if (data.length > 3 && dynamicBool(data[3]))
 				return true;
 		}
 		return false;
@@ -173,21 +208,21 @@ class WeekData
 
 	static function addHiddenSongName(list:Array<String>, value:Dynamic)
 	{
-		if(value == null) return;
+		if (value == null) return;
 		var name:String = Std.string(value).trim();
-		if(name.length < 1) return;
+		if (name.length < 1) return;
 
 		var formatted:String = Paths.formatToSongPath(name);
 		for (existing in list)
-			if(Paths.formatToSongPath(existing) == formatted)
+			if (Paths.formatToSongPath(existing) == formatted)
 				return;
 		list.push(name);
 	}
 
 	static function dynamicBool(value:Dynamic):Bool
 	{
-		if(value == null) return false;
-		if(Std.isOfType(value, Bool)) return value;
+		if (value == null) return false;
+		if (Std.isOfType(value, Bool)) return value;
 
 		var clean:String = Std.string(value).toLowerCase().trim();
 		return clean == 'true' || clean == '1' || clean == 'yes' || clean == 'hide' || clean == 'hidden';
@@ -211,21 +246,27 @@ class WeekData
 		#end
 
 		var sexList:Array<String> = CoolUtil.coolTextFile(Paths.getSharedPath('levels/WeeksList.txt'));
-		for (i in 0...sexList.length) {
-			for (j in 0...directories.length) {
+		for (i in 0...sexList.length)
+		{
+			for (j in 0...directories.length)
+			{
 				var fileToCheck:String = directories[j] + 'data/levels/' + sexList[i] + '.json';
-				if(!weeksLoaded.exists(sexList[i])) {
+				if (!weeksLoaded.exists(sexList[i]))
+				{
 					var week:WeekFile = getWeekFile(fileToCheck);
-					if(week != null) {
+					if (week != null)
+					{
 						var weekFile:WeekData = new WeekData(week, sexList[i]);
 
 						#if MODS_ALLOWED
-						if(j >= originalLength) {
-							weekFile.folder = directories[j].substring(Paths.mods().length, directories[j].length-1);
+						if (j >= originalLength)
+						{
+							weekFile.folder = directories[j].substring(Paths.mods().length, directories[j].length - 1);
 						}
 						#end
 
-						if(weekFile != null && weekMatchesSection(weekFile, targetSection)) {
+						if (weekFile != null && weekMatchesSection(weekFile, targetSection))
+						{
 							weeksLoaded.set(sexList[i], weekFile);
 							weeksList.push(sexList[i]);
 						}
@@ -235,14 +276,16 @@ class WeekData
 		}
 
 		#if MODS_ALLOWED
-		for (i in 0...directories.length) {
+		for (i in 0...directories.length)
+		{
 			var directory:String = directories[i] + 'data/levels/';
-			if(FileSystem.exists(directory)) {
+			if (FileSystem.exists(directory))
+			{
 				var listOfWeeks:Array<String> = CoolUtil.coolTextFile(directory + 'weekList.txt');
 				for (daWeek in listOfWeeks)
 				{
 					var path:String = directory + daWeek + '.json';
-					if(FileSystem.exists(path))
+					if (FileSystem.exists(path))
 					{
 						addWeek(daWeek, path, directories[i], i, originalLength);
 					}
@@ -263,16 +306,16 @@ class WeekData
 
 	public static function normalizeMenuSection(value:Dynamic):String
 	{
-		if(value == null)
+		if (value == null)
 			return null;
-		if(Std.isOfType(value, Bool))
+		if (Std.isOfType(value, Bool))
 			return value ? 'storyMode' : 'freeplay';
 
 		var clean:String = Std.string(value).trim();
-		if(clean.length < 1)
+		if (clean.length < 1)
 			return null;
 
-		switch(clean.toLowerCase())
+		switch (clean.toLowerCase())
 		{
 			case 'story', 'storymode', 'story_mode':
 				return 'storyMode';
@@ -286,23 +329,23 @@ class WeekData
 
 	public static function weekMatchesSection(week:WeekData, targetSection:String):Bool
 	{
-		if(week == null)
+		if (week == null)
 			return false;
-		if(targetSection == null)
+		if (targetSection == null)
 			return true;
 
-		if(targetSection == 'storyMode' && week.hideStoryMode)
+		if (targetSection == 'storyMode' && week.hideStoryMode)
 			return false;
 
-		if(targetSection == 'freeplay' && week.hideFreeplay)
+		if (targetSection == 'freeplay' && week.hideFreeplay)
 			return false;
 
 		var sections:Array<String> = getWeekSections(week);
-		if(sections.length < 1)
+		if (sections.length < 1)
 			return targetSection != 'extraFreeplay';
 
-		for(section in sections)
-			if(normalizeMenuSection(section) == targetSection)
+		for (section in sections)
+			if (normalizeMenuSection(section) == targetSection)
 				return true;
 		return false;
 	}
@@ -317,38 +360,38 @@ class WeekData
 
 	static function addWeekSections(output:Array<String>, value:Dynamic):Void
 	{
-		if(value == null)
+		if (value == null)
 			return;
-		if(Std.isOfType(value, Array))
+		if (Std.isOfType(value, Array))
 		{
-			for(item in (cast value:Array<Dynamic>))
+			for (item in (cast value:Array<Dynamic>))
 				addWeekSections(output, item);
 			return;
 		}
 
-		for(part in Std.string(value).split(','))
+		for (part in Std.string(value).split(','))
 		{
 			var normalized:String = normalizeMenuSection(part);
-			if(normalized != null && normalized.length > 0 && !output.contains(normalized))
+			if (normalized != null && normalized.length > 0 && !output.contains(normalized))
 				output.push(normalized);
 		}
 	}
 
 	private static function addWeek(weekToCheck:String, path:String, directory:String, i:Int, originalLength:Int)
 	{
-		if(!weeksLoaded.exists(weekToCheck))
+		if (!weeksLoaded.exists(weekToCheck))
 		{
 			var week:WeekFile = getWeekFile(path);
-			if(week != null)
+			if (week != null)
 			{
 				var weekFile:WeekData = new WeekData(week, weekToCheck);
-				if(i >= originalLength)
+				if (i >= originalLength)
 				{
 					#if MODS_ALLOWED
-					weekFile.folder = directory.substring(Paths.mods().length, directory.length-1);
+					weekFile.folder = directory.substring(Paths.mods().length, directory.length - 1);
 					#end
 				}
-				if(weekMatchesSection(weekFile, reloadTargetSection))
+				if (weekMatchesSection(weekFile, reloadTargetSection))
 				{
 					weeksLoaded.set(weekToCheck, weekFile);
 					weeksList.push(weekToCheck);
@@ -361,36 +404,39 @@ class WeekData
 	{
 		var rawJson:String = null;
 		#if MODS_ALLOWED
-		if(FileSystem.exists(path)) {
+		if (FileSystem.exists(path))
+		{
 			rawJson = File.getContent(path);
 		}
 		#else
-		if(OpenFlAssets.exists(path)) {
+		if (OpenFlAssets.exists(path))
+		{
 			rawJson = Assets.getText(path);
 		}
 		#end
 
-		if(rawJson != null && rawJson.length > 0) {
+		if (rawJson != null && rawJson.length > 0)
+		{
 			return cast tjson.TJSON.parse(rawJson);
 		}
 		return null;
 	}
 
-	//   FUNCTIONS YOU WILL PROBABLY NEVER NEED TO USE
-
-	//To use on PlayState.hx or Highscore stuff
-	public static function getWeekFileName():String {
+	public static function getWeekFileName():String
+	{
 		return weeksList[PlayState.storyWeek];
 	}
 
-	//Used on LoadingScreenState, nothing really too relevant
-	public static function getCurrentWeek():WeekData {
+	public static function getCurrentWeek():WeekData
+	{
 		return weeksLoaded.get(weeksList[PlayState.storyWeek]);
 	}
 
-	public static function setDirectoryFromWeek(?data:WeekData = null) {
+	public static function setDirectoryFromWeek(?data:WeekData = null)
+	{
 		Mods.currentModDirectory = '';
-		if(data != null && data.folder != null && data.folder.length > 0) {
+		if (data != null && data.folder != null && data.folder.length > 0)
+		{
 			Mods.currentModDirectory = data.folder;
 		}
 	}
