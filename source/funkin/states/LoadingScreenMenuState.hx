@@ -1,11 +1,11 @@
 package funkin.states;
 
 import funkin.play.Song;
+import funkin.play.SongMeta;
 import funkin.stages.StageData;
 import funkin.data.objects.game.characters.Character;
 import funkin.data.objects.game.notes.data.Note;
 import funkin.data.objects.game.notes.data.NoteSplash;
-import funkin.data.PreloadData;
 
 import haxe.Json;
 import openfl.display.BitmapData;
@@ -37,7 +37,7 @@ import crowplexus.hscript.Printer;
 #include <thread>')
 #end
 
-class LoadingScreenState extends MusicBeatState
+class LoadingScreenMenuState extends MusicBeatState
 {
 	public static var loaded:Int = 0;
 	public static var loadMax:Int = 0;
@@ -111,9 +111,52 @@ class LoadingScreenState extends MusicBeatState
 		barWidth = Std.int(barBack.width - 10);
 
 		#if HSCRIPT_ALLOWED
-		if(Mods.currentModDirectory != null && Mods.currentModDirectory.trim().length > 0)
+		// scripts/states/loadingScreen/*.hx (shared + mods) — no mod required
+		var loadingScriptLoaded:Bool = false;
+		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/states/loadingScreen/'))
 		{
-			var scriptPath:String = 'mods/${Mods.currentModDirectory}/scripts/LoadingScreen.hx'; //mods/My-Mod/data/LoadingScreen.hx
+			if(folder == null || !FileSystem.exists(folder) || !FileSystem.isDirectory(folder)) continue;
+			for (file in FileSystem.readDirectory(folder))
+			{
+				var lower:String = file.toLowerCase();
+				if(!(lower.endsWith('.hx') || lower.endsWith('.hxc'))) continue;
+				var scriptPath:String = folder;
+				if(!scriptPath.endsWith('/') && !scriptPath.endsWith('\\')) scriptPath += '/';
+				scriptPath += file;
+				if(FileSystem.isDirectory(scriptPath)) continue;
+				try
+				{
+					hscript = new FunkinHSProgramming(null, scriptPath);
+					hscript.set('getLoaded', function() return loaded);
+					hscript.set('getLoadMax', function() return loadMax);
+					hscript.set('barBack', barBack);
+					hscript.set('bar', bar);
+					if(hscript.exists('onCreate'))
+					{
+						hscript.call('onCreate');
+						trace('initialized hscript interp successfully: $scriptPath');
+						loadingScriptLoaded = true;
+						return super.create();
+					}
+					else
+					{
+						trace('"$scriptPath" contains no "onCreate" function, stopping script.');
+					}
+				}
+				catch(e:IrisError)
+				{
+					var pos:HScriptInfos = cast {fileName: scriptPath, showLine: false};
+					Iris.error(Printer.errorToString(e, false), pos);
+				}
+				if(hscript != null) hscript.destroy();
+				hscript = null;
+			}
+			if(loadingScriptLoaded) break;
+		}
+		// Legacy fallback: mods/<mod>/scripts/LoadingScreen.hx
+		if(!loadingScriptLoaded && Mods.currentModDirectory != null && Mods.currentModDirectory.trim().length > 0)
+		{
+			var scriptPath:String = 'mods/${Mods.currentModDirectory}/scripts/LoadingScreen.hx';
 			if(FileSystem.exists(scriptPath))
 			{
 				try
@@ -123,23 +166,17 @@ class LoadingScreenState extends MusicBeatState
 					hscript.set('getLoadMax', function() return loadMax);
 					hscript.set('barBack', barBack);
 					hscript.set('bar', bar);
-	
 					if(hscript.exists('onCreate'))
 					{
 						hscript.call('onCreate');
 						trace('initialized hscript interp successfully: $scriptPath');
 						return super.create();
 					}
-					else
-					{
-						trace('"$scriptPath" contains no \"onCreate" function, stopping script.');
-					}
 				}
 				catch(e:IrisError)
 				{
 					var pos:HScriptInfos = cast {fileName: scriptPath, showLine: false};
 					Iris.error(Printer.errorToString(e, false), pos);
-					var hscript:FunkinHSProgramming = cast (Iris.instances.get(scriptPath), FunkinHSProgramming);
 				}
 				if(hscript != null) hscript.destroy();
 				hscript = null;
@@ -475,6 +512,46 @@ class LoadingScreenState extends MusicBeatState
 		musicToPrepare = [];
 		songsToPrepare = [];
 
+		// ===== Meta + new song layout support =====
+		try
+		{
+			var metaFolder:String = Paths.formatToSongPath(
+				(Song.loadedSongName != null && Song.loadedSongName.length > 0)
+					? Song.loadedSongName
+					: (PlayState.SONG.song != null ? PlayState.SONG.song : '')
+			);
+			var variationKey:String = null;
+			try
+			{
+				if(PlayState.SONG.songVariation != null && Std.string(PlayState.SONG.songVariation).trim().length > 0)
+					variationKey = Std.string(PlayState.SONG.songVariation).trim();
+				else if(PlayState.SONG.variation != null && Std.string(PlayState.SONG.variation).trim().length > 0)
+					variationKey = Std.string(PlayState.SONG.variation).trim();
+			}
+			catch(e:Dynamic) {}
+
+			var isExtra:Bool = false;
+			try
+			{
+				if(Reflect.field(PlayState.SONG, 'extraFreeplay') == true)
+					isExtra = true;
+			}
+			catch(e:Dynamic) {}
+
+			var meta = SongMeta.load(metaFolder, null, isExtra, variationKey);
+			if(meta != null)
+			{
+				SongMeta.applyToSong(PlayState.SONG, meta, false);
+				trace('[LoadingScreen] Meta applied: ' + meta.loadedPath + (variationKey != null ? ' (var=' + variationKey + ')' : ''));
+			}
+			Paths.applyAudioSuffixesFromSong(PlayState.SONG);
+		}
+		catch(e:Dynamic)
+		{
+			trace('[LoadingScreen] Meta integrate failed: ' + e);
+			try Paths.clearAudioSuffixes() catch(e2:Dynamic) {}
+		}
+
 		initialThreadCompleted = false;
 		var threadsCompleted:Int = 0;
 		var threadsMax:Int = 0;
@@ -490,9 +567,12 @@ class LoadingScreenState extends MusicBeatState
 		}
 
 		var song:SwagSong = PlayState.SONG;
-		var folder:String = Paths.formatToSongPath(Song.loadedSongName);
+		var folder:String = Paths.formatToSongPath(Song.loadedSongName != null && Song.loadedSongName.length > 0
+			? Song.loadedSongName
+			: (song.song != null ? song.song : ''));
+
 		new Future<Bool>(() -> {
-			// LOAD NOTE IMAGE
+			// LOAD NOTE IMAGE (noteStyle from meta/chart)
 			var addPreloadNoteAsset = function(asset:String)
 			{
 				if(asset != null && asset.length > 0 && !imagesToPrepare.contains(asset))
@@ -502,7 +582,7 @@ class LoadingScreenState extends MusicBeatState
 			var noteSkin:String = Note.defaultSongNoteStyle();
 			var songNoteStyle:String = Note.songNoteStyle();
 			if(songNoteStyle != null && songNoteStyle.length > 1) noteSkin = songNoteStyle;
-	
+
 			var customSkin:String = noteSkin + Note.getNoteSkinPostfix();
 			if(Paths.fileExists('images/$customSkin.json', TEXT) || Paths.fileExists('images/$customSkin.png', IMAGE))
 				noteSkin = customSkin;
@@ -511,11 +591,13 @@ class LoadingScreenState extends MusicBeatState
 			addPreloadNoteAsset(Note.resolveNoteSkinAsset(noteSkin, noteSkinConfig, PlayState.isPixelStage ? 'notePixel' : 'note'));
 			addPreloadNoteAsset(Note.resolveNoteSkinAsset(noteSkin, noteSkinConfig, PlayState.isPixelStage ? 'holdNotePixel' : 'holdNote'));
 			addPreloadNoteAsset(Note.resolveNoteSkinAsset(noteSkin, noteSkinConfig, PlayState.isPixelStage ? 'noteStrumlinePixel' : 'noteStrumline'));
-			//
 
 			// LOAD NOTE SPLASH IMAGE
-			if(PlayState.SONG.stage == 'philly_remix' || PlayState.SONG.stage == 'philly-remix')
-				PlayState.SONG.splashSkin = 'noteSplashes/noteSplashes-godot';
+			if(PlayState.SONG != null && (PlayState.SONG.stage == 'philly_remix' || PlayState.SONG.stage == 'philly-remix'))
+			{
+				if(PlayState.SONG.noteStyle == null || PlayState.SONG.noteStyle.trim().length < 1)
+					PlayState.SONG.noteStyle = 'godot';
+			}
 
 			var noteSplash:String = NoteSplash.defaultNoteSplash;
 			var songSplash:String = Note.songSplashSkinForMustPress(true);
@@ -523,32 +605,45 @@ class LoadingScreenState extends MusicBeatState
 			else noteSplash += NoteSplash.getSplashSkinPostfix();
 			imagesToPrepare.push(noteSplash);
 
-			// Pico Engine preload: scripts/songs/<song>/preload.json (+ optional preload.lua later)
+			// Preload script: scripts/songs/<folder>/preload.json (not chart path)
 			try
 			{
-				var list = PreloadData.loadForSong(folder);
-				PreloadData.applyToLoadingScreenState(list);
+				var preloadKey:String = 'scripts/songs/' + folder + '/preload.json';
+				var preloadPath:String = Paths.getPath(preloadKey, TEXT, null, true);
+				var json:Dynamic = null;
+				#if MODS_ALLOWED
+				if(FileSystem.exists(preloadPath))
+					json = Json.parse(File.getContent(preloadPath));
+				else if(OpenFlAssets.exists(preloadPath, TEXT))
+					json = Json.parse(OpenFlAssets.getText(preloadPath));
+				#else
+				if(OpenFlAssets.exists(preloadPath, TEXT))
+					json = Json.parse(OpenFlAssets.getText(preloadPath));
+				#end
 
-
-				// Characters listed in preload.json (images resolved inside PreloadData + explicit preload)
-				if(list.characters != null)
+				if(json != null)
 				{
-					for (charId in list.characters)
+					var imgs:Array<String> = [];
+					var snds:Array<String> = [];
+					var mscs:Array<String> = [];
+					for (asset in Reflect.fields(json))
 					{
-						if(charId == null || charId.length < 1) continue;
-						try { preloadCharacter(charId); } catch(e:Dynamic) {}
+						var filters:Int = Reflect.field(json, asset);
+						var assetName:String = asset.trim();
+						if(filters < 0 || StageData.validateVisibility(filters))
+						{
+							if(assetName.startsWith('images/'))
+								imgs.push(assetName.substr('images/'.length));
+							else if(assetName.startsWith('sounds/'))
+								snds.push(assetName.substr('sounds/'.length));
+							else if(assetName.startsWith('music/'))
+								mscs.push(assetName.substr('music/'.length));
+						}
 					}
+					prepare(imgs, snds, mscs);
 				}
-
-				// Stage objects already merged into list.images by PreloadData
-				// Note types / events / scripts are available via PreloadData.lastList for Lua
-				if(PreloadData.hasPreloadLua(folder))
-					trace('[LoadingScreen] Found preload.lua for ' + folder + ' → ' + PreloadData.getPreloadLuaPath(folder));
 			}
-			catch(e:Dynamic)
-			{
-				trace('[LoadingScreen] preload.json failed: ' + e);
-			}
+			catch(e:Dynamic) {}
 			return true;
 		}, isIntrusive)
 		.then((_) -> new Future<Bool>(() -> {
@@ -566,20 +661,19 @@ class LoadingScreenState extends MusicBeatState
 					for (asset in Reflect.fields(stageData.preload))
 					{
 						var filters:Int = Reflect.field(stageData.preload, asset);
-						var asset:String = asset.trim();
-
+						var assetName:String = asset.trim();
 						if(filters < 0 || StageData.validateVisibility(filters))
 						{
-							if(asset.startsWith('images/'))
-								imgs.push(asset.substr('images/'.length));
-							else if(asset.startsWith('sounds/'))
-								snds.push(asset.substr('sounds/'.length));
-							else if(asset.startsWith('music/'))
-								mscs.push(asset.substr('music/'.length));
+							if(assetName.startsWith('images/'))
+								imgs.push(assetName.substr('images/'.length));
+							else if(assetName.startsWith('sounds/'))
+								snds.push(assetName.substr('sounds/'.length));
+							else if(assetName.startsWith('music/'))
+								mscs.push(assetName.substr('music/'.length));
 						}
 					}
 				}
-				
+
 				if (stageData.objects != null)
 				{
 					for (sprite in stageData.objects)
@@ -591,41 +685,119 @@ class LoadingScreenState extends MusicBeatState
 				}
 				prepare(imgs, snds, mscs);
 			}
+			else stageData = StageData.dummy();
 
-			songsToPrepare.push('$folder/Inst');
+			// ===== Audio: new layout assets/songs/<folder>/song/Inst[.suffix].ogg =====
+			var audioLibrary:String = (Paths.songAudioRoot != null && Paths.songAudioRoot.length > 0)
+				? Paths.songAudioRoot
+				: 'songs';
 
-			var player1:String = song.player1;
-			var player2:String = song.player2;
-			var gfVersion:String = song.gfVersion;
-			var prefixVocals:String = song.needsVoices ? '$folder/Voices' : null;
-			if (gfVersion == null) gfVersion = 'gf';
-
-			dontPreloadDefaultVoices = false;
-			preloadCharacter(player1, prefixVocals);
-			if (!dontPreloadDefaultVoices && prefixVocals != null)
+			function pushSongAudio(relNoExt:String):Void
 			{
-				if(Paths.fileExists('$prefixVocals-Player.${Paths.SOUND_EXT}', SOUND, false, 'songs') && Paths.fileExists('$prefixVocals-Opponent.${Paths.SOUND_EXT}', SOUND, false, 'songs'))
-				{
-					songsToPrepare.push('$prefixVocals-Player');
-					songsToPrepare.push('$prefixVocals-Opponent');
-				}
-				else if(Paths.fileExists('$prefixVocals.${Paths.SOUND_EXT}', SOUND, false, 'songs'))
-					songsToPrepare.push(prefixVocals);
+				if(relNoExt == null || relNoExt.length < 1) return;
+				if(!songsToPrepare.contains(relNoExt))
+					songsToPrepare.push(relNoExt);
 			}
 
-			if (player2 != player1)
+			function audioExists(relNoExt:String):Bool
+			{
+				var full:String = relNoExt + '.' + Paths.SOUND_EXT;
+				#if sys
+				var disk:String = Paths.getPath(full, SOUND, audioLibrary, true);
+				if(FileSystem.exists(disk)) return true;
+				#end
+				try return Paths.fileExists(full, SOUND, false, audioLibrary) catch(e:Dynamic) return false;
+			}
+
+			// Inst (+ meta instSuffix already applied via Paths.instSuffix)
+			var instSuf:String = Paths.instSuffix; // "-pico" or null
+			if(instSuf != null && instSuf.length > 0)
+			{
+				if(audioExists(folder + '/song/Inst' + instSuf))
+					pushSongAudio(folder + '/song/Inst' + instSuf);
+				else if(audioExists(folder + '/Inst' + instSuf))
+					pushSongAudio(folder + '/Inst' + instSuf);
+			}
+			if(audioExists(folder + '/song/Inst'))
+				pushSongAudio(folder + '/song/Inst');
+			else
+				pushSongAudio(folder + '/Inst'); // legacy fallback always listed; clearInvalid removes missing
+
+			// SwagSong (Pico): player / opponent / girlfriend — legacy player1/player2/gfVersion via Reflect
+			var player:String = resolveSongChar(song, ['player', 'player1'], 'bf');
+			var opponent:String = resolveSongChar(song, ['opponent', 'player2'], 'dad');
+			var girlfriend:String = resolveSongChar(song, ['girlfriend', 'gfVersion', 'gf'], 'gf');
+			var needsVoices:Bool = song.needsVoices;
+
+			dontPreloadDefaultVoices = false;
+			var prefixNested:String = folder + '/song/Voices';
+			var prefixLegacy:String = folder + '/Voices';
+
+			function tryVoiceKeys(suffix:String):Void
+			{
+				if(suffix == null) suffix = '';
+				if(audioExists(prefixNested + suffix))
+					pushSongAudio(prefixNested + suffix);
+				else if(audioExists(prefixLegacy + suffix))
+					pushSongAudio(prefixLegacy + suffix);
+			}
+
+			if(needsVoices)
+			{
+				var vp:String = Paths.vocalPlayerSuffix;
+				var vo:String = Paths.vocalOpponentSuffix;
+				var vs:String = Paths.vocalsSuffix;
+
+				if(vp != null && vp.length > 0) tryVoiceKeys(vp);
+				if(vo != null && vo.length > 0) tryVoiceKeys(vo);
+				if(vs != null && vs.length > 0) tryVoiceKeys(vs);
+
+				// Classic Player/Opponent split
+				if(audioExists(prefixNested + '-Player') && audioExists(prefixNested + '-Opponent'))
+				{
+					pushSongAudio(prefixNested + '-Player');
+					pushSongAudio(prefixNested + '-Opponent');
+				}
+				else if(audioExists(prefixLegacy + '-Player') && audioExists(prefixLegacy + '-Opponent'))
+				{
+					pushSongAudio(prefixLegacy + '-Player');
+					pushSongAudio(prefixLegacy + '-Opponent');
+				}
+				else
+				{
+					tryVoiceKeys('');
+				}
+			}
+
+			// pauseSong music preload (from meta/chart)
+			try
+			{
+				var pauseKey:String = song.pauseSong;
+				if(pauseKey != null && pauseKey.trim().length > 0)
+				{
+					var pk:String = pauseKey.trim();
+					if(pk.startsWith('music/')) pk = pk.substr(6);
+					if(!musicToPrepare.contains(pk))
+						musicToPrepare.push(pk);
+				}
+			}
+			catch(e:Dynamic) {}
+
+			preloadCharacter(player, needsVoices ? (audioExists(prefixNested) ? prefixNested : prefixLegacy) : null);
+			if (opponent != player)
 			{
 				threadsMax++;
 				threadPool.run(() -> {
-					try { preloadCharacter(player2, prefixVocals); } catch (e:Dynamic) {}
+					try { preloadCharacter(opponent, needsVoices ? (audioExists(prefixNested) ? prefixNested : prefixLegacy) : null); } catch (e:Dynamic) {}
 					completedThread();
 				});
 			}
-			if (!stageData.hide_girlfriend && gfVersion != player2 && gfVersion != player1)
+
+			if (stageData != null && !stageData.hide_girlfriend && girlfriend != opponent && girlfriend != player)
 			{
 				threadsMax++;
 				threadPool.run(() -> {
-					try { preloadCharacter(gfVersion); } catch (e:Dynamic) {}
+					try { preloadCharacter(girlfriend); } catch (e:Dynamic) {}
 					completedThread();
 				});
 			}
@@ -647,7 +819,7 @@ class LoadingScreenState extends MusicBeatState
 	{
 		clearInvalidFrom(imagesToPrepare, 'images', '.png', IMAGE);
 		clearInvalidFrom(soundsToPrepare, 'sounds', '.${Paths.SOUND_EXT}', SOUND);
-		clearInvalidFrom(musicToPrepare, 'music',' .${Paths.SOUND_EXT}', SOUND);
+		clearInvalidFrom(musicToPrepare, 'music', '.${Paths.SOUND_EXT}', SOUND);
 		clearInvalidFrom(songsToPrepare, 'songs', '.${Paths.SOUND_EXT}', SOUND, 'songs');
 
 		for (arr in [imagesToPrepare, soundsToPrepare, musicToPrepare, songsToPrepare])
@@ -747,6 +919,28 @@ class LoadingScreenState extends MusicBeatState
 		});
 	}
 
+
+	/** Read char id from SwagSong whether it uses player/opponent/girlfriend or player1/player2/gfVersion. */
+	static function resolveSongChar(song:Dynamic, names:Array<String>, fallback:String):String
+	{
+		if(song == null) return fallback;
+		for (n in names)
+		{
+			try
+			{
+				var v:Dynamic = Reflect.field(song, n);
+				if(v != null)
+				{
+					var s:String = Std.string(v).trim();
+					if(s.length > 0 && s.toLowerCase() != 'null')
+						return s;
+				}
+			}
+			catch(e:Dynamic) {}
+		}
+		return fallback;
+	}
+
 	inline private static function preloadCharacter(char:String, ?prefixVocals:String)
 	{
 		try
@@ -796,7 +990,7 @@ class LoadingScreenState extends MusicBeatState
 			if (prefixVocals != null && character.vocals_file != null && character.vocals_file.length > 0)
 			{
 				songsToPrepare.push(prefixVocals + "-" + character.vocals_file);
-				if(char == PlayState.SONG.player1) dontPreloadDefaultVoices = true;
+				if(char == resolveSongChar(PlayState.SONG, ['player', 'player1'], 'bf')) dontPreloadDefaultVoices = true;
 			}
 		}
 		catch(e:haxe.Exception)
