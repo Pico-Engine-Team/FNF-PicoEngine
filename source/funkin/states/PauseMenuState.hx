@@ -7,11 +7,11 @@ import funkin.data.WeekData;
 import funkin.states.options.OptionsState;
 import funkin.states.editors.data.ChartingState;
 
-import funkin.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.freeplay.FreeplayMenuState;
 import funkin.utils.engines.pico.LocaleUtils;
 import flixel.util.FlxStringUtil;
 
-class PauseState extends MusicBeatSubstate
+class PauseMenuState extends MusicBeatSubstate
 {
 	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit to menu'];
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
@@ -31,6 +31,14 @@ class PauseState extends MusicBeatSubstate
 	var dateTimeText:FlxText;
 	
 	public static var songName:String = null;
+
+	#if LUA_ALLOWED
+	var pauseLuaScripts:Array<funkin.modding.scripting.FunkinLuaProgramming> = [];
+	#end
+	#if HSCRIPT_ALLOWED
+	var pauseHScripts:Array<funkin.modding.scripting.FunkinHSProgramming> = [];
+	#end
+
 	override function create()
 	{
 		menuItems = buildPauseMenuItems();
@@ -142,6 +150,9 @@ class PauseState extends MusicBeatSubstate
 		regenMenu();
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
+		// Custom scripts: scripts/states/pauseMenu/*.lua | *.hx | *.hxc
+		startPauseScripts();
+
 		super.create();
 	}
 
@@ -201,6 +212,7 @@ class PauseState extends MusicBeatSubstate
 			pauseMusic.volume += 0.01 * elapsed;
 
 		super.update(elapsed);
+		callPauseScripts('onUpdate', [elapsed]);
 
 		// Pico Engine and By PlusEngine 
 		if (dateTimeText != null)
@@ -422,6 +434,23 @@ class PauseState extends MusicBeatSubstate
 
 	override function destroy()
 	{
+		callPauseScripts('onDestroy', []);
+		#if LUA_ALLOWED
+		if(pauseLuaScripts != null)
+		{
+			for (s in pauseLuaScripts)
+				if(s != null) try s.stop() catch(e:Dynamic) {}
+			pauseLuaScripts = [];
+		}
+		#end
+		#if HSCRIPT_ALLOWED
+		if(pauseHScripts != null)
+		{
+			for (s in pauseHScripts)
+				if(s != null) try s.destroy() catch(e:Dynamic) {}
+			pauseHScripts = [];
+		}
+		#end
 		if(pauseMusic != null)
 		{
 			FlxG.sound.list.remove(pauseMusic);
@@ -497,4 +526,98 @@ class PauseState extends MusicBeatSubstate
 
 	function updateSkipTimeText()
 		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false) + ' / ' + FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false);
+
+	/** Load scripts from scripts/states/pauseMenu/ (shared + mods). */
+	function startPauseScripts():Void
+	{
+		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+		var folderKey:String = 'scripts/states/pauseMenu/';
+		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), folderKey))
+		{
+			if(folder == null || !FileSystem.exists(folder) || !FileSystem.isDirectory(folder)) continue;
+			for (file in FileSystem.readDirectory(folder))
+			{
+				var lower:String = file.toLowerCase();
+				var full:String = folder;
+				if(!full.endsWith('/') && !full.endsWith('\\')) full += '/';
+				full += file;
+				if(FileSystem.isDirectory(full)) continue;
+
+				#if LUA_ALLOWED
+				if(lower.endsWith('.lua'))
+				{
+					var rel:String = folderKey + file;
+					try
+					{
+						var script = new funkin.modding.scripting.FunkinLuaProgramming(rel);
+						pauseLuaScripts.push(script);
+						trace('[PauseState] Loaded lua: ' + rel);
+					}
+					catch(e:Dynamic)
+					{
+						// try absolute via Paths.modFolders style
+						try
+						{
+							var script = new funkin.modding.scripting.FunkinLuaProgramming(full);
+							pauseLuaScripts.push(script);
+							trace('[PauseState] Loaded lua (full): ' + full);
+						}
+						catch(e2:Dynamic)
+						{
+							trace('[PauseState] Failed lua ' + file + ': ' + e2);
+						}
+					}
+				}
+				#end
+
+				#if HSCRIPT_ALLOWED
+				if(lower.endsWith('.hx') || lower.endsWith('.hxc'))
+				{
+					try
+					{
+						var hs = new funkin.modding.scripting.FunkinHSProgramming(null, full);
+						if(hs.exists('onCreate')) hs.call('onCreate');
+						pauseHScripts.push(hs);
+						trace('[PauseState] Loaded hscript: ' + full);
+					}
+					catch(e:Dynamic)
+					{
+						trace('[PauseState] Failed hscript ' + file + ': ' + e);
+					}
+				}
+				#end
+			}
+		}
+		callPauseScripts('onCreatePost', []);
+		#end
+	}
+
+	function callPauseScripts(func:String, args:Array<Dynamic>):Void
+	{
+		if(args == null) args = [];
+		#if LUA_ALLOWED
+		if(pauseLuaScripts != null)
+		{
+			for (s in pauseLuaScripts)
+			{
+				if(s == null || s.closed) continue;
+				try s.call(func, args) catch(e:Dynamic) {}
+			}
+		}
+		#end
+		#if HSCRIPT_ALLOWED
+		if(pauseHScripts != null)
+		{
+			for (s in pauseHScripts)
+			{
+				if(s == null) continue;
+				try
+				{
+					if(s.exists(func)) s.call(func, args);
+				}
+				catch(e:Dynamic) {}
+			}
+		}
+		#end
+	}
 }
