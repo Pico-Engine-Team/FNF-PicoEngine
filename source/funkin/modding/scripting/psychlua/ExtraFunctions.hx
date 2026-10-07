@@ -277,7 +277,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (ClientPrefs.keyBinds.exists(name) || ClientPrefs.gamepadBinds.exists(name)))
+		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.justPressed(name);
 		return rawKeyboardInput(name, 'justPressed') || FlxG.gamepads.anyJustPressed(name);
 	}
@@ -286,7 +286,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (ClientPrefs.keyBinds.exists(name) || ClientPrefs.gamepadBinds.exists(name)))
+		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.pressed(name);
 		return rawKeyboardInput(name, 'pressed') || FlxG.gamepads.anyPressed(name);
 	}
@@ -295,7 +295,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (ClientPrefs.keyBinds.exists(name) || ClientPrefs.gamepadBinds.exists(name)))
+		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.justReleased(name);
 		return rawKeyboardInput(name, 'justReleased') || FlxG.gamepads.anyJustReleased(name);
 	}
@@ -312,7 +312,7 @@ class ExtraFunctions
 	static function getControlKeyName(name:String, alt:Int = 0):String
 	{
 		name = normalizeControlName(name);
-		var keys:Array<Null<FlxKey>> = ClientPrefs.keyBinds.get(name);
+		var keys:Array<Null<FlxKey>> = Preferences.keyBinds.get(name);
 		if(keys == null || keys.length < 1)
 		{
 			var rawKey:FlxKey = FlxKey.fromString(name.toUpperCase());
@@ -326,7 +326,7 @@ class ExtraFunctions
 	static function getControlGamepadName(name:String, alt:Int = 0):String
 	{
 		name = normalizeControlName(name);
-		var buttons:Array<Null<FlxGamepadInputID>> = ClientPrefs.gamepadBinds.get(name);
+		var buttons:Array<Null<FlxGamepadInputID>> = Preferences.gamepadBinds.get(name);
 		if(buttons == null || buttons.length < 1)
 			return '';
 

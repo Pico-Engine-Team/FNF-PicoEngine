@@ -5,7 +5,7 @@ class ModchartSprite extends FlxSprite
 	public var animOffsets:Map<String, Array<Float>> = new Map<String, Array<Float>>();
 	public function new(?x:Float = 0, ?y:Float = 0)
 	{
-		antialiasing = ClientPrefs.data.antialiasing;
+		antialiasing = Preferences.data.antialiasing;
 		super(x, y);
 	}
 
