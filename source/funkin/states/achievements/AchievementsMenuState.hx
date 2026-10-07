@@ -73,8 +73,8 @@ class AchievementsMenuState extends MusicBeatState
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuBGBlue'));
-		menuBG.antialiasing = ClientPrefs.data.antialiasing;
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuBGBlue'));
+		menuBG.antialiasing = Preferences.data.antialiasing;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
@@ -207,7 +207,7 @@ class AchievementsMenuState extends MusicBeatState
 		for (i in 0...pageOptions.length)
 		{
 			var option:Dynamic = pageOptions[i];
-			var hasAntialias:Bool = ClientPrefs.data.antialiasing;
+			var hasAntialias:Bool = Preferences.data.antialiasing;
 			var graphic = null;
 
 			if(option.unlocked)

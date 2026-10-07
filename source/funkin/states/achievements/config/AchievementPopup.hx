@@ -23,7 +23,7 @@ class AchievementPopup extends openfl.display.Sprite
 
 		// achievement icon
 		var graphic = null;
-		var hasAntialias:Bool = ClientPrefs.data.antialiasing;
+		var hasAntialias:Bool = Preferences.data.antialiasing;
 		var image:String = 'achievements/$achieve';
 		
 		var achievement:Achievement = null;
