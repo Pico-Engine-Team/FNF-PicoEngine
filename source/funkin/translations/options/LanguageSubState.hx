@@ -14,16 +14,16 @@ class LanguageSubState extends MusicBeatSubstate
 	{
 		super();
 
-		var bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+		var bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
 		bg.color = 0xFFea71fd;
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		bg.screenCenter();
 		add(bg);
 		add(grpLanguages);
 
-		languages.push(ClientPrefs.defaultData.language); //English (USA)
-		displayLanguages.set(ClientPrefs.defaultData.language, Language.defaultLangName);
-		var directories:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'data/language/');
+		languages.push(Preferences.defaultData.language); //English (USA)
+		displayLanguages.set(Preferences.defaultData.language, Language.defaultLangName);
+		var directories:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'language/');
 		for (directory in directories)
 		{
 			for (file in FileSystem.readDirectory(directory))
@@ -64,13 +64,13 @@ class LanguageSubState extends MusicBeatSubstate
 			return 0;
 		});
 
-		//trace(ClientPrefs.data.language);
-		curSelected = languages.indexOf(ClientPrefs.data.language);
+		//trace(Preferences.data.language);
+		curSelected = languages.indexOf(Preferences.data.language);
 		if(curSelected < 0)
 		{
-			//trace('Language not found: ' + ClientPrefs.data.language);
-			ClientPrefs.data.language = ClientPrefs.defaultData.language;
-			curSelected = Std.int(Math.max(0, languages.indexOf(ClientPrefs.data.language)));
+			//trace('Language not found: ' + Preferences.data.language);
+			Preferences.data.language = Preferences.defaultData.language;
+			curSelected = Std.int(Math.max(0, languages.indexOf(Preferences.data.language)));
 		}
 
 		for (num => lang in languages)
@@ -123,9 +123,9 @@ class LanguageSubState extends MusicBeatSubstate
 		if(controls.ACCEPT)
 		{
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
-			ClientPrefs.data.language = languages[curSelected];
-			//trace(ClientPrefs.data.language);
-			ClientPrefs.saveSettings();
+			Preferences.data.language = languages[curSelected];
+			//trace(Preferences.data.language);
+			Preferences.saveSettings();
 			Language.reloadPhrases();
 			changedLanguage = true;
 		}
