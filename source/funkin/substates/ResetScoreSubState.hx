@@ -1,8 +1,12 @@
 package funkin.substates;
 
 import funkin.data.WeekData;
-import funkin.play.Highscore;
 import funkin.data.objects.HealthIcon;
+
+import funkin.play.Highscore;
+import funkin.play.Difficulty;
+
+import funkin.utils.Paths;
 import flixel.FlxSubState;
 
 class ResetScoreSubState extends MusicBeatSubstate
@@ -17,19 +21,19 @@ class ResetScoreSubState extends MusicBeatSubstate
 	var song:String;
 	var difficulty:Int;
 	var week:Int;
+	var freeplay:Bool;
 
-	public function new(song:String, difficulty:Int, character:String, week:Int = -1)
-	{
-		this.song = song;
-		this.difficulty = difficulty;
-		this.week = week;
-
-		super();
-
-		var name:String = song;
-		if(week > -1) {
-			name = WeekData.weeksLoaded.get(WeekData.weeksList[week]).weekName;
-		}
+public function new(song:String, difficulty:Int, character:String, week:Int = -1, ?freeplay:Bool = false)
+{
+	super();
+	this.song = song;
+	this.difficulty = difficulty;
+	this.week = week;
+	this.freeplay = freeplay;
+	var name:String = song;
+	if(week > -1) {
+		name = WeekData.weeksLoaded.get(WeekData.weeksList[week]).weekName;
+	}
 		name += ' (' + Difficulty.getString(difficulty) + ')?';
 
 		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
@@ -63,6 +67,7 @@ class ResetScoreSubState extends MusicBeatSubstate
 		yesText.screenCenter(X);
 		yesText.x -= 200;
 		add(yesText);
+
 		noText = new Alphabet(0, text.y + 150, Language.getPhrase('No'), true);
 		noText.screenCenter(X);
 		noText.x += 200;
@@ -93,7 +98,12 @@ class ResetScoreSubState extends MusicBeatSubstate
 			close();
 		} else if(controls.ACCEPT) {
 			if(onYes) {
-				if(week == -1) {
+				if(freeplay) {
+					var weekData:WeekData = null;
+					if(week >= 0 && week < WeekData.weeksList.length)
+						weekData = WeekData.weeksLoaded.get(WeekData.weeksList[week]);
+					Highscore.resetSong(song, difficulty, null, weekData, true);
+				} else if(week == -1) {
 					Highscore.resetSong(song, difficulty);
 				} else {
 					Highscore.resetWeek(WeekData.weeksList[week], difficulty);
@@ -105,7 +115,8 @@ class ResetScoreSubState extends MusicBeatSubstate
 		super.update(elapsed);
 	}
 
-	function updateOptions() {
+	function updateOptions()
+	{
 		var scales:Array<Float> = [0.75, 1];
 		var alphas:Array<Float> = [0.6, 1.25];
 		var confirmInt:Int = onYes ? 1 : 0;
