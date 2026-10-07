@@ -44,10 +44,17 @@ typedef CharacterFile = {
 	@:optional var gameOverLoop:String;
 	@:optional var gameOverEnd:String;
 	@:optional var noteStyle:String;
-	@:optional var useNotestyle:Bool;
-	@:optional var useNoteStyle:Bool;
 	@:optional var renderType:String;
 	@:optional var _editor_isPlayer:Null<Bool>;
+	// New Pico character format (normalized on load)
+	@:optional var character_animations_data:Array<Dynamic>;
+	@:optional var characterNoteStyle:String;
+	@:optional var characterPositionOffsets:Array<Float>;
+	@:optional var cameraPosition:Array<Float>;
+	@:optional var characterIcon:String;
+	@:optional var characterHealthBarColor:Array<Int>;
+	@:optional var characterSingDuration:Float;
+	@:optional var characterScale:Float;
 }
 
 typedef AnimArray = {
@@ -61,9 +68,24 @@ typedef AnimArray = {
 	var offsets:Array<Int>;
 	/** Offsets quando o personagem está no lado do player (BETADCIU-style) */
 	@:optional var playerOffsets:Array<Float>;
+	// New format aliases
+	@:optional var Framerate:Int;
+	@:optional var loopd:Bool;
 }
 
-class Character extends FlxSprite {
+/**
+ * Pico Engine character — Psych API, V-Slice-inspired render pipeline.
+ *
+ * Base-game FNF splits this into SparrowCharacter / MultiSparrowCharacter /
+ * PackerCharacter / AnimateAtlasCharacter / MultiAnimateAtlasCharacter + BaseCharacter.
+ * Porting those as separate classes would break PlayState, editors and mods.
+ * Instead this single class implements the same render types:
+ *   sparrow | multisparrow | packer | animateatlas | multianimateatlas
+ *
+ * Gameplay API stays Psych-compatible: playAnim, dance, animationsArray, offsets, etc.
+ */
+class Character extends FlxSprite
+{
 	public static final DEFAULT_CHARACTER:String = 'bf-opponent';
 
 	public var animOffsets:Map<String, Array<Dynamic>>;
@@ -109,7 +131,6 @@ class Character extends FlxSprite {
 	public var gameOverLoop:String = null;
 	public var gameOverEnd:String = null;
 	public var noteStyle:String = null;
-	public var useNotestyle:Bool = false;
 	public var renderType:String = null;
 
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
@@ -175,8 +196,17 @@ class Character extends FlxSprite {
 	public function loadCharacterFile(json:Dynamic)
 	{
 		isAnimateAtlas = false;
+		// Normalize new Pico character JSON → Psych-compatible fields
+		normalizeCharacterJson(json);
+
 		var assetPath:String = getCharacterString(json, ['assetPath', 'image'], DEFAULT_CHARACTER);
-		var animationAssetPaths:String = collectAnimationAssetPaths(assetPath, cast Reflect.field(json, 'animations'));
+		// Clean double slashes (e.g. characters/bf//Boyfriend)
+		while(assetPath.indexOf('//') >= 0)
+			assetPath = assetPath.replace('//', '/');
+
+		var animsField:Dynamic = Reflect.field(json, 'animations');
+		if(animsField == null) animsField = Reflect.field(json, 'character_animations_data');
+		var animationAssetPaths:String = collectAnimationAssetPaths(assetPath, cast animsField);
 
 		// renderType: sparrow | multisparrow | animateatlas (V-Slice / Psych-compatible)
 		renderType = normalizeRenderType(getCharacterString(json, ['renderType'], null));
@@ -233,80 +263,169 @@ class Character extends FlxSprite {
 		gameOverSound = getCharacterString(json, ['gameOverSound'], null);
 		gameOverLoop = getCharacterString(json, ['gameOverLoop'], null);
 		gameOverEnd = getCharacterString(json, ['gameOverEnd'], null);
+		// noteStyle only — enable/disable is Preferences.useCharacterNoteStyle (Gameplay Settings)
 		noteStyle = getCharacterString(json, ['noteStyle'], null);
-		// PsychUICheckBox "Use NoteStyle for Character" ↔ useNotestyle
-		if(Reflect.hasField(json, 'useNotestyle') || Reflect.hasField(json, 'useNoteStyle'))
-			useNotestyle = (json.useNotestyle == true || json.useNoteStyle == true);
-		else
-			useNotestyle = (noteStyle != null && noteStyle.length > 0); // legacy: style set = enabled
-		if(!useNotestyle)
+		if(noteStyle != null && noteStyle.trim().length < 1)
 			noteStyle = null;
 		// renderType already resolved in loadCharacterFrames above
 
 		// Pixel characters keep antialiasing disabled.
 		noAntialiasing = (json.isPixel == true || json.no_antialiasing == true);
-		antialiasing = ClientPrefs.data.antialiasing ? !noAntialiasing : false;
+		antialiasing = Preferences.data.antialiasing ? !noAntialiasing : false;
 
-		// animations
-		animationsArray = json.animations;
-		if(animationsArray != null && animationsArray.length > 0) {
-			for (anim in animationsArray) {
-				normalizeAnimationData(anim);
-				var animAnim:String = '' + anim.anim;
-				var animName:String = '' + anim.name;
-				var animFps:Int = anim.fps;
-				var animLoop:Bool = !!anim.loop; //Bruh
-				var animIndices:Array<Int> = anim.indices;
-				if(animAnim == null || animAnim.length < 1 || animName == null || animName.length < 1)
-					continue;
-
-				if(!isAnimateAtlas)
-				{
-					if(animIndices != null && animIndices.length > 0)
-						animation.addByIndices(animAnim, animName, animIndices, "", animFps, animLoop);
-					else
-						animation.addByPrefix(animAnim, animName, animFps, animLoop);
-				}
-				#if flxanimate
-				else
-				{
-					if(animIndices != null && animIndices.length > 0)
-						atlas.anim.addBySymbolIndices(animAnim, animName, animIndices, animFps, animLoop);
-					else
-						atlas.anim.addBySymbol(animAnim, animName, animFps, animLoop);
-				}
-				#end
-
-				// offsets normais (opponent / default)
-				var baseOffX:Float = 0;
-				var baseOffY:Float = 0;
-				if(anim.offsets != null && anim.offsets.length > 1)
-				{
-					baseOffX = anim.offsets[0];
-					baseOffY = anim.offsets[1];
-				}
-
-				// playerOffsets (BETADCIU): offsets quando o char é o player
-				var pOff:Array<Float> = null;
-				if(Reflect.hasField(anim, 'playerOffsets') && anim.playerOffsets != null && anim.playerOffsets.length > 1)
-					pOff = [anim.playerOffsets[0], anim.playerOffsets[1]];
-
-				if(isPlayer && pOff != null)
-					addOffset(anim.anim, pOff[0], pOff[1]);
-				else
-					addOffset(anim.anim, baseOffX, baseOffY);
-
-				// guarda playerOffsets sempre (editor / troca de lado)
-				if(pOff != null)
-					addPlayerOffset(anim.anim, pOff[0], pOff[1]);
-				else
-					addPlayerOffset(anim.anim, baseOffX, baseOffY);
-			}
-		}
-		#if flxanimate
-		if(isAnimateAtlas) copyAtlasValues();
-		#end
+		// animations (renderType decides sparrow/packer/animate registration)
+		animationsArray = cast Reflect.field(json, 'animations');
+		if(animationsArray == null) animationsArray = [];
+		applyCharacterAnimations(animationsArray, true);
 		//trace('Loaded file to character ' + curCharacter);
+	}
+
+
+	/**
+	 * Map new Pico character JSON fields onto Psych-compatible ones.
+	 * New format uses character_animations_data, characterIcon, characterScale, etc.
+	 */
+	public static function normalizeCharacterJson(json:Dynamic):Void
+	{
+		if(json == null) return;
+
+		// character_animations_data → animations
+		var animsRaw:Dynamic = Reflect.field(json, 'animations');
+		if(animsRaw == null) animsRaw = Reflect.field(json, 'character_animations_data');
+		if(animsRaw != null && Std.isOfType(animsRaw, Array))
+		{
+			var out:Array<Dynamic> = [];
+			for (entry in (cast animsRaw:Array<Dynamic>))
+			{
+				if(entry == null) continue;
+				// Normalize each entry to anim/name/fps/loop/offsets/playerOffsets
+				var animId:String = '';
+				var prefix:String = '';
+				if(Reflect.hasField(entry, 'anim') && Reflect.field(entry, 'anim') != null)
+					animId = Std.string(Reflect.field(entry, 'anim'));
+				else if(Reflect.hasField(entry, 'name'))
+					animId = Std.string(Reflect.field(entry, 'name'));
+
+				if(Reflect.hasField(entry, 'prefix') && Reflect.field(entry, 'prefix') != null)
+					prefix = Std.string(Reflect.field(entry, 'prefix'));
+				else if(Reflect.hasField(entry, 'name') && Reflect.hasField(entry, 'anim'))
+					prefix = Std.string(Reflect.field(entry, 'name'));
+				else
+					prefix = animId;
+
+				var fps:Int = 24;
+				if(Reflect.hasField(entry, 'fps'))
+				{
+					var f = Std.parseFloat(Std.string(Reflect.field(entry, 'fps')));
+					if(!Math.isNaN(f) && f > 0) fps = Std.int(f);
+				}
+				else if(Reflect.hasField(entry, 'Framerate'))
+				{
+					var f2 = Std.parseFloat(Std.string(Reflect.field(entry, 'Framerate')));
+					if(!Math.isNaN(f2) && f2 > 0) fps = Std.int(f2);
+				}
+
+				var loop:Bool = false;
+				if(Reflect.hasField(entry, 'loop'))
+					loop = Reflect.field(entry, 'loop') == true;
+				else if(Reflect.hasField(entry, 'loopd?'))
+					loop = Reflect.field(entry, 'loopd?') == true;
+				else if(Reflect.hasField(entry, 'loopd'))
+					loop = Reflect.field(entry, 'loopd') == true;
+
+				var off:Array<Int> = [0, 0];
+				var offRaw:Dynamic = Reflect.field(entry, 'offsets');
+				if(Std.isOfType(offRaw, Array))
+				{
+					var oa:Array<Dynamic> = cast offRaw;
+					if(oa.length > 0) off[0] = Std.int(Std.parseFloat(Std.string(oa[0])));
+					if(oa.length > 1) off[1] = Std.int(Std.parseFloat(Std.string(oa[1])));
+				}
+
+				var pOff:Array<Float> = null;
+				var poRaw:Dynamic = Reflect.field(entry, 'playerOffsets');
+				if(poRaw == null) poRaw = Reflect.field(entry, 'Offsets-Playable');
+				if(Std.isOfType(poRaw, Array))
+				{
+					var pa:Array<Dynamic> = cast poRaw;
+					var px:Float = pa.length > 0 ? Std.parseFloat(Std.string(pa[0])) : 0;
+					var py:Float = pa.length > 1 ? Std.parseFloat(Std.string(pa[1])) : 0;
+					if(Math.isNaN(px)) px = 0;
+					if(Math.isNaN(py)) py = 0;
+					pOff = [px, py];
+				}
+
+				var indices:Array<Int> = [];
+				if(Reflect.hasField(entry, 'indices') && Std.isOfType(Reflect.field(entry, 'indices'), Array))
+				{
+					for (ix in (cast Reflect.field(entry, 'indices'):Array<Dynamic>))
+						indices.push(Std.int(Std.parseFloat(Std.string(ix))));
+				}
+
+				var animAsset:String = '';
+				if(Reflect.hasField(entry, 'assetPath') && Reflect.field(entry, 'assetPath') != null)
+					animAsset = Std.string(Reflect.field(entry, 'assetPath'));
+
+				var normalized:Dynamic = {
+					anim: animId,
+					name: prefix,
+					prefix: prefix,
+					fps: fps,
+					loop: loop,
+					offsets: off,
+					indices: indices
+				};
+				if(pOff != null) Reflect.setField(normalized, 'playerOffsets', pOff);
+				if(animAsset.length > 0) Reflect.setField(normalized, 'assetPath', animAsset);
+				out.push(normalized);
+			}
+			Reflect.setField(json, 'animations', out);
+		}
+
+		// characterNoteStyle → noteStyle
+		if(Reflect.field(json, 'noteStyle') == null && Reflect.hasField(json, 'characterNoteStyle'))
+			Reflect.setField(json, 'noteStyle', Reflect.field(json, 'characterNoteStyle'));
+
+		// characterPositionOffsets → positionOffsets
+		if(Reflect.field(json, 'positionOffsets') == null && Reflect.hasField(json, 'characterPositionOffsets'))
+			Reflect.setField(json, 'positionOffsets', Reflect.field(json, 'characterPositionOffsets'));
+
+		// cameraPosition (new) → cameraOffsets (also keep camera_position)
+		if(Reflect.field(json, 'cameraOffsets') == null)
+		{
+			if(Reflect.hasField(json, 'cameraPosition'))
+				Reflect.setField(json, 'cameraOffsets', Reflect.field(json, 'cameraPosition'));
+			else if(Reflect.hasField(json, 'camera_position'))
+				Reflect.setField(json, 'cameraOffsets', Reflect.field(json, 'camera_position'));
+		}
+
+		// characterIcon → healthicon
+		if(Reflect.field(json, 'healthicon') == null && Reflect.hasField(json, 'characterIcon'))
+			Reflect.setField(json, 'healthicon', Reflect.field(json, 'characterIcon'));
+
+		// characterHealthBarColor → healthbar_colors
+		if(Reflect.field(json, 'healthbar_colors') == null && Reflect.hasField(json, 'characterHealthBarColor'))
+			Reflect.setField(json, 'healthbar_colors', Reflect.field(json, 'characterHealthBarColor'));
+
+		// characterSingDuration → sing_duration
+		if(Reflect.field(json, 'sing_duration') == null && Reflect.hasField(json, 'characterSingDuration'))
+			Reflect.setField(json, 'sing_duration', Reflect.field(json, 'characterSingDuration'));
+
+		// characterScale → scale
+		if(Reflect.field(json, 'scale') == null && Reflect.hasField(json, 'characterScale'))
+			Reflect.setField(json, 'scale', Reflect.field(json, 'characterScale'));
+
+		// Type "BF" / "Player" etc.
+		if(Reflect.hasField(json, 'Type') && Reflect.field(json, 'characterType') == null)
+			Reflect.setField(json, 'characterType', Reflect.field(json, 'Type'));
+
+		// assetPath cleanup
+		if(Reflect.hasField(json, 'assetPath'))
+		{
+			var ap = Std.string(Reflect.field(json, 'assetPath')).trim().replace('\\\\', '/');
+			while(ap.indexOf('//') >= 0) ap = ap.replace('//', '/');
+			Reflect.setField(json, 'assetPath', ap);
+		}
 	}
 
 	static function normalizeAnimationData(anim:AnimArray):Void
@@ -321,6 +440,35 @@ class Character extends FlxSprite {
 		anim.name = animPrefix;
 		if(anim.indices == null) anim.indices = [];
 		if(anim.offsets == null) anim.offsets = [0, 0];
+
+		// New format: Framerate → fps
+		if(Reflect.hasField(anim, 'Framerate'))
+		{
+			var fr = Std.parseFloat(Std.string(Reflect.field(anim, 'Framerate')));
+			if(!Math.isNaN(fr) && fr > 0) anim.fps = Std.int(fr);
+		}
+		if(anim.fps <= 0) anim.fps = 24;
+
+		// New format: "loopd?" or loopd → loop
+		if(Reflect.hasField(anim, 'loopd?'))
+			anim.loop = Reflect.field(anim, 'loopd?') == true;
+		else if(Reflect.hasField(anim, 'loopd'))
+			anim.loop = Reflect.field(anim, 'loopd') == true;
+
+		// New format: Offsets-Playable → playerOffsets
+		if((anim.playerOffsets == null || anim.playerOffsets.length < 2) && Reflect.hasField(anim, 'Offsets-Playable'))
+		{
+			var po:Dynamic = Reflect.field(anim, 'Offsets-Playable');
+			if(Std.isOfType(po, Array))
+			{
+				var arr:Array<Dynamic> = cast po;
+				var x:Float = arr.length > 0 ? Std.parseFloat(Std.string(arr[0])) : 0;
+				var y:Float = arr.length > 1 ? Std.parseFloat(Std.string(arr[1])) : 0;
+				if(Math.isNaN(x)) x = 0;
+				if(Math.isNaN(y)) y = 0;
+				anim.playerOffsets = [x, y];
+			}
+		}
 	}
 
 	static function getAnimString(anim:Dynamic, names:Array<String>, fallback:String):String
@@ -391,10 +539,28 @@ class Character extends FlxSprite {
 	}
 
 
-	/** V-Slice / Psych-compatible render types */
+	/**
+	 * Render types aligned with base-game FNF / V-Slice, loaded through one Psych-compatible Character.
+	 * sparrow              → single XML atlas (SparrowCharacter)
+	 * multisparrow         → multiple XML atlases concatenated (MultiSparrowCharacter)
+	 * packer               → single TXT packer atlas (PackerCharacter)
+	 * animateatlas         → single Adobe Animate texture atlas (AnimateAtlasCharacter)
+	 * multianimateatlas    → multiple Animate atlases / mix with sparrow (MultiAnimateAtlasCharacter)
+	 */
 	public static final RENDER_SPARROW:String = 'sparrow';
 	public static final RENDER_MULTISPARROW:String = 'multisparrow';
+	public static final RENDER_PACKER:String = 'packer';
 	public static final RENDER_ANIMATE:String = 'animateatlas';
+	public static final RENDER_MULTIANIMATE:String = 'multianimateatlas';
+
+	public static function getSupportedRenderTypes():Array<String>
+	{
+		#if flxanimate
+		return [RENDER_SPARROW, RENDER_MULTISPARROW, RENDER_PACKER, RENDER_ANIMATE, RENDER_MULTIANIMATE];
+		#else
+		return [RENDER_SPARROW, RENDER_MULTISPARROW, RENDER_PACKER];
+		#end
+	}
 
 	public static function normalizeRenderType(value:String):String
 	{
@@ -404,51 +570,211 @@ class Character extends FlxSprite {
 
 		switch(clean)
 		{
-			case 'sparrow', 'sparrowatlas', 'spritesheet':
+			case 'sparrow', 'sparrowatlas', 'spritesheet', 'xml':
 				return RENDER_SPARROW;
-			case 'multisparrow', 'multi', 'multiatlas':
+			case 'multisparrow', 'multi', 'multiatlas', 'multiplesparrow':
 				return RENDER_MULTISPARROW;
-			case 'animateatlas', 'animate', 'atlas', 'textureatlas', 'flxanimate':
+			case 'packer', 'packeratlas', 'libgdx', 'texturepacker':
+				return RENDER_PACKER;
+			case 'animateatlas', 'animate', 'atlas', 'textureatlas', 'flxanimate', 'adobeanimate':
 				return RENDER_ANIMATE;
+			case 'multianimateatlas', 'multianimate', 'multiatlasanimate', 'multiplesanimate':
+				return RENDER_MULTIANIMATE;
 			default:
-				return clean;
+				return '';
 		}
 	}
 
 	/**
-	 * Auto-detect like Psych 1.0.4 when renderType is missing.
-	 * Animation.json folder → animateatlas; multiple asset paths → multisparrow; else sparrow.
+	 * Auto-detect when renderType is missing.
+	 * Priority: animateatlas folder → multiple paths → packer → sparrow.
 	 */
 	public static function detectRenderType(assetPath:String, animationAssetPaths:String):String
 	{
-		#if flxanimate
 		var primary:String = assetPath != null ? assetPath.trim() : '';
+		var paths:String = animationAssetPaths != null ? animationAssetPaths : assetPath;
+		var multiPaths:Bool = paths != null && paths.indexOf(',') >= 0;
+
+		#if flxanimate
+		var primaryIsAnimate:Bool = false;
 		if(primary.length > 0)
 		{
 			var animToFind:String = Paths.getPath('images/' + primary + '/Animation.json', TEXT);
 			if (#if MODS_ALLOWED FileSystem.exists(animToFind) || #end Assets.exists(animToFind))
-				return RENDER_ANIMATE;
+				primaryIsAnimate = true;
+			#if (sys || MODS_ALLOWED)
+			try
+			{
+				if(Reflect.hasField(Paths, 'hasAnimateAtlas') && Reflect.callMethod(Paths, Reflect.field(Paths, 'hasAnimateAtlas'), [primary]) == true)
+					primaryIsAnimate = true;
+			}
+			catch(e:Dynamic) {}
+			#end
 		}
-		// Paths.hasAnimateAtlas used by editor when available
-		#if (sys || MODS_ALLOWED)
-		try
+
+		// Multiple paths + any animate folder → multianimateatlas
+		if(multiPaths)
 		{
-			if(Reflect.hasField(Paths, 'hasAnimateAtlas') && Reflect.callMethod(Paths, Reflect.field(Paths, 'hasAnimateAtlas'), [primary]) == true)
-				return RENDER_ANIMATE;
+			for (part in paths.split(','))
+			{
+				var p:String = part.trim();
+				if(p.length < 1) continue;
+				var animCheck:String = Paths.getPath('images/' + p + '/Animation.json', TEXT);
+				if (#if MODS_ALLOWED FileSystem.exists(animCheck) || #end Assets.exists(animCheck))
+					return RENDER_MULTIANIMATE;
+			}
+			if(primaryIsAnimate)
+				return RENDER_MULTIANIMATE;
+			return RENDER_MULTISPARROW;
 		}
-		catch(e:Dynamic) {}
-		#end
+
+		if(primaryIsAnimate)
+			return RENDER_ANIMATE;
 		#end
 
-		var paths:String = animationAssetPaths != null ? animationAssetPaths : assetPath;
-		if(paths != null && paths.indexOf(',') >= 0)
+		if(multiPaths)
 			return RENDER_MULTISPARROW;
+
+		if(primary.length > 0)
+		{
+			try
+			{
+				var packerTxt:String = Paths.getPath('images/' + primary + '.txt', TEXT);
+				if (#if MODS_ALLOWED FileSystem.exists(packerTxt) || #end Assets.exists(packerTxt))
+					return RENDER_PACKER;
+			}
+			catch(e:Dynamic) {}
+		}
 
 		return RENDER_SPARROW;
 	}
 
+	/** Runtime/editor: change type, reload frames, re-bind animations. */
+	public function setRenderType(type:String, reapplyAnims:Bool = true):Void
+	{
+		var lastAnim:String = getAnimationName();
+		var resolved:String = normalizeRenderType(type);
+		if(resolved.length < 1)
+			resolved = detectRenderType(imageFile, collectAnimationAssetPaths(imageFile, animationsArray));
+
+		#if flxanimate
+		atlas = FlxDestroyUtil.destroy(atlas);
+		#end
+		isAnimateAtlas = false;
+
+		var multi:String = collectAnimationAssetPaths(imageFile, animationsArray);
+		loadCharacterFrames(imageFile, multi, resolved);
+
+		if(reapplyAnims)
+			applyCharacterAnimations(animationsArray, false);
+
+		if(lastAnim != null && lastAnim.length > 0 && hasAnimation(lastAnim))
+			playAnim(lastAnim, true);
+		else
+			dance();
+	}
+
 	/**
-	 * Loads frames based on renderType (Funkin V-Slice style, Psych-compatible fallback).
+	 * Register animations according to current renderType / isAnimateAtlas.
+	 * clearOffsets=true resets maps (full character load).
+	 */
+	public function applyCharacterAnimations(?anims:Array<AnimArray>, clearOffsets:Bool = false):Void
+	{
+		if(clearOffsets)
+		{
+			animOffsets = new Map<String, Array<Dynamic>>();
+			animPlayerOffsets = new Map<String, Array<Float>>();
+		}
+
+		if(anims == null)
+			anims = animationsArray;
+		if(anims == null || anims.length < 1)
+		{
+			#if flxanimate
+			if(isAnimateAtlas) copyAtlasValues();
+			#end
+			return;
+		}
+
+		if(!isAnimateAtlas && animation != null)
+		{
+			try { animation.destroyAnimations(); } catch(e:Dynamic) {}
+		}
+
+		for (anim in anims)
+		{
+			if(anim == null) continue;
+			normalizeAnimationData(anim);
+			var animAnim:String = '' + anim.anim;
+			var animName:String = '' + anim.name;
+			var animFps:Int = anim.fps;
+			var animLoop:Bool = !!anim.loop;
+			var animIndices:Array<Int> = anim.indices;
+			if(animAnim == null || animAnim.length < 1 || animName == null || animName.length < 1)
+				continue;
+
+			try
+			{
+				if(!isAnimateAtlas)
+				{
+					if(animIndices != null && animIndices.length > 0)
+						animation.addByIndices(animAnim, animName, animIndices, "", animFps, animLoop);
+					else
+						animation.addByPrefix(animAnim, animName, animFps, animLoop);
+				}
+				#if flxanimate
+				else if(atlas != null && atlas.anim != null)
+				{
+					if(animIndices != null && animIndices.length > 0)
+						atlas.anim.addBySymbolIndices(animAnim, animName, animIndices, animFps, animLoop);
+					else
+						atlas.anim.addBySymbol(animAnim, animName, animFps, animLoop);
+				}
+				#end
+			}
+			catch(e:Dynamic)
+			{
+				FlxG.log.warn('Character ' + curCharacter + ': failed anim "' + animAnim + '": ' + e);
+			}
+
+			var baseOffX:Float = 0;
+			var baseOffY:Float = 0;
+			if(anim.offsets != null && anim.offsets.length > 1)
+			{
+				baseOffX = anim.offsets[0];
+				baseOffY = anim.offsets[1];
+			}
+
+			var pOff:Array<Float> = null;
+			if(Reflect.hasField(anim, 'playerOffsets') && anim.playerOffsets != null && anim.playerOffsets.length > 1)
+				pOff = [anim.playerOffsets[0], anim.playerOffsets[1]];
+
+			if(isPlayer && pOff != null)
+				addOffset(anim.anim, pOff[0], pOff[1]);
+			else
+				addOffset(anim.anim, baseOffX, baseOffY);
+
+			if(pOff != null)
+				addPlayerOffset(anim.anim, pOff[0], pOff[1]);
+			else
+				addPlayerOffset(anim.anim, baseOffX, baseOffY);
+		}
+
+		#if flxanimate
+		if(isAnimateAtlas) copyAtlasValues();
+		#end
+	}
+
+	/**
+	 * Loads frames from renderType.
+	 * sparrow / multisparrow / packer / animateatlas
+	 */
+	/**
+	 * Loads frames by renderType (V-Slice style, single Character class for Psych).
+	 * - sparrow / multisparrow → Paths.getSparrowAtlas / getMultiAtlas
+	 * - packer → Paths.getPackerAtlas
+	 * - animateatlas → Paths.loadAnimateAtlas (FlxAnimate)
+	 * - multianimateatlas → primary Animate atlas (extra sparrow paths stay available via anim.assetPath on anims)
 	 */
 	public function loadCharacterFrames(assetPath:String, animationAssetPaths:String, type:String):Void
 	{
@@ -458,38 +784,107 @@ class Character extends FlxSprite {
 			resolved = detectRenderType(assetPath, animationAssetPaths);
 		renderType = resolved;
 
+		var primary:String = assetPath != null ? assetPath.trim() : '';
+		var multiSrc:String = (animationAssetPaths != null && animationAssetPaths.trim().length > 0)
+			? animationAssetPaths
+			: primary;
+
 		switch(resolved)
 		{
 			#if flxanimate
-			case RENDER_ANIMATE:
+			case RENDER_ANIMATE | RENDER_MULTIANIMATE:
+				atlas = FlxDestroyUtil.destroy(atlas);
 				atlas = new FlxAnimate();
 				atlas.showPivot = false;
 				try
 				{
-					Paths.loadAnimateAtlas(atlas, assetPath);
+					// Primary Animate atlas (V-Slice AnimateAtlas / MultiAnimate primary)
+					Paths.loadAnimateAtlas(atlas, primary);
 					isAnimateAtlas = true;
+					renderType = resolved;
 				}
 				catch(e:Dynamic)
 				{
-					FlxG.log.warn('Could not load animateatlas $assetPath: $e');
-					// Psych-compatible fallback to sparrow
-					renderType = RENDER_SPARROW;
-					frames = Paths.getMultiAtlas((animationAssetPaths != null ? animationAssetPaths : assetPath).split(','));
+					FlxG.log.warn('Could not load animateatlas $primary: $e — falling back');
+					isAnimateAtlas = false;
+					renderType = (multiSrc.indexOf(',') >= 0) ? RENDER_MULTISPARROW : RENDER_SPARROW;
+					loadSparrowOrMulti(multiSrc);
 				}
+
 			#end
+			case RENDER_PACKER:
+				try
+				{
+					var packFrames = Paths.getPackerAtlas(primary);
+					if(packFrames != null)
+						frames = packFrames;
+					else
+					{
+						FlxG.log.warn('Packer atlas missing for $primary — falling back to sparrow');
+						renderType = RENDER_SPARROW;
+						loadSparrowOrMulti(multiSrc);
+					}
+				}
+				catch(e:Dynamic)
+				{
+					FlxG.log.warn('Packer load failed $primary: $e');
+					renderType = RENDER_SPARROW;
+					loadSparrowOrMulti(multiSrc);
+				}
 
 			case RENDER_MULTISPARROW:
-				var multiPaths:String = (animationAssetPaths != null && animationAssetPaths.length > 0)
-					? animationAssetPaths
-					: assetPath;
-				frames = Paths.getMultiAtlas(multiPaths.split(','));
+				// Concatenate multiple sparrow sheets (like V-Slice MultiSparrowCharacter)
+				loadSparrowOrMulti(multiSrc);
+				renderType = RENDER_MULTISPARROW;
 
 			default: // sparrow
-				var pathList:String = (animationAssetPaths != null && animationAssetPaths.length > 0)
-					? animationAssetPaths
-					: assetPath;
-				// Single path still works with getMultiAtlas (Psych 1.0.4 style)
-				frames = Paths.getMultiAtlas(pathList.split(','));
+				loadSparrowOrMulti(multiSrc);
+				if(multiSrc != null && multiSrc.indexOf(',') >= 0)
+					renderType = RENDER_MULTISPARROW;
+				else
+					renderType = RENDER_SPARROW;
+		}
+	}
+
+	/**
+	 * Sparrow / MultiSparrow load.
+	 * Splits comma paths, trims empties, prefers Paths.getMultiAtlas when available.
+	 */
+	function loadSparrowOrMulti(pathList:String):Void
+	{
+		isAnimateAtlas = false;
+		var list:String = pathList != null ? pathList : '';
+		try
+		{
+			if(list.indexOf(',') >= 0)
+			{
+				var parts:Array<String> = [];
+				for (p in list.split(','))
+				{
+					var c:String = p.trim();
+					if(c.length > 0 && !parts.contains(c))
+						parts.push(c);
+				}
+				if(parts.length > 1)
+					frames = Paths.getMultiAtlas(parts);
+				else if(parts.length == 1)
+				{
+					var single = Paths.getSparrowAtlas(parts[0]);
+					frames = single != null ? single : Paths.getMultiAtlas(parts);
+				}
+			}
+			else if(list.length > 0)
+			{
+				var single = Paths.getSparrowAtlas(list);
+				if(single != null)
+					frames = single;
+				else
+					frames = Paths.getMultiAtlas([list]);
+			}
+		}
+		catch(e:Dynamic)
+		{
+			FlxG.log.warn('Sparrow/multi load failed ($list): $e');
 		}
 	}
 
