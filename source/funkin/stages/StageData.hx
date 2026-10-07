@@ -338,7 +338,7 @@ class StageData
 							var dat:Dynamic = Reflect.getProperty(data, varName);
 							if(dat != null) Reflect.setProperty(spr, varName, dat);
 						}
-						if(!ClientPrefs.data.antialiasing) spr.antialiasing = false;
+						if(!Preferences.data.antialiasing) spr.antialiasing = false;
 					}
 					else
 					{
@@ -379,7 +379,7 @@ class StageData
 		else if((filters & FREEPLAY) == FREEPLAY)
 			if(PlayState.isStoryMode) return false;
 
-		return ((ClientPrefs.isLowQuality && (filters & LOW_QUALITY) == LOW_QUALITY) ||
-			(!ClientPrefs.isLowQuality && (filters & HIGH_QUALITY) == HIGH_QUALITY));
+		return ((Preferences.isLowQuality && (filters & LOW_QUALITY) == LOW_QUALITY) ||
+			(!Preferences.isLowQuality && (filters & HIGH_QUALITY) == HIGH_QUALITY));
 	}
 }

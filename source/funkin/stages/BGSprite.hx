@@ -23,12 +23,18 @@ class BGSprite extends FlxSprite
 			active = false;
 		}
 		scrollFactor.set(scrollX, scrollY);
-		antialiasing = ClientPrefs.data.antialiasing;
+		antialiasing = Preferences.data.antialiasing;
 	}
 
 	public function dance(?forceplay:Bool = false) {
 		if(idleAnim != null) {
 			animation.play(idleAnim, forceplay);
 		}
+	}
+
+	public function makePixel() {
+		scale.set(PlayState.daPixelZoom, PlayState.daPixelZoom);
+		updateHitbox();
+		antialiasing = false;
 	}
 }
