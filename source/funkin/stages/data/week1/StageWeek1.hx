@@ -23,7 +23,7 @@ class StageWeek1 extends BaseStage
 		stageFront.updateHitbox();
 		add(stageFront);
 
-		if(!ClientPrefs.isLowQuality)
+		if(!Preferences.isLowQuality)
 		{
 			var stageLight:BGSprite = new BGSprite('', -125, -100, 0.9, 0.9);
 			stageLight.loadGraphic(Paths.image('stage_light', WEEK_ASSET_FOLDER));

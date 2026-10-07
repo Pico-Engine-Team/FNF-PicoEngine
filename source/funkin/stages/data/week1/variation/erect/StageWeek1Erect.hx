@@ -1,26 +1,22 @@
 package funkin.stages.data.week1.variation.erect;
 
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.characters.Character;
-import funkin.stages.objects.levels.week1.StageSpotlight;
-
-import lucas.vslice.FunkinTools;
 import lucas.vslice.VsliceOptions;
 import lucas.vslice.shaders.AdjustColorShader;
+
 import openfl.display.BlendMode;
 
-class StageWeek1Erect extends BaseStage
-{   
-	var peeps:BGSprite;
+class StageWeek1Erect extends BaseStage 
+{
+    var peeps:BGSprite;
+    var dadbattleBlack:BGSprite;
+	var dadbattleLight:BGSprite;
 	override function create()
 	{
-        new StageSpotlight(200,-50);
-		var bg:FlxSprite = FunkinTools.makeSolidColor(new FlxSprite(-500,-1000), 2400, 2000, 0xFF222026);
+		var bg:BGSprite = new BGSprite('erect/backDark', 729, -170);
 		add(bg);
 
-        if(!VsliceOptions.IS_LOW_QUALITY)
-        {
-            peeps = new BGSprite('erect/crowd', 682, 290,0.8,0.8,["idle"],true);
+        if(!VsliceOptions.IS_LOW_QUALITY) {
+            peeps = new BGSprite('erect/crowd', 560, 290,0.8,0.8,["Symbol 2 instance 10"],true);
             peeps.animation.curAnim.frameRate = 12;
             add(peeps);
 
@@ -29,10 +25,10 @@ class StageWeek1Erect extends BaseStage
             add(lightSmol);
         }
 
-		var stageFront:BGSprite = new BGSprite('erect/bg', -765, -247);
+		var stageFront:BGSprite = new BGSprite('erect/bg', -603, -187);
 		add(stageFront);
 
-        var server:BGSprite = new BGSprite('erect/server', -991, 205);
+        var server:BGSprite = new BGSprite('erect/server', -361, 205);
 		add(server);
 
 		if(!VsliceOptions.IS_LOW_QUALITY) {
@@ -44,12 +40,12 @@ class StageWeek1Erect extends BaseStage
             redLight.blend = BlendMode.ADD;
 			add(redLight);
 
-            var orangeLight:BGSprite = new BGSprite('erect/orangeLight', 189, -500);
+            var orangeLight:BGSprite = new BGSprite('erect/orangeLight', 189, -195);
             orangeLight.blend = BlendMode.ADD;
 			add(orangeLight);
 		}
 
-        var beamLol:BGSprite = new BGSprite('erect/lights', -847, -245,1.2,1.2);
+        var beamLol:BGSprite = new BGSprite('erect/lights', -601, -147,1.2,1.2);
 		add(beamLol);
 
         if(!VsliceOptions.IS_LOW_QUALITY) {
@@ -58,10 +54,10 @@ class StageWeek1Erect extends BaseStage
 			add(TheOneAbove);
         }
 	}
-
-    override function createPost() {
+    override function createPost()
+    {
         super.createPost();
-        if(VsliceOptions.SHADERS){
+        if(VsliceOptions.SHADERS) {
             gf.shader = makeCoolShader(-9,0,-30,-4);
             dad.shader = makeCoolShader(-32,0,-33,-23);
             boyfriend.shader = makeCoolShader(12,0,-23,7);

@@ -6,7 +6,7 @@ class StageWeek2 extends BaseStage
 	var halloweenWhite:BGSprite;
 	override function create()
 	{
-	if(ClientPrefs.data.Quality != 'Low')
+	if(Preferences.data.Quality != 'Low')
 	{
 		halloweenBG = new BGSprite('halloween_bg', -200, -100, ['halloweem bg0', 'halloweem bg lightning strike']);
 		} else {
@@ -51,7 +51,7 @@ class StageWeek2 extends BaseStage
 	function lightningStrikeShit():Void
 	{
 		FlxG.sound.play(Paths.soundRandom('thunder_', 1, 2));
-		if(ClientPrefs.data.Quality != 'Low') halloweenBG.animation.play('halloweem bg lightning strike');
+		if(Preferences.data.Quality != 'Low') halloweenBG.animation.play('halloweem bg lightning strike');
 
 		lightningStrikeBeat = curBeat;
 		lightningOffset = FlxG.random.int(8, 24);
@@ -65,7 +65,7 @@ class StageWeek2 extends BaseStage
 		if(gf != null && gf.hasAnimation('scared'))
 			gf.playAnim('scared', true);
 
-		if(ClientPrefs.data.camZooms) {
+		if(Preferences.data.camZooms) {
 			FlxG.camera.zoom += 0.015;
 			camHUD.zoom += 0.03;
 
@@ -75,7 +75,7 @@ class StageWeek2 extends BaseStage
 			}
 		}
 
-		if(ClientPrefs.data.flashing) {
+		if(Preferences.data.flashing) {
 			halloweenWhite.alpha = 0.4;
 			FlxTween.tween(halloweenWhite, {alpha: 0.5}, 0.075);
 			FlxTween.tween(halloweenWhite, {alpha: 0}, 0.25, {startDelay: 0.15});

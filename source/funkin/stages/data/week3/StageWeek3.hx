@@ -19,7 +19,7 @@ class StageWeek3 extends BaseStage
 
 	override function create()
 	{
-		if(ClientPrefs.data.Quality == 'Low') {
+		if(Preferences.data.Quality == 'Low') {
 			var bg:BGSprite = new BGSprite('philly/sky', -100, 0, 0.1, 0.1);
 			add(bg);
 		}
@@ -36,7 +36,7 @@ class StageWeek3 extends BaseStage
 		add(phillyWindow);
 		phillyWindow.alpha = 0;
 
-		if(ClientPrefs.data.Quality == 'Low') {
+		if(Preferences.data.Quality == 'Low') {
 			var streetBehind:BGSprite = new BGSprite('philly/behindTrain', -40, 50);
 			add(streetBehind);
 		}
@@ -65,7 +65,7 @@ class StageWeek3 extends BaseStage
 				phillyGlowGradient = new PhillyGlowGradient(-400, 225);
 				phillyGlowGradient.visible = false;
 				insert(members.indexOf(blammedLightsBlack) + 1, phillyGlowGradient);
-				if(!ClientPrefs.data.flashing) phillyGlowGradient.intendedAlpha = 0.7;
+				if(!Preferences.data.flashing) phillyGlowGradient.intendedAlpha = 0.7;
 
 				Paths.image('philly/particle'); //precache philly glow particle image
 				phillyGlowParticles = new FlxTypedGroup<PhillyGlowParticle>();
@@ -113,7 +113,7 @@ class StageWeek3 extends BaseStage
 						if(phillyGlowGradient.visible)
 						{
 							doFlash();
-							if(ClientPrefs.data.camZooms)
+							if(Preferences.data.camZooms)
 							{
 								FlxG.camera.zoom += 0.5;
 								camHUD.zoom += 0.1;
@@ -139,7 +139,7 @@ class StageWeek3 extends BaseStage
 						if(!phillyGlowGradient.visible)
 						{
 							doFlash();
-							if(ClientPrefs.data.camZooms)
+							if(Preferences.data.camZooms)
 							{
 								FlxG.camera.zoom += 0.5;
 								camHUD.zoom += 0.1;
@@ -151,7 +151,7 @@ class StageWeek3 extends BaseStage
 							phillyGlowGradient.visible = true;
 							phillyGlowParticles.visible = true;
 						}
-						else if(ClientPrefs.data.flashing)
+						else if(Preferences.data.flashing)
 						{
 							var colorButLower:FlxColor = color;
 							colorButLower.alphaFloat = 0.25;
@@ -159,7 +159,7 @@ class StageWeek3 extends BaseStage
 						}
 
 						var charColor:FlxColor = color;
-						if(!ClientPrefs.data.flashing) charColor.saturation *= 0.5;
+						if(!Preferences.data.flashing) charColor.saturation *= 0.5;
 						else charColor.saturation *= 0.75;
 
 						for (who in chars)
@@ -177,7 +177,7 @@ class StageWeek3 extends BaseStage
 						phillyStreet.color = color;
 
 					case 2: // spawn particles
-						if(ClientPrefs.data.Quality != 'Low')
+						if(Preferences.data.Quality != 'Low')
 						{
 							var particlesNum:Int = FlxG.random.int(8, 12);
 							var width:Float = (2000 / particlesNum);
@@ -203,7 +203,7 @@ class StageWeek3 extends BaseStage
 	function doFlash()
 	{
 		var color:FlxColor = FlxColor.WHITE;
-		if(!ClientPrefs.data.flashing) color.alphaFloat = 0.5;
+		if(!Preferences.data.flashing) color.alphaFloat = 0.5;
 		FlxG.camera.flash(color, 0.15, null, true);
 	}
 }

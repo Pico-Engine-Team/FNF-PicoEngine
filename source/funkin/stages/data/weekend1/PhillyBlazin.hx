@@ -33,11 +33,11 @@ class PhillyBlazin extends BaseStage
 			spr.updateHitbox();
 		}
 
-		if(!ClientPrefs.isLowQuality)
+		if(!Preferences.isLowQuality)
 		{
 			var skyImage = Paths.image('phillyBlazin/skyBlur');
 			scrollingSky = new FlxTiledSprite(skyImage, Std.int(skyImage.width * 1.1) + 475, Std.int(skyImage.height / 1.1), true, false);
-			scrollingSky.antialiasing = ClientPrefs.data.antialiasing;
+			scrollingSky.antialiasing = Preferences.data.antialiasing;
 			scrollingSky.setPosition(-500, -120);
 			scrollingSky.scrollFactor.set();
 			add(scrollingSky);
@@ -57,7 +57,7 @@ class PhillyBlazin extends BaseStage
 		setupScale(phillyForegroundCity);
 		add(phillyForegroundCity);
 		
-		if(!ClientPrefs.isLowQuality)
+		if(!Preferences.isLowQuality)
 		{
 			foregroundMultiply = new BGSprite('phillyBlazin/streetBlur', -600, -175, 0.0, 0.0);
 			setupScale(foregroundMultiply);
@@ -77,7 +77,7 @@ class PhillyBlazin extends BaseStage
 		abot = new ABotSpeaker(gfGroup.x, gfGroup.y + 550);
 		add(abot);
 		
-		if(ClientPrefs.data.shaders)
+		if(Preferences.data.shaders)
 			setupRainShader();
 
 		var _song = PlayState.SONG;
@@ -191,7 +191,7 @@ class PhillyBlazin extends BaseStage
 	
 	function applyLightning():Void
 	{
-		if(ClientPrefs.isLowQuality || game.endingSong) return;
+		if(Preferences.isLowQuality || game.endingSong) return;
 
 		final LIGHTNING_FULL_DURATION = 1.5;
 		final LIGHTNING_FADE_DURATION = 0.3;

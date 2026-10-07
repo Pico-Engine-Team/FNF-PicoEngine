@@ -1,27 +1,27 @@
 package funkin.stages.data.weekend1;
 
-import funkin.states.PauseState;
+import funkin.states.PauseMenuState;
 import funkin.states.GameOverState;
-import lucas.vslice.VsliceOptions;
 
-import funkin.data.shaders.RainShader;
-import funkin.data.shaders.ReflectedChar;
-import funkin.data.cutscenes.CutsceneHandler;
 import funkin.data.objects.game.notes.data.Note;
-import funkin.stages.objects.levels.weekend1.SpraycanAtlasSprite;
+import funkin.data.cutscenes.CutsceneHandler;
+import funkin.data.shaders.RainShader;
+//import funkin.stages.objects.levels.weekend1.SpraycanAtlasSprite;
 
 import flixel.FlxSubState;
+import openfl.filters.ShaderFilter;
 import flixel.addons.display.FlxTiledSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
-import openfl.filters.ShaderFilter;
+import lucas.vslice.VsliceOptions;
 
 class PhillyStreets extends BaseStage
 {
-	public var spraycan:SpraycanAtlasSprite;
-
 	var rainShader:RainShader;
 	var rainShaderStartIntensity:Float = 0;
 	var rainShaderEndIntensity:Float = 0;
+
+	var rainSndAmbience:FlxSound;
+	var carSndAmbience:FlxSound;
 
 	var scrollingSky:FlxTiledSprite;
 	var phillyTraffic:BGSprite;
@@ -30,15 +30,11 @@ class PhillyStreets extends BaseStage
 	var phillyCars2:BGSprite;
 
 	var picoFade:FlxSprite;
+	var spraycan:funkin.stages.objects.levels.weekend1.SpraycanAtlasSprite;
 	var spraycanPile:BGSprite;
 
 	var darkenable:Array<FlxSprite> = [];
-	var lightsStop:Bool = false;
-	var lastChange:Int = 0;
-	var changeInterval:Int = 8;
-	var carWaiting:Bool = false;
-	var carInterruptable:Bool = true;
-	var car2Interruptable:Bool = true;
+
 	override function create()
 	{
 		if (!VsliceOptions.IS_LOW_QUALITY)
@@ -130,6 +126,7 @@ class PhillyStreets extends BaseStage
 		if (VsliceOptions.SHADERS)
 			setupRainShader();
 
+
 		var _song = PlayState.SONG;
 		if (_song.gameOverSound == null || _song.gameOverSound.trim().length < 1)
 			GameOverState.deathSoundName = 'fnf_loss_sfx-pico';
@@ -149,7 +146,7 @@ class PhillyStreets extends BaseStage
 			{
 				case 'darnell':
 					if (!seenCutscene)
-						setStartCallback(videoCutscene.bind('weekend1/darnellCutscene'));
+						setStartCallback(videoCutscene.bind('darnellCutscene'));
 				case '2hot':
 					setEndCallback(function()
 					{
@@ -159,18 +156,16 @@ class PhillyStreets extends BaseStage
 						FlxTransitionableState.skipNextTransIn = true;
 						FlxG.camera.visible = false;
 						camHUD.visible = false;
-						game.startVideo('weekend1/2hotCutscene');
+						game.startVideo('2hotCutscene');
 					});
 			}
 		}
 	}
 
 	var noteTypes:Array<String> = [];
+
 	override function createPost()
 	{
-		reflectedBF = new ReflectedChar(boyfriend, 0.35);
-		addBehindBF(reflectedBF);
-
 		var unspawnNotes:Array<Note> = cast game.unspawnNotes;
 		for (note in unspawnNotes)
 		{
@@ -192,14 +187,24 @@ class PhillyStreets extends BaseStage
 		add(spraycanPile);
 		darkenable.push(spraycanPile);
 
+		carSndAmbience = new FlxSound().loadEmbedded(Paths.sound("ambience/car"), true);
+		carSndAmbience.volume = 0.01;
+		carSndAmbience.play(false, FlxG.random.float(0, carSndAmbience.length));
+
 		if (VsliceOptions.SHADERS)
 		{
-			// Shaders-only visual effects apply here.
+			// ? ambience
+			rainSndAmbience = new FlxSound().loadEmbedded(Paths.sound("ambience/rain"), true);
+			rainSndAmbience.volume = 0.01;
+			rainSndAmbience.play(false, FlxG.random.float(0, rainSndAmbience.length));
 		}
+
 		super.createPost();
 	}
 
+
 	var videoEnded:Bool = false;
+
 	function videoCutscene(?videoName:String = null)
 	{
 		game.inCutscene = true;
@@ -207,15 +212,12 @@ class PhillyStreets extends BaseStage
 		{
 			#if VIDEOS_ALLOWED
 			game.startVideo(videoName);
-			if (game.videoCutscene != null)
+			game.videoCutscene.finishCallback = game.videoCutscene.onSkip = function()
 			{
-				game.videoCutscene.finishCallback = game.videoCutscene.onSkip = function()
-				{
-					videoEnded = true;
-					game.videoCutscene = null;
-					videoCutscene();
-				};
-			}
+				videoEnded = true;
+				game.videoCutscene = null;
+				videoCutscene();
+			};
 			#else // Make a timer to prevent it from crashing due to sprites not being ready yet.
 			new FlxTimer().start(0.0, function(tmr:FlxTimer)
 			{
@@ -237,6 +239,7 @@ class PhillyStreets extends BaseStage
 	}
 
 	var cutsceneHandler:CutsceneHandler;
+
 	function darnellCutscene()
 	{
 		moveCamera(false);
@@ -385,14 +388,23 @@ class PhillyStreets extends BaseStage
 	override function startSong()
 	{
 		super.startSong();
+		carSndAmbience.volume = 0.1;
 	}
 
 	override function openSubState(SubState:FlxSubState)
 	{
 		super.openSubState(SubState);
-		if(!Std.isOfType(SubState, PauseState) || inCutscene) return;
-		// No ambient rain sound is used in this stage.
+			if(!Std.isOfType(SubState, PauseMenuState) || inCutscene) return;
+		if (rainSndAmbience != null) {
+			rainSndAmbience.pause();
+		}
+		if (carSndAmbience != null) {
+			carSndAmbience.pause();
+		}
 		PlayState.instance.subStateClosed.addOnce((sub) ->{
+			carSndAmbience.volume = 0.1;
+			carSndAmbience.resume();
+			rainSndAmbience.resume();
 		});
 	}
 	
@@ -410,7 +422,7 @@ class PhillyStreets extends BaseStage
 		{
 			if (didCreateCan)
 				return;
-			spraycan = new SpraycanAtlasSprite(spraycanPile.x + 530, spraycanPile.y - 240);
+			spraycan = new funkin.stages.objects.levels.weekend1.SpraycanAtlasSprite(spraycanPile.x + 530, spraycanPile.y - 240);
 			add(spraycan);
 
 			lightCanSnd = new FlxSound();
@@ -506,11 +518,27 @@ class PhillyStreets extends BaseStage
 			rainShader.intensity = remappedIntensityValue;
 			rainShader.updateViewInfo(FlxG.width, FlxG.height, FlxG.camera);
 			rainShader.update(elapsed);
+
+			if (rainSndAmbience != null)
+			{
+				rainSndAmbience.volume = Math.min(0.3, remappedIntensityValue * 2);
+			}
 		}
+
+		super.update(elapsed);
 	}
+
+	var lightsStop:Bool = false;
+	var lastChange:Int = 0;
+	var changeInterval:Int = 8;
+
+	var carWaiting:Bool = false;
+	var carInterruptable:Bool = true;
+	var car2Interruptable:Bool = true;
 
 	override function beatHit()
 	{
+		// if(curBeat % 2 == 0) abot.beatHit();
 		super.beatHit();
 
 		if (VsliceOptions.IS_LOW_QUALITY)
@@ -693,6 +721,7 @@ class PhillyStreets extends BaseStage
 	override function goodNoteHit(note:Note)
 	{
 		super.goodNoteHit(note);
+
 		switch (note.noteType)
 		{
 			case 'weekend-1-cockgun': // HE'S PULLING HIS COCK OUT
@@ -817,6 +846,7 @@ class PhillyStreets extends BaseStage
 	}
 
 	var picoFlicker:FlxTimer = null;
+
 	override function noteMiss(note:Note)
 	{
 		switch (note.noteType)
@@ -869,7 +899,6 @@ class PhillyStreets extends BaseStage
 				}
 		}
 	}
-
 	function showPicoFade()
 	{
 		if (VsliceOptions.IS_LOW_QUALITY)
@@ -907,5 +936,10 @@ class PhillyStreets extends BaseStage
 	override function destroy()
 	{
 		super.destroy();
+		// Fully stop ambiance.
+		if (rainSndAmbience != null)
+			rainSndAmbience.stop();
+		if (carSndAmbience != null)
+			carSndAmbience.stop();
 	}
 }

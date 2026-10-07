@@ -14,7 +14,7 @@ class MallXmas extends BaseStage
 		bg.updateHitbox();
 		add(bg);
 
-		if(!ClientPrefs.isLowQuality) {
+		if(!Preferences.isLowQuality) {
 			upperBoppers = new BGSprite('christmas/upperBop', -240, -90, 0.33, 0.33, ['Upper Crowd Bob']);
 			upperBoppers.setGraphicSize(Std.int(upperBoppers.width * 0.85));
 			upperBoppers.updateHitbox();
@@ -63,7 +63,7 @@ class MallXmas extends BaseStage
 
 	function everyoneDance()
 	{
-		if(!ClientPrefs.isLowQuality)
+		if(!Preferences.isLowQuality)
 			upperBoppers.dance(true);
 
 		bottomBoppers.dance(true);

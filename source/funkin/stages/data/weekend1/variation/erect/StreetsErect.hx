@@ -1,8 +1,8 @@
 package funkin.stages.data.weekend1.variation.erect;
 
-import funkin.states.PauseState;
 import funkin.data.shaders.RainShader;
 import funkin.data.cutscenes.CutsceneHandler;
+import funkin.states.PauseMenuState;
 
 import lucas.vslice.VsliceOptions;
 import lucas.vslice.shaders.AdjustColorShader;
@@ -10,16 +10,19 @@ import lucas.vslice.shaders.AdjustColorShader;
 import openfl.filters.BlurFilter;
 import openfl.filters.ShaderFilter;
 
-import flixel.FlxSubState;
 import flixel.addons.display.FlxBackdrop;
 import flixel.addons.display.FlxTiledSprite;
+import flixel.FlxSubState;
 
 class StreetsErect extends BaseStage
 {
         var rainShader:RainShader;
         var rainShaderStartIntensity:Float = 0;
         var rainShaderEndIntensity:Float = 0.01;
-
+    
+        var rainSndAmbience:FlxSound;
+        var carSndAmbience:FlxSound;
+    
         var scrollingSky:FlxTiledSprite;
         var phillyTraffic:BGSprite;
     
@@ -28,13 +31,13 @@ class StreetsErect extends BaseStage
     
         var picoFade:FlxSprite;
         var spraycanPile:BGSprite;
-        var paper:FlxSprite;
     
         var darkenable:Array<FlxSprite> = [];
 	    var colorShader:AdjustColorShader;
+    
         override function create()
         {
-            buildMist();
+        buildMist();
             if (!VsliceOptions.IS_LOW_QUALITY)
             {
                 var skyImage = Paths.image('phillyStreets/erect/phillySkybox');
@@ -139,6 +142,7 @@ class StreetsErect extends BaseStage
     
             
             var _song = PlayState.SONG;
+
             setDefaultGF('gf');
             gfGroup.y += 200;
             gfGroup.x += 50;
@@ -156,6 +160,7 @@ class StreetsErect extends BaseStage
         var mist = new FlxBackdrop(Paths.image('phillyStreets/erect/$image'), X);
 		mist.setPosition(-650, -100);
 		mist.scrollFactor.set(scrollFac, scrollFac);
+		//mist.zIndex = 1000;
         mist.blend = ADD;
 		mist.color = 0xFF5c5c5c;
 		mist.alpha = alpha;
@@ -163,7 +168,7 @@ class StreetsErect extends BaseStage
         return mist;
     }
 
-	function buildMist() // Probable will be really broken 😞
+	function buildMist()
 	{
 		mist0 = makeMist('mistMid',1.2,0.6,172); //1000
 		mist1 = makeMist('mistMid',1.1,0.6,150); //1000
@@ -175,7 +180,6 @@ class StreetsErect extends BaseStage
 		mist5 = makeMist('mistMid',0.5,1,20); //39
 		mist5.scale.set(1.1, 1.1);
 	}
-
     var _timer:Float = 0;
     function updateMist(elapsed:Float)
     {
@@ -191,26 +195,25 @@ class StreetsErect extends BaseStage
         override function createPost()
         {
             super.createPost();
+            spraycanPile = new BGSprite('SpraycanPile', 920, 1045, 1, 1);
 
-            var paper:FlxSprite = new FlxSprite(350, 608);
-            paper.frames = Paths.getSparrowAtlas("phillyStreets/erect/paper");
-            paper.animation.addByPrefix('paperBlow', 'Paper Blowing instance 1', 24, false);
-		    paper.animation.play('paperBlow');
-            paper.scrollFactor.set(1.1, 1.1);
-            add(paper);
-
-		    spraycanPile = new BGSprite('SpraycanPile', 920, 1045, 1, 1);
-		    spraycanPile.visible = false;
-		    add(spraycanPile);
-
+            add(spraycanPile);
+            darkenable.push(spraycanPile);
             add(mist0);
             add(mist1);
             add(mist2);
-            darkenable.push(spraycanPile);
-            darkenable.push(paper);
-
+    
+            carSndAmbience = new FlxSound().loadEmbedded(Paths.sound("ambience/car"), true);
+            carSndAmbience.volume = 0.01;
+            carSndAmbience.play(false, FlxG.random.float(0, carSndAmbience.length));
+    
             if (VsliceOptions.SHADERS)
             {
+                // ? ambience
+                rainSndAmbience = new FlxSound().loadEmbedded(Paths.sound("ambience/rain"), true);
+                rainSndAmbience.volume = 0.01;
+                rainSndAmbience.play(false, FlxG.random.float(0, rainSndAmbience.length));
+
                 colorShader = new AdjustColorShader();
                 colorShader.hue = -5;
                 colorShader.saturation = -40;
@@ -222,22 +225,30 @@ class StreetsErect extends BaseStage
             }
         }
     
+    
         var videoEnded:Bool = false;
         override function startSong()
         {
             super.startSong();
+            carSndAmbience.volume = 0.1;
         }
-
+    
         override function openSubState(SubState:FlxSubState)
         {
             super.openSubState(SubState);
-            if(!Std.isOfType(SubState, PauseState)) return;
-            // Temporarily stop ambiance.
-            PlayState.instance.subStateClosed.addOnce((sub) ->
-            {
+                if(!Std.isOfType(SubState, PauseMenuState)) return;
+            if (rainSndAmbience != null) {
+                rainSndAmbience.pause();
+            }
+            if (carSndAmbience != null) {
+                carSndAmbience.pause();
+            }
+            PlayState.instance.subStateClosed.addOnce((sub) ->{
+                carSndAmbience.volume = 0.1;
+                carSndAmbience.resume();
+                rainSndAmbience.resume();
             });
         }
-
 
         var casingGroup:FlxSpriteGroup;
         var gunPrepSnd:FlxSound;
@@ -249,13 +260,17 @@ class StreetsErect extends BaseStage
         {
             rainShader = new RainShader();
             rainShader.scale = FlxG.height / 200;
-            switch (songName) {
-                case 'darnell-erect':
+            switch (songName)
+            {
+                case 'darnell':
                     rainShaderStartIntensity = 0;
                     rainShaderEndIntensity = 0.1;
-                case 'lit-up-erect':
+                case 'lit-up':
                     rainShaderStartIntensity = 0.1;
                     rainShaderEndIntensity = 0.2;
+                case '2hot':
+                    rainShaderStartIntensity = 0.2;
+                    rainShaderEndIntensity = 0.4;
             }
             rainShader.intensity = rainShaderStartIntensity;
             FlxG.camera.setFilters([new ShaderFilter(rainShader)]);
@@ -274,6 +289,10 @@ class StreetsErect extends BaseStage
                 rainShader.updateViewInfo(FlxG.width, FlxG.height, FlxG.camera);
                 rainShader.update(elapsed);
     
+                if (rainSndAmbience != null)
+                {
+                    rainSndAmbience.volume = Math.min(0.3, remappedIntensityValue * 2);
+                }
             }
             updateMist(elapsed);
             super.update(elapsed);
@@ -469,7 +488,6 @@ class StreetsErect extends BaseStage
             FlxTween.quadPath(sprite, path, duration, true, {onComplete: function(_) car2Interruptable = true});
         }
 
-
         function showPicoFade()
         {
             if (VsliceOptions.IS_LOW_QUALITY)
@@ -504,9 +522,12 @@ class StreetsErect extends BaseStage
             }
         }
     
-        override function destroy()
+    override function destroy()
         {
-            super.destroy();
-            // Fully stop ambiance.
+        super.destroy();
+        if (rainSndAmbience != null)
+            rainSndAmbience.stop();
+        if (carSndAmbience != null)
+            carSndAmbience.stop();
     }
 }

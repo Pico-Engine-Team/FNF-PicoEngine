@@ -55,7 +55,7 @@ class PhillyRemix extends BaseStage
 	function godotSprite(image:String, centerX:Float, centerY:Float, scrollX:Float = 1, scrollY:Float = 1):FlxSprite
 	{
 		var spr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(image));
-		spr.antialiasing = ClientPrefs.data.antialiasing;
+		spr.antialiasing = Preferences.data.antialiasing;
 		spr.scrollFactor.set(scrollX, scrollY);
 		spr.setPosition(centerX - spr.width * 0.5, centerY - spr.height * 0.5);
 		return spr;
