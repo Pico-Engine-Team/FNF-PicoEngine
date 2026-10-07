@@ -34,7 +34,7 @@ class PlayMenuState extends MusicBeatState
 		persistentUpdate = persistentDraw = true;
 
 		magenta = new FlxSprite(-80).loadGraphic(Paths.image('menus/bg/menuDesat'));
-		magenta.antialiasing = ClientPrefs.data.antialiasing;
+		magenta.antialiasing = Preferences.data.antialiasing;
 		magenta.scrollFactor.set(0.1, 0.1);
 		magenta.setGraphicSize(Std.int(magenta.width * 1.175));
 		magenta.updateHitbox();
@@ -93,7 +93,7 @@ class PlayMenuState extends MusicBeatState
 		icon.animation.addByPrefix('idle', '$id idle', 24, true);
 		icon.animation.addByPrefix('selected', '$id selected', 24, true);
 		icon.animation.play('idle');
-		icon.antialiasing = ClientPrefs.data.antialiasing;
+		icon.antialiasing = Preferences.data.antialiasing;
 		icon.scrollFactor.set();
 		var iconScale:Float = Math.min(260 / icon.width, 58 / icon.height);
 		icon.setGraphicSize(Std.int(icon.width * iconScale));

@@ -90,7 +90,7 @@ class FreeplayMenuState extends MusicBeatState
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the FreePlayer", null);
+		DiscordClient.changePresence("In Freeplayer Menu", null);
 		#end
 
 		if(WeekData.weeksList.length < 1)
@@ -104,7 +104,7 @@ class FreeplayMenuState extends MusicBeatState
 		}
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
 
@@ -198,7 +198,7 @@ class FreeplayMenuState extends MusicBeatState
 				else showFreeplaySongList();
 			case 'Extra Songs':
 				#if PICO_ALLOWED
-				MusicBeatState.switchState(new FreeplayExtraSongsState());
+				MusicBeatState.switchState(new FreeplayExtraSongsMenuState());
 				#else
 				hideSelectMenu();
 				inSelectMenu = false;
@@ -254,7 +254,7 @@ class FreeplayMenuState extends MusicBeatState
 		freeplayBuilt = true;
 		inSelectMenu = false;
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("In the FreePlayer", null);
+		DiscordClient.changePresence("In Freeplayer menu", null);
 		#end
 
 		for (i in 0...WeekData.weeksList.length)
@@ -317,12 +317,12 @@ class FreeplayMenuState extends MusicBeatState
 		}
 		WeekData.setDirectoryFromWeek();
 
-		scoreText = new FlxText(FlxG.width * 0.7, 5, 0, "", 32);
-		scoreText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
+		scoreText = new FlxText(FlxG.width * 0.7, 5, 0, "", 24);
+		scoreText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, RIGHT);
 		scoreText.borderStyle = FlxTextBorderStyle.OUTLINE;
 		scoreText.borderSize = 1.25;
 
-		scoreBG = new FlxSprite(scoreText.x - 6, 0).makeGraphic(1, 92, 0xFF000000);
+		scoreBG = new FlxSprite(scoreText.x - 6, 0).makeGraphic(1, 140, 0xFF000000);
 		scoreBG.alpha = 0.6;
 		add(scoreBG);
 
@@ -413,7 +413,7 @@ class FreeplayMenuState extends MusicBeatState
 	function weekIsLocked(name:String):Bool
 	{
 		var leWeek:WeekData = WeekData.weeksLoaded.get(name);
-		return (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!StoryMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryMenuState.weekCompleted.get(leWeek.weekBefore)));
+		return (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!StoryModeMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryModeMenuState.weekCompleted.get(leWeek.weekBefore)));
 	}
 
 	var instPlaying:Int = -1;
@@ -500,7 +500,7 @@ class FreeplayMenuState extends MusicBeatState
 				if (FlxG.mouse.justPressed && canMove)
 				{
 					#if PICO_ALLOWED
-					MusicBeatState.switchState(new FreeplayExtraSongsState());
+					MusicBeatState.switchState(new FreeplayExtraSongsMenuState());
 					#end
 					FlxG.mouse.visible = false;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
@@ -535,17 +535,25 @@ class FreeplayMenuState extends MusicBeatState
 				else
 					diffLine = displayDiff.toUpperCase();
 			}
-			// Append variation from meta when present
+			// Variation in parentheses: < HARD > (PICO)
 			if(songs.length > 0 && curSelected >= 0 && curSelected < songs.length && songs[curSelected].hasVariations())
 			{
 				var vName:String = songs[curSelected].getCurrentVariation();
 				var vLabel:String = (vName == null || vName.length < 1) ? 'DEFAULT' : vName.toUpperCase();
-				if(diffLine.length > 0) diffLine += ' | ';
-				diffLine += (songs[curSelected].variations.length > 1 ? '< ' + vLabel + ' >' : vLabel);
+				if(diffLine.length > 0)
+					diffLine += ' (' + vLabel + ')';
+				else
+					diffLine = '(' + vLabel + ')';
 			}
-			var scoreBox:String = Rank.formatFreeplayBox(lerpScore, lerpRating, intendedMisses, diffLine);
-			if(Highscore.isOpponentModeSettingOn())
-				scoreBox = scoreBox.replace('HIGHSCORE:', 'OPP HIGHSCORE:');
+			var oppOn:Bool = false;
+			try { oppOn = Highscore.isOpponentModeSettingOn(); } catch(e:Dynamic) {}
+			var scoreBox:String = Rank.formatFreeplayBox(lerpScore, lerpRating, intendedMisses, diffLine, true);
+			if(oppOn)
+			{
+				scoreBox = scoreBox.replace('Score:', 'Opp Score:');
+				// highlight that Opponent Mod is active
+				scoreBox = scoreBox.replace('[Tab] Opponent Mod', '[Tab] Opponent Mod: ON');
+			}
 			scoreText.text = scoreBox;
 			positionHighscore();
 			
@@ -768,8 +776,8 @@ class FreeplayMenuState extends MusicBeatState
 				trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
 				Paths.freeGraphicsFromMemory();
 			}
-			LoadingScreenState.prepareToSong();
-			LoadingScreenState.loadAndSwitchState(new PlayState());
+			LoadingScreenMenuState.prepareToSong();
+			LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 			#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
 			stopMusicPlay = true;
 
@@ -1028,14 +1036,14 @@ class FreeplayMenuState extends MusicBeatState
 		if (scoreText == null || scoreBG == null)
 			return;
 
-		// Uma caixa só: HIGHSCORE + Rank, MISSES e dificuldade
-		scoreText.x = FlxG.width - scoreText.width - 6;
-		scoreText.y = 5;
+		// Score / Accuracy / Rank / Misses / Diff box (top-right)
+		scoreText.x = FlxG.width - scoreText.width - 8;
+		scoreText.y = 6;
 
 		scoreBG.scale.x = 1;
 		scoreBG.scale.y = 1;
 		scoreBG.updateHitbox();
-		scoreBG.setGraphicSize(Std.int(scoreText.width + 12), Std.int(scoreText.height + 8));
+		scoreBG.setGraphicSize(Std.int(Math.max(scoreText.width + 16, 160)), Std.int(scoreText.height + 12));
 		scoreBG.updateHitbox();
 		scoreBG.x = FlxG.width - scoreBG.width;
 		scoreBG.y = 0;
@@ -1084,17 +1092,15 @@ class FreeplayMenuState extends MusicBeatState
 	{
 		super.destroy();
 
-		FlxG.autoPause = ClientPrefs.data.autoPause;
+		FlxG.autoPause = Preferences.data.autoPause;
 		if (!FlxG.sound.music.playing && !stopMusicPlay)
 			FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
 	}
 
 	// ---------- Mod directory / category filter (Psych Online style) ----------
-
 	static inline var FILTER_ALL:String = 'ALL';
 	static inline var FILTER_BASE:String = '(Base Game)';
 	static inline var FILTER_CAT_PREFIX:String = 'CATEGORY:';
-
 	function rebuildModDirectoryList():Void
 	{
 		modDirectoryList = [FILTER_ALL, FILTER_BASE];

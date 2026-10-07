@@ -1,6 +1,6 @@
 package funkin.states.menus.freeplay;
 
-import funkin.Paths;
+import funkin.utils.Paths;
 import funkin.play.Song;
 import funkin.play.Highscore;
 import funkin.play.Difficulty;
@@ -29,7 +29,7 @@ using StringTools;
  *
  * Uses Paths.songAudioRoot = "data/extra-songs" while playing.
  */
-class FreeplayExtraSongsState extends MusicBeatState
+class FreeplayExtraSongsMenuState extends MusicBeatState
 {
 	private var songs:Array<ExtraSongData> = [];
 	private static var curSelected:Int = 0;
@@ -79,7 +79,7 @@ class FreeplayExtraSongsState extends MusicBeatState
 		#end
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
 
@@ -580,8 +580,8 @@ class FreeplayExtraSongsState extends MusicBeatState
 		Mods.currentModDirectory = song.folder ?? '';
 
 		FlxG.sound.music.volume = 0;
-		LoadingScreenState.prepareToSong();
-		LoadingScreenState.loadAndSwitchState(new PlayState());
+		LoadingScreenMenuState.prepareToSong();
+		LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 	}
 
 	function changeDiff(change:Int = 0)
