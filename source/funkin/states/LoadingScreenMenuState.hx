@@ -194,7 +194,7 @@ class LoadingScreenMenuState extends MusicBeatState
 			addBehindBar(bg);
 
 			funkay = new FlxSprite(0, 0).loadGraphic(Paths.image('funkay'));
-			funkay.antialiasing = ClientPrefs.data.antialiasing;
+			funkay.antialiasing = Preferences.data.antialiasing;
 			funkay.setGraphicSize(0, FlxG.height);
 			funkay.updateHitbox();
 			funkay.screenCenter();
@@ -202,7 +202,7 @@ class LoadingScreenMenuState extends MusicBeatState
 			FlxG.camera.fade(0xFF8A2BE2, 0.6, true);
 
 			#if PSYCH_WATERMARKS
-			loadingText = new FlxText(520, 600, 400, Language.getPhrase('now_loading', ' Loading Song', ['...']), 32);
+			loadingText = new FlxText(520, 600, 400, Language.getPhrase('now_loading', ' Loading A Song', ['...']), 32);
 			loadingText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, LEFT, OUTLINE_FAST, FlxColor.BLACK);
 			loadingText.borderSize = 2;
 			addBehindBar(loadingText);
@@ -211,20 +211,20 @@ class LoadingScreenMenuState extends MusicBeatState
 		else
 		{
 			#if PSYCH_WATERMARKS // PSYCH LOADING SCREEN
-			var bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
-			bg.antialiasing = ClientPrefs.data.antialiasing;
+			var bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+			bg.antialiasing = Preferences.data.antialiasing;
 			bg.setGraphicSize(Std.int(FlxG.width));
 			bg.color = 0xFFD16FFF;
 			bg.updateHitbox();
 			addBehindBar(bg);
 		
-			loadingText = new FlxText(520, 600, 400, Language.getPhrase('now_loading', ' Loading', ['...']), 32);
+			loadingText = new FlxText(520, 600, 400, Language.getPhrase('now_loading', 'Loading A Song', ['...']), 32);
 			loadingText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, LEFT, OUTLINE_FAST, FlxColor.BLACK);
 			loadingText.borderSize = 2;
 			addBehindBar(loadingText);
 		
 			logoKey = new FlxSprite(0, 0).loadGraphic(Paths.image('loading/icon'));
-			logoKey.antialiasing = ClientPrefs.data.antialiasing;
+			logoKey.antialiasing = Preferences.data.antialiasing;
 			logoKey.scale.set(0.75, 0.75);
 			logoKey.updateHitbox();
 			logoKey.screenCenter();
@@ -240,7 +240,7 @@ class LoadingScreenMenuState extends MusicBeatState
 			addBehindBar(bg);
 
 			funkay = new FlxSprite(0, 0).loadGraphic(Paths.image('funkay'));
-			funkay.antialiasing = ClientPrefs.data.antialiasing;
+			funkay.antialiasing = Preferences.data.antialiasing;
 			funkay.setGraphicSize(0, FlxG.height);
 			funkay.updateHitbox();
 			addBehindBar(funkay);
@@ -339,7 +339,7 @@ class LoadingScreenMenuState extends MusicBeatState
 				pessy.frames = Paths.getSparrowAtlas('loading/pessy');
 				pessy.animation.addByPrefix('run', 'run', 24, true);
 				pessy.animation.addByPrefix('spin', 'spin', 24, true);
-				pessy.antialiasing = ClientPrefs.data.antialiasing;
+				pessy.antialiasing = Preferences.data.antialiasing;
 				pessy.flipX = (logoKey.offset.x > 0);
 				pessy.visible = false;
 
@@ -445,12 +445,12 @@ class LoadingScreenMenuState extends MusicBeatState
 		intrusive = false;
 		#end
 
-		LoadingScreenState.isIntrusive = intrusive;
+		LoadingScreenMenuState.isIntrusive = intrusive;
 		_startPool();
 		loadNextDirectory();
 
 		if(intrusive)
-			return new LoadingScreenState(target, stopMusic);
+			return new LoadingScreenMenuState(target, stopMusic);
 		
 		if (stopMusic && FlxG.sound.music != null)
 			FlxG.sound.music.stop();

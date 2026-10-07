@@ -2,9 +2,11 @@ package funkin.states;
 
 import funkin.data.WeekData;
 import funkin.data.shaders.ColorSwap;
-import funkin.states.menus.StoryMenuState;
+
 import funkin.states.menus.MainMenuState;
+import funkin.states.menus.StoryModeMenuState;
 import funkin.states.menus.freeplay.FreeplayMenuState;
+
 import funkin.utils.engines.pico.EnginePerformance;
 import funkin.utils.engines.pico.AssetBootPreload;
 
@@ -107,7 +109,7 @@ class TitleMenuState extends MusicBeatState
 
 		if(!initialized)
 		{
-			ClientPrefs.loadPrefs();
+			Preferences.loadPrefs();
 			Language.reloadPhrases();
 			try { EnginePerformance.applyBootHints(); } catch(e:Dynamic) {}
 			#if !html5
@@ -132,7 +134,7 @@ class TitleMenuState extends MusicBeatState
 		}
 
 		if (FlxG.save.data.weekCompleted != null)
-			StoryMenuState.weekCompleted = FlxG.save.data.weekCompleted;
+			StoryModeMenuState.weekCompleted = FlxG.save.data.weekCompleted;
 
 		FlxG.mouse.visible = false;
 		#if FREEPLAY
@@ -201,13 +203,13 @@ class TitleMenuState extends MusicBeatState
 		{
 			logoBl.makeGraphic(1, 1, FlxColor.TRANSPARENT);
 			logoBl.visible = false;
-			trace('[TitleState] logoBumpin missing');
+			trace('[TitleMenuState] logo Bumpin Missing');
 		}
-		logoBl.antialiasing = ClientPrefs.data.antialiasing;
+		logoBl.antialiasing = Preferences.data.antialiasing;
 
 		buildTitleCharacter();
 
-		if(ClientPrefs.data.shaders)
+		if(Preferences.data.shaders)
 		{
 			swagShader = new ColorSwap();
 			if(gfDance != null) gfDance.shader = swagShader.shader;
@@ -239,7 +241,7 @@ class TitleMenuState extends MusicBeatState
 			{
 				newTitle = true;
 				titleText.animation.addByPrefix('idle', "ENTER IDLE", 24);
-				titleText.animation.addByPrefix('press', ClientPrefs.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE", 24);
+				titleText.animation.addByPrefix('press', Preferences.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE", 24);
 			}
 			else
 			{
@@ -253,7 +255,7 @@ class TitleMenuState extends MusicBeatState
 		{
 			titleText.makeGraphic(1, 1, FlxColor.TRANSPARENT);
 			titleText.visible = false;
-			trace('[TitleState] titleEnter missing');
+			trace('[TitleMenuState] titleEnter missing');
 		}
 
 		blackScreen = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
@@ -281,7 +283,7 @@ class TitleMenuState extends MusicBeatState
 		ngSpr.setGraphicSize(Std.int(Math.max(1, ngSpr.width * 0.8)));
 		ngSpr.updateHitbox();
 		ngSpr.screenCenter(X);
-		ngSpr.antialiasing = ClientPrefs.data.antialiasing;
+		ngSpr.antialiasing = Preferences.data.antialiasing;
 
 		if(gfDance != null) add(gfDance);
 		if(logoBl != null) add(logoBl);
@@ -306,7 +308,7 @@ class TitleMenuState extends MusicBeatState
 				var frames:FlxAtlasFrames = Paths.getSparrowAtlas(k);
 				if(frames != null)
 				{
-					trace('[TitleState] loaded sparrow: ' + k);
+					trace('[TitleMenuState] loaded sparrow: ' + k);
 					return frames;
 				}
 			}
@@ -326,7 +328,7 @@ class TitleMenuState extends MusicBeatState
 				var g = Paths.image(k);
 				if(g != null)
 				{
-					trace('[TitleState] loaded image: ' + k);
+					trace('[TitleMenuState] loaded image: ' + k);
 					return g;
 				}
 			}
@@ -401,7 +403,7 @@ class TitleMenuState extends MusicBeatState
 		var raw:String = readTitleCharJson(id);
 		if(raw == null || raw.trim().length < 1)
 		{
-			trace('[TitleState] No title character JSON for ' + id + ', using defaults');
+			trace('[TitleMenuState] No title character JSON for ' + id + ', using defaults');
 			characterImage = resolveCharAsset('Girlfriend-Title');
 			return;
 		}
@@ -413,7 +415,7 @@ class TitleMenuState extends MusicBeatState
 		}
 		catch(e:Dynamic)
 		{
-			trace('[TitleState] Failed to parse title character ' + id + ': ' + e);
+			trace('[TitleMenuState] Failed to parse title character ' + id + ': ' + e);
 		}
 	}
 
@@ -437,7 +439,7 @@ class TitleMenuState extends MusicBeatState
 					var t:String = Paths.getTextFromFile(path);
 					if(t != null && t.trim().length > 0)
 					{
-						trace('[TitleState] character JSON: ' + path);
+						trace('[TitleMenuState] character JSON: ' + path);
 						return t;
 					}
 				}
@@ -534,7 +536,7 @@ class TitleMenuState extends MusicBeatState
 			if(bgG != null)
 			{
 				var bg:FlxSprite = new FlxSprite().loadGraphic(bgG);
-				bg.antialiasing = ClientPrefs.data.antialiasing;
+				bg.antialiasing = Preferences.data.antialiasing;
 				add(bg);
 			}
 		}
@@ -543,7 +545,7 @@ class TitleMenuState extends MusicBeatState
 	function buildTitleCharacter():Void
 	{
 		gfDance = new FlxSprite(gfPosition.x, gfPosition.y);
-		gfDance.antialiasing = titleUseAntialiasing && ClientPrefs.data.antialiasing;
+		gfDance.antialiasing = titleUseAntialiasing && Preferences.data.antialiasing;
 
 		var tryKeys:Array<String> = [
 			characterImage,
@@ -572,7 +574,7 @@ class TitleMenuState extends MusicBeatState
 
 		if(frames == null)
 		{
-			trace('[TitleState] No title character atlas found — hiding character');
+			trace('[TitleMenuState] No title character atlas found — hiding character');
 			gfDance.makeGraphic(1, 1, FlxColor.TRANSPARENT);
 			gfDance.visible = false;
 			return;
@@ -597,7 +599,7 @@ class TitleMenuState extends MusicBeatState
 				}
 				catch(e:Dynamic)
 				{
-					trace('[TitleState] anim add failed ' + a.name + ': ' + e);
+					trace('[TitleMenuState] anim add failed ' + a.name + ': ' + e);
 				}
 			}
 
@@ -873,7 +875,7 @@ class TitleMenuState extends MusicBeatState
 						titleText.animation.play('press');
 				}
 
-				FlxG.camera.flash(ClientPrefs.data.flashing ? FlxColor.WHITE : 0x4CFFFFFF, 1);
+				FlxG.camera.flash(Preferences.data.flashing ? FlxColor.WHITE : 0x4CFFFFFF, 1);
 				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 				transitioning = true;
 
@@ -914,7 +916,7 @@ class TitleMenuState extends MusicBeatState
 								function(twn:FlxTween) {
 									FlxTransitionableState.skipNextTransIn = true;
 									FlxTransitionableState.skipNextTransOut = true;
-									MusicBeatState.switchState(new TitleState());
+									MusicBeatState.switchState(new TitleMenuState());
 								}
 							});
 							if(FlxG.sound.music != null) FlxG.sound.music.fadeOut();

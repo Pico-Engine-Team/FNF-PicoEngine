@@ -2,8 +2,8 @@ package funkin.states;
 
 import funkin.play.Song;
 import funkin.stages.StageData;
-import funkin.utils.editors.VSlice;
-import funkin.utils.editors.FileDialogHandler;
+import funkin.states.editors.components.VSlice;
+import funkin.states.editors.components.FileDialogHandler;
 import funkin.utils.engines.psych.PsychJsonPrinter;
 
 import flash.net.FileFilter;
@@ -13,10 +13,12 @@ import haxe.Exception;
 class ConvertersMenuState extends MusicBeatState
 {
 	static inline var PAGE_MAIN:String = 'main';
-	static inline var PAGE_CHARTS:String = 'charts';
-	static inline var PAGE_CHARACTERS:String = 'characters';
-	static inline var PAGE_STAGES:String = 'stages';
+	static inline var PAGE_PSYCH:String = 'psych';
+	static inline var PAGE_NIGHTMAREVISION:String = 'nightmarevision';
+	static inline var PAGE_CODENAME:String = 'codename';
+	static inline var PAGE_VSLICE:String = 'vslice';
 
+	static inline var SOURCE_PSYCH:String = 'psych';
 	static inline var SOURCE_GODOT:String = 'godot';
 	static inline var SOURCE_CODENAME:String = 'codename';
 	static inline var SOURCE_NIGHTMAREVISION:String = 'nightmarevision';
@@ -28,7 +30,9 @@ class ConvertersMenuState extends MusicBeatState
 	var title:FlxText;
 	var description:FlxText;
 	var statusText:FlxText;
-	var menuItems:Array<FlxText> = [];
+	var versionText:FlxText;
+	var grpOptions:FlxTypedGroup<Alphabet>;
+	var selectorLeft:Alphabet;
 	var options:Array<String> = [];
 	var page:String = PAGE_MAIN;
 	var curSelected:Int = 0;
@@ -38,7 +42,7 @@ class ConvertersMenuState extends MusicBeatState
 	{
 		super.create();
 		FlxG.camera.bgColor = FlxColor.BLACK;
-		bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
 		bg.scrollFactor.set();
 		bg.color = 0xFF3F4F70;
 		add(bg);
@@ -57,17 +61,107 @@ class ConvertersMenuState extends MusicBeatState
 		statusText.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.YELLOW, CENTER);
 		statusText.scrollFactor.set();
 		add(statusText);
+
+		versionText = new FlxText(12, FlxG.height - 28, FlxG.width - 24, 'Converters Menu v1.0.0  |  F1 Help  |  BACK to go back', 16);
+		versionText.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, LEFT);
+		versionText.scrollFactor.set();
+		versionText.alpha = 0.7;
+		add(versionText);
+
+		grpOptions = new FlxTypedGroup<Alphabet>();
+		add(grpOptions);
+
+		selectorLeft = new Alphabet(0, 0, '>', true);
+		selectorLeft.scrollFactor.set();
+		add(selectorLeft);
 		setPage(PAGE_MAIN, false);
 	}
+
+	var helpVisible:Bool = false;
+	var helpBg:FlxSprite;
+	var helpText:FlxText;
 
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
+		// Help overlay
+		if(FlxG.keys.justPressed.F1)
+			toggleHelp();
+
+		if(helpVisible)
+		{
+			if(controls.BACK || FlxG.keys.justPressed.F1 || controls.ACCEPT)
+				toggleHelp(false);
+			return;
+		}
+
+		// Navigation — same mapping as other menus (Controls / Psych controls)
 		if(controls.UI_UP_P) changeSelection(-1);
 		if(controls.UI_DOWN_P) changeSelection(1);
+		if(controls.UI_LEFT_P) changeSelection(-1);
+		if(controls.UI_RIGHT_P) changeSelection(1);
 		if(controls.ACCEPT) accept();
 		if(controls.BACK) back();
+
+		// Keep '>' selector locked to the selected Alphabet item while it lerps
+		if(selectorLeft != null && grpOptions != null && grpOptions.members.length > 0)
+		{
+			var item:Alphabet = grpOptions.members[curSelected];
+			if(item != null)
+			{
+				selectorLeft.x = item.x - 63;
+				selectorLeft.y = item.y;
+			}
+		}
+	}
+
+	function toggleHelp(?force:Null<Bool> = null)
+	{
+		helpVisible = force != null ? force : !helpVisible;
+		if(helpBg == null)
+		{
+			helpBg = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+			helpBg.scale.set(FlxG.width, FlxG.height);
+			helpBg.updateHitbox();
+			helpBg.scrollFactor.set();
+			helpBg.alpha = 0.82;
+			add(helpBg);
+
+			helpText = new FlxText(40, 40, FlxG.width - 80, '', 18);
+			helpText.setFormat(Paths.font('vcr.ttf'), 18, FlxColor.WHITE, LEFT);
+			helpText.scrollFactor.set();
+			add(helpText);
+		}
+		helpBg.visible = helpVisible;
+		helpText.visible = helpVisible;
+		if(helpVisible)
+		{
+			helpText.text = [
+				'CONVERTERS MENU — HELP',
+				'',
+				'How to use:',
+				'1. Choose an engine (Psych, NightmareVision, Codename, V-Slice).',
+				'2. Pick Chart / Character / Stage Converter.',
+				'3. Select the source file(s) in the file dialog.',
+				'4. Save the converted JSON where you want.',
+				'',
+				'Controls:',
+				'  UI UP / UI DOWN     — Move selection',
+				'  UI LEFT / UI RIGHT  — Move selection (same)',
+				'  ACCEPT             — Open converter / confirm',
+				'  BACK               — Go back (sub-menu → main → Editors)',
+				'  F1                 — Toggle this help',
+				'',
+				'Tips:',
+				'  Codename charts need chart.json + meta.json.',
+				'  V-Slice charts need chart.json + metadata.json.',
+				'  NightmareVision stages use data.json (+ optional script.hx).',
+				'',
+				'Press BACK or F1 to close help.'
+			].join('\n');
+			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		}
 	}
 
 	function setPage(newPage:String, playSound:Bool = true)
@@ -77,16 +171,19 @@ class ConvertersMenuState extends MusicBeatState
 
 		options = switch(page)
 		{
-			case PAGE_CHARTS: ['Godot Charts', 'Nightmare-Vision Charts', 'Codename Engine Charts', 'VSlice Charts', 'Back'];
-			case PAGE_CHARACTERS: ['Godot Characters', 'Codename Engine Characters', 'VSlice Characters', 'Forever Engine Characters', 'Back'];
-			case PAGE_STAGES: ['Codename Engine Stages', 'VSlice Stages', 'Back'];
-			default: ['Chart Converters', 'Character Converters', 'Stage Converters', 'Back'];
+			case PAGE_PSYCH: ['Chart Converter', 'Character Converter'];
+			case PAGE_NIGHTMAREVISION: ['Chart Converter', 'Character Converter', 'Stage Converter'];
+			case PAGE_CODENAME: ['Chart Converter', 'Character Converter', 'Stage Converter'];
+			case PAGE_VSLICE: ['Chart Converter', 'Character Converter', 'Stage Converter'];
+			default: ['Psych Engine', 'NightmareVision Engine', 'Codename Engine', 'VSlice Engine'];
 		}
 		title.text = switch(page)
 		{
-			case PAGE_CHARTS: 'Chart Converters';
-			case PAGE_CHARACTERS: 'Character Converters';
-			case PAGE_STAGES: 'Stage Converters';
+			case PAGE_MAIN: 'Converters Menu';
+			case PAGE_PSYCH: 'Psych Engine Converters';
+			case PAGE_NIGHTMAREVISION: 'NightmareVision Engine Converters';
+			case PAGE_CODENAME: 'Codename Engine Converters';
+			case PAGE_VSLICE: 'VSlice Engine Converters';
 			default: 'Converters Menu';
 		}
 
@@ -96,39 +193,39 @@ class ConvertersMenuState extends MusicBeatState
 
 	function rebuildMenuItems()
 	{
-		for (item in menuItems)
-		{
-			remove(item, true);
-			item.destroy();
-		}
-		menuItems = [];
-
-		var compactMenu:Bool = page == PAGE_CHARACTERS || page == PAGE_STAGES;
-		var fontSize:Int = compactMenu ? 22 : 26;
-		var startY:Float = compactMenu ? 138 : 170;
-		var gap:Float = compactMenu ? 42 : 54;
+		if(grpOptions == null) return;
+		grpOptions.clear();
 
 		for (i in 0...options.length)
 		{
-			var item = new FlxText(90, startY + i * gap, 760, options[i], fontSize);
-			item.setFormat(Paths.font('vcr.ttf'), fontSize, FlxColor.WHITE, LEFT);
-			item.scrollFactor.set();
-			menuItems.push(item);
-			add(item);
+			var item:Alphabet = new Alphabet(90, 320, options[i], true);
+			item.isMenuItem = true;
+			item.targetY = i;
+			item.snapToPosition();
+			grpOptions.add(item);
 		}
 	}
 
 	function changeSelection(change:Int = 0, playSound:Bool = true)
 	{
+		if(options.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
 		if(playSound) FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 
-		for (i in 0...menuItems.length)
+		for (i in 0...grpOptions.members.length)
 		{
-			var item = menuItems[i];
-			item.alpha = i == curSelected ? 1 : 0.45;
-			item.x = 90;
-			item.text = options[i];
+			var item:Alphabet = grpOptions.members[i];
+			item.targetY = i - curSelected;
+			item.alpha = 0.45;
+			if(i == curSelected)
+			{
+				item.alpha = 1;
+				if(selectorLeft != null)
+				{
+					selectorLeft.x = item.x - 63;
+					selectorLeft.y = item.y;
+				}
+			}
 		}
 
 		description.text = getDescription(options[curSelected]);
@@ -136,44 +233,170 @@ class ConvertersMenuState extends MusicBeatState
 
 	function getDescription(option:String):String
 	{
+		// Engine pages share option labels — resolve by current page.
+		if(option == 'Chart Converter')
+		{
+			return switch(page)
+			{
+				case PAGE_PSYCH: 'Convert a Psych Engine chart JSON into Pico Engine chart format.';
+				case PAGE_NIGHTMAREVISION: 'Convert one NightmareVision chart JSON.';
+				case PAGE_CODENAME: 'Open Codename chart.json + meta.json, then export one Pico chart JSON.';
+				case PAGE_VSLICE: 'Open a VSlice chart.json + metadata.json, then export chart JSON files.';
+				default: 'Convert a chart JSON.';
+			}
+		}
+		if(option == 'Character Converter')
+		{
+			return switch(page)
+			{
+				case PAGE_PSYCH: 'Convert a Psych Engine character JSON into Pico character format.';
+				case PAGE_NIGHTMAREVISION: 'Convert a NightmareVision character JSON into Pico character format.';
+				case PAGE_CODENAME: 'Convert one Codename Engine character XML or JSON (anims still use .png + .xml).';
+				case PAGE_VSLICE: 'Convert one Friday Night Funkin V-Slice character JSON.';
+				default: 'Convert a character file.';
+			}
+		}
+		if(option == 'Stage Converter')
+		{
+			return switch(page)
+			{
+				case PAGE_NIGHTMAREVISION: 'Convert NightmareVision stage data.json (+ optional script.hx) into Pico stage JSON.';
+				case PAGE_CODENAME: 'Convert one Codename Engine stage XML into Pico stage JSON.';
+				case PAGE_VSLICE: 'Convert one V-Slice stage JSON (props/characters format) into Pico stage JSON.';
+				default: 'Convert a stage file.';
+			}
+		}
+
 		return switch(option)
 		{
-			case 'Chart Converters': 'Convert charts.json in Different Formats';
-			case 'Character Converters': 'Convert characters.json in Different Formats';
-			case 'Stage Converters': 'Convert stages.json in Different Formats';
-			case 'Godot Charts': 'Convert one Another FNF Engine Made In Godot chart JSON.';
-			case 'Nightmare-Vision Charts': 'Convert one Nightmare-Vision chart JSON.';
-			case 'Codename Engine Charts': 'Open Codename Engine chart.json + meta.json, then export one chart JSON.';
-			case 'VSlice Charts': 'Open a VSlice chart.json and metadata.json, then export chart JSON files.';
-			case 'Godot Characters':'Convert one Another FNF Engine Made In Godot character JSON.';
-			case 'Codename Engine Characters': 'Convert one Codename Engine character XML or JSON.';
-			case 'VSlice Characters': 'Convert one Friday Night Funkin V-Slice character JSON.';
-			case 'Forever Engine Characters': 'Convert one Forever Engine character JSON.';
-			case 'Codename Engine Stages': 'Convert Stage Codename Engine';
-			case 'VSlice Stages': 'Convert one V-Slice stage JSON.';
-			default: page == PAGE_MAIN ? 'Return to the editor menu.' : 'Return to the previous converter menu.';
+			case 'Psych Engine': 'Psych Engine chart and character converters.';
+			case 'NightmareVision Engine': 'NightmareVision chart, character and stage converters.';
+			case 'Codename Engine': 'Codename Engine chart, character (XML) and stage (XML) converters.';
+			case 'VSlice Engine': 'V-Slice chart, character and stage (props) converters.';
+			default: 'Select an option. Press BACK to go back. Press F1 for Help.';
 		}
 	}
 
 	function accept()
 	{
-		switch(options[curSelected])
+		var option = options[curSelected];
+		switch(option)
 		{
-			case 'Chart Converters': setPage(PAGE_CHARTS);
-			case 'Character Converters': setPage(PAGE_CHARACTERS);
-			case 'Stage Converters': setPage(PAGE_STAGES);
-			case 'Godot Charts': openGodotChartToPico();
-			case 'Nightmare-Vision Charts': openNightmareVisionChartToPico();
-			case 'Codename Engine Charts': openCodenameChartToPico();
-			case 'VSlice Charts': openVSliceChartToPico();
-			case 'Godot Characters': openCharacter(SOURCE_GODOT);
-			case 'Codename Engine Characters': openCharacter(SOURCE_CODENAME);
-			case 'VSlice Characters': openCharacter(SOURCE_VSLICE);
-			case 'Forever Engine Characters': openCharacter(SOURCE_FOREVER);
-			case 'Codename Engine Stages': openStage(SOURCE_CODENAME);
-			case 'VSlice Stages': openStage(SOURCE_VSLICE);
+			case 'Psych Engine': setPage(PAGE_PSYCH);
+			case 'NightmareVision Engine': setPage(PAGE_NIGHTMAREVISION);
+			case 'Codename Engine': setPage(PAGE_CODENAME);
+			case 'VSlice Engine': setPage(PAGE_VSLICE);
+			case 'Chart Converter':
+				switch(page)
+				{
+					case PAGE_PSYCH: openPsychChartToPico();
+					case PAGE_NIGHTMAREVISION: openNightmareVisionChartToPico();
+					case PAGE_CODENAME: openCodenameChartToPico();
+					case PAGE_VSLICE: openVSliceChartToPico();
+					default: back();
+				}
+			case 'Character Converter':
+				switch(page)
+				{
+					case PAGE_PSYCH: openCharacter(SOURCE_PSYCH);
+					case PAGE_NIGHTMAREVISION: openCharacter(SOURCE_NIGHTMAREVISION);
+					case PAGE_CODENAME: openCharacter(SOURCE_CODENAME);
+					case PAGE_VSLICE: openCharacter(SOURCE_VSLICE);
+					default: back();
+				}
+			case 'Stage Converter':
+				switch(page)
+				{
+					case PAGE_NIGHTMAREVISION: openNightmareVisionStageToPico();
+					case PAGE_CODENAME: openStage(SOURCE_CODENAME);
+					case PAGE_VSLICE: openStage(SOURCE_VSLICE);
+					default: back();
+				}
 			default: back();
 		}
+	}
+
+	function openPsychChartToPico()
+	{
+		fileDialog.open('song.json', 'Open Psych Chart JSON', null, function()
+		{
+			try
+			{
+				var filePath = fileDialog.path.replace('\\', '/');
+				var converted = convertPsychChart(fileDialog.data, getFileBase(filePath));
+				fileDialog.save(Paths.formatToSongPath(getFileBase(filePath)) + '.json', converted, function()
+				{
+					setStatus('Saved converted Psych chart to: ${fileDialog.path}');
+				}, onCancel, onError);
+			}
+			catch(e:Exception)
+			{
+				setStatus('Failed to convert Psych chart: ${e.message}', true);
+			}
+			catch(e:Dynamic)
+			{
+				setStatus('Failed to convert Psych chart: $e', true);
+			}
+		}, onCancel, onError);
+	}
+
+	function openNightmareVisionStageToPico()
+	{
+		// NightmareVision stages: data.json (+ optional script.hx beside it)
+		fileDialog.open('data.json', 'Open NightmareVision stage data.json', [new FileFilter('Stage data JSON', 'json')], function()
+		{
+			try
+			{
+				var dataPath = fileDialog.path.replace('\\', '/');
+				var dataRaw = fileDialog.data;
+				var folder = dataPath.contains('/') ? dataPath.substr(0, dataPath.lastIndexOf('/')) : '.';
+				var scriptRaw:String = null;
+				var scriptName:String = null;
+				// Prefer script.hx next to data.json
+				for (candidate in ['script.hx', 'stage.hx', 'Script.hx'])
+				{
+					var full = folder + '/' + candidate;
+					if(FileSystem.exists(full) && !FileSystem.isDirectory(full))
+					{
+						scriptRaw = File.getContent(full);
+						scriptName = candidate;
+						break;
+					}
+				}
+
+				var converted = convertNightmareVisionStage(dataRaw, getFileBase(dataPath), scriptName);
+				var saveName = Paths.formatToSongPath(getFileBase(dataPath));
+				if(saveName == 'data' || saveName.length < 1)
+					saveName = 'stage';
+
+				fileDialog.save(saveName + '.json', converted, function()
+				{
+					var extra = scriptName != null ? ' (linked $scriptName)' : ' (no script.hx found beside data.json)';
+					setStatus('Saved converted NightmareVision stage to: ${fileDialog.path}' + extra);
+
+					// Also offer saving script.hx copy if present
+					if(scriptRaw != null && scriptName != null)
+					{
+						try
+						{
+							var outFolder = fileDialog.path.replace('\\', '/');
+							if(outFolder.contains('/'))
+								outFolder = outFolder.substr(0, outFolder.lastIndexOf('/'));
+							File.saveContent(outFolder + '/' + scriptName, scriptRaw);
+						}
+						catch(e:Dynamic) {}
+					}
+				}, onCancel, onError);
+			}
+			catch(e:Exception)
+			{
+				setStatus('Failed to convert NightmareVision stage: ${e.message}', true);
+			}
+			catch(e:Dynamic)
+			{
+				setStatus('Failed to convert NightmareVision stage: $e', true);
+			}
+		}, onCancel, onError);
 	}
 
 	function openGodotChartToPico()
@@ -412,8 +635,8 @@ class ConvertersMenuState extends MusicBeatState
 
 	function openStage(source:String)
 	{
-		var defaultName = source == SOURCE_VSLICE ? 'stage.json' : 'stage.xml';
-		var label = source == SOURCE_VSLICE ? 'Stage JSON' : 'Stage XML';
+		var defaultName = (source == SOURCE_VSLICE || source == SOURCE_NIGHTMAREVISION) ? 'stage.json' : 'stage.xml';
+		var label = (source == SOURCE_VSLICE || source == SOURCE_NIGHTMAREVISION) ? 'Stage JSON' : 'Stage XML';
 		fileDialog.open(defaultName, 'Open ${sourceLabel(source)} $label', stageFilter(source), function()
 		{
 			try
@@ -488,6 +711,8 @@ class ConvertersMenuState extends MusicBeatState
 	{
 		if(source == SOURCE_VSLICE)
 			return convertVSliceJsonStage(raw, fileName);
+		if(source == SOURCE_NIGHTMAREVISION)
+			return convertNightmareVisionStage(raw, fileName, null);
 
 		return convertXmlStage(raw, fileName, source);
 	}
@@ -572,9 +797,9 @@ class ConvertersMenuState extends MusicBeatState
 			defaultZoom: vSliceFloat(data, ['defaultZoom', 'cameraZoom', 'camZoom', 'zoom', 'stageZoom'], defaultStage.defaultZoom),
 			stageUI: vSliceString(data, ['stageUI', 'uiStyle', 'ui', 'uiType'], defaultStage.stageUI),
 
-			boyfriend: vSlicePoint(bfData, ['position', 'pos', 'offset', 'offsets'], [770, 100]),
-			girlfriend: vSlicePoint(gfData, ['position', 'pos', 'offset', 'offsets'], [400, 130]),
-			opponent: vSlicePoint(dadData, ['position', 'pos', 'offset', 'offsets'], [100, 100]),
+			boyfriend: vSlicePoint(bfData, ['position', 'pos', 'offset', 'offsets'], [770.0, 100.0]),
+			girlfriend: vSlicePoint(gfData, ['position', 'pos', 'offset', 'offsets'], [400.0, 130.0]),
+			opponent: vSlicePoint(dadData, ['position', 'pos', 'offset', 'offsets'], [100.0, 100.0]),
 			hide_girlfriend: vSliceBool(data, ['hide_girlfriend', 'hideGirlfriend', 'hideGF'], false),
 
 			camera_boyfriend: vSlicePoint(bfData, ['cameraOffsets', 'cameraOffset', 'camera_position', 'cameraPosition', 'camera', 'cam', 'camOffset'], defaultStage.camera_boyfriend),
@@ -610,11 +835,12 @@ class ConvertersMenuState extends MusicBeatState
 		var animated = !isSquare && (typeName.contains('animated') || typeName == 'sparrow' || animations.length > 0 || vSliceBool(data, ['animated'], false));
 		var type = isSquare ? 'square' : (animated ? 'animatedSprite' : 'sprite');
 
+		var pos = vSlicePoint(data, ['position', 'pos'], [0, 0]);
 		var obj:Dynamic = {
 			type: type,
 			name: name,
-			x: vSlicePoint(data, ['position', 'pos'], [0, 0])[0],
-			y: vSlicePoint(data, ['position', 'pos'], [0, 0])[1],
+			x: pos[0],
+			y: pos[1],
 			scale: vSlicePair(data, ['scale'], ['scaleX', 'sx'], ['scaleY', 'sy'], [1, 1]),
 			scroll: vSlicePair(data, ['scroll', 'scrollFactor', 'parallax'], ['scrollX', 'scrollFactorX', 'parallaxX'], ['scrollY', 'scrollFactorY', 'parallaxY'], [1, 1]),
 			alpha: vSliceFloat(data, ['alpha', 'opacity'], 1),
@@ -622,6 +848,10 @@ class ConvertersMenuState extends MusicBeatState
 			color: normalizeStageColor(vSliceString(data, ['color', 'tint'], 'FFFFFF')),
 			filters: vSliceStageFilters(data)
 		};
+		if(vSliceHasAny(data, ['zIndex', 'z', 'depth']))
+			Reflect.setField(obj, 'zIndex', Std.int(vSliceFloat(data, ['zIndex', 'z', 'depth'], 0)));
+		if(vSliceHasAny(data, ['isPixel', 'pixel', 'isPixelStage']))
+			Reflect.setField(obj, 'isPixel', vSliceBool(data, ['isPixel', 'pixel', 'isPixelStage'], false));
 
 		if(type != 'square')
 		{
@@ -666,6 +896,87 @@ class ConvertersMenuState extends MusicBeatState
 		return PsychJsonPrinter.print(songData, ['sectionNotes', 'events']);
 	}
 
+	public static function convertPsychChart(raw:String, fileName:String):String
+	{
+		// Psych chart is already close to Pico — normalize song wrapper + keep notes/events.
+		var parsed:Dynamic = Json.parse(raw);
+		if(parsed == null)
+			throw new Exception('Could not parse Psych chart JSON.');
+
+		var songData:Dynamic = Reflect.hasField(parsed, 'song') ? Reflect.field(parsed, 'song') : parsed;
+		if(songData == null)
+			throw new Exception('Psych chart is missing song data.');
+
+		// Ensure song name
+		if(!Reflect.hasField(songData, 'song') || Std.string(Reflect.field(songData, 'song')).trim().length < 1)
+			Reflect.setField(songData, 'song', fileName);
+
+		return PsychJsonPrinter.print(songData, ['sectionNotes', 'events', 'notes']);
+	}
+
+	/** NightmareVision stage: data.json (+ optional script.hx name). */
+	public static function convertNightmareVisionStage(raw:String, fileName:String, scriptName:String):String
+	{
+		var data:Dynamic = Json.parse(raw);
+		if(data == null)
+			throw new Exception('Could not parse NightmareVision stage data.json.');
+
+		var defaultStage = StageData.dummy();
+		var bfPos = parsePoint(optionalField(data, ['boyfriend', 'bf', 'player']), [770.0, 100.0]);
+		var gfPos = parsePoint(optionalField(data, ['girlfriend', 'gf']), [400.0, 130.0]);
+		var dadPos = parsePoint(optionalField(data, ['opponent', 'dad', 'enemy']), [100.0, 100.0]);
+		var camBf = parsePoint(optionalField(data, ['camera_boyfriend', 'cameraBoyfriend', 'bfCamera']), defaultStage.camera_boyfriend);
+		var camDad = parsePoint(optionalField(data, ['camera_opponent', 'cameraOpponent', 'dadCamera']), defaultStage.camera_opponent);
+		var camGf = parsePoint(optionalField(data, ['camera_girlfriend', 'cameraGirlfriend', 'gfCamera']), defaultStage.camera_girlfriend);
+
+		var stage:Dynamic = {
+			directory: vSliceString(data, ['directory', 'folder', 'assetFolder', 'library', 'week'], defaultStage.directory),
+			defaultZoom: vSliceFloat(data, ['defaultZoom', 'cameraZoom', 'camZoom', 'zoom', 'stageZoom'], defaultStage.defaultZoom),
+			stageUI: vSliceString(data, ['stageUI', 'uiStyle', 'ui', 'uiType'], defaultStage.stageUI),
+
+			boyfriend: bfPos != null ? bfPos : [770.0, 100.0],
+			girlfriend: gfPos != null ? gfPos : [400.0, 130.0],
+			opponent: dadPos != null ? dadPos : [100.0, 100.0],
+			hide_girlfriend: vSliceBool(data, ['hide_girlfriend', 'hideGirlfriend', 'hideGF'], false),
+
+			camera_boyfriend: camBf != null ? camBf : defaultStage.camera_boyfriend,
+			camera_opponent: camDad != null ? camDad : defaultStage.camera_opponent,
+			camera_girlfriend: camGf != null ? camGf : defaultStage.camera_girlfriend,
+			camera_speed: vSliceFloat(data, ['camera_speed', 'cameraSpeed', 'camSpeed', 'followSpeed'], defaultStage.camera_speed),
+
+			_editorMeta: {
+				boyfriend: 'bf',
+				gf: 'gf',
+				dad: 'dad'
+			}
+		};
+
+		if(vSliceHasAny(data, ['isPixelStage', 'pixelStage', 'isPixel']))
+			Reflect.setField(stage, 'isPixelStage', vSliceBool(data, ['isPixelStage', 'pixelStage', 'isPixel'], false));
+
+		// Z-index from NV data.json
+		var objects:Array<Dynamic> = [];
+		appendStageCharacterObjects(objects);
+		// Stamp zIndex onto character objects when provided
+		var zMap:Map<String, Int> = [
+			'dad' => Std.int(vSliceFloat(data, ['dadZIndex', 'opponentZIndex'], 200)),
+			'boyfriend' => Std.int(vSliceFloat(data, ['bfZIndex', 'boyfriendZIndex'], 300)),
+			'gf' => Std.int(vSliceFloat(data, ['gfZIndex', 'girlfriendZIndex'], 100))
+		];
+		for (obj in objects)
+		{
+			var t = Std.string(Reflect.field(obj, 'type'));
+			if(zMap.exists(t))
+				Reflect.setField(obj, 'zIndex', zMap.get(t));
+		}
+		Reflect.setField(stage, 'objects', objects);
+
+		if(scriptName != null && scriptName.trim().length > 0)
+			Reflect.setField(stage, 'script', scriptName.trim());
+
+		return PsychJsonPrinter.print(stage, ['boyfriend', 'girlfriend', 'opponent', 'camera_boyfriend', 'camera_opponent', 'camera_girlfriend', 'scale', 'scroll', 'offsets', 'indices']);
+	}
+
 	public static function convertNightmareVisionChart(raw:String, fileName:String):String
 	{
 		var songData = parseNightmareVisionChart(raw, fileName);
@@ -674,9 +985,29 @@ class ConvertersMenuState extends MusicBeatState
 
 	static function parseGodotChart(raw:String, fileName:String):SwagSong
 	{
-		var songData:SwagSong = Song.parseJSON(raw, fileName);
+		var songData:SwagSong = null;
+		try { songData = Song.parseJSON(raw, fileName); } catch(e:Dynamic) { songData = null; }
 		if(songData == null || songData.notes == null)
-			throw new Exception('File is not a valid Godot chart.');
+		{
+			// Fallback: raw Psych-like / Godot-wrapped JSON
+			try
+			{
+				var parsed:Dynamic = Json.parse(raw);
+				if(parsed != null)
+				{
+					var root:Dynamic = Reflect.hasField(parsed, 'song') ? Reflect.field(parsed, 'song') : parsed;
+					if(root != null && (Reflect.hasField(root, 'notes') || Reflect.hasField(root, 'sectionNotes')))
+					{
+						songData = cast root;
+						if(songData.notes == null && Reflect.hasField(root, 'sectionNotes'))
+							songData.notes = cast Reflect.field(root, 'sectionNotes');
+					}
+				}
+			}
+			catch(e2:Dynamic) {}
+		}
+		if(songData == null || songData.notes == null)
+			throw new Exception('File is not a valid Godot/Psych chart. Expected JSON with song.notes sections.');
 
 		if(songData.song == null || songData.song.trim().length < 1)
 			songData.song = getReadableSongName(fileName);
@@ -689,9 +1020,9 @@ class ConvertersMenuState extends MusicBeatState
 		if(!Reflect.hasField(songData, 'bpm') || Reflect.field(songData, 'bpm') == null)
 			songData.bpm = firstSectionBpm(songData.notes, 100);
 
-		songData.player1 = normalizeGodotChartCharacter(songData.player1, 'bf');
-		songData.player2 = normalizeGodotChartCharacter(songData.player2, 'dad');
-		songData.gfVersion = normalizeGodotChartCharacter(songData.gfVersion, 'gf');
+		songData.player = normalizeGodotChartCharacter(songData.player, 'bf');
+		songData.girlfriend = normalizeGodotChartCharacter(songData.girlfriend, 'gf');
+		songData.opponent = normalizeGodotChartCharacter(songData.opponent, 'dad');
 		if(songData.stage != null && songData.stage.trim().length > 0)
 			songData.stage = normalizeGodotChartStage(songData.stage);
 		else
@@ -739,9 +1070,9 @@ class ConvertersMenuState extends MusicBeatState
 			needsVoices: codenameChartBool(meta, ['needsVoices', 'needVoices', 'hasVoices', 'voices'], true),
 			speed: codenameChartFloat(chart, ['scrollSpeed', 'speed'], codenameChartFloat(meta, ['scrollSpeed', 'speed'], 1)),
 			offset: codenameChartFloat(meta, ['offset', 'songOffset'], 0),
-			player1: normalizeGodotChartCharacter(codenameChartString(meta, ['player1', 'player', 'bf', 'boyfriend'], 'bf'), 'bf'),
-			player2: normalizeGodotChartCharacter(codenameChartString(meta, ['player2', 'opponent', 'dad'], 'dad'), 'dad'),
-			gfVersion: normalizeGodotChartCharacter(codenameChartString(meta, ['gfVersion', 'girlfriend', 'gf'], 'gf'), 'gf'),
+			player: normalizeGodotChartCharacter(codenameChartString(meta, ['player', 'bf', 'boyfriend'], 'bf'), 'bf'),
+			girlfriend: normalizeGodotChartCharacter(codenameChartString(meta, ['girlfriend', 'gf'], 'gf'), 'gf'),
+			opponent: normalizeGodotChartCharacter(codenameChartString(meta, ['opponent', 'dad'], 'dad'), 'dad'),
 			stage: normalizeGodotChartStage(codenameChartString(chart, ['stage', 'stageName'], codenameChartString(meta, ['stage', 'stageName'], 'stage'))),
 			format: 'psych_v1_codename_convert'
 		};
@@ -758,9 +1089,9 @@ class ConvertersMenuState extends MusicBeatState
 				{
 					switch(lineKind)
 					{
-						case 'player': converted.player1 = normalizeGodotChartCharacter(lineCharacter, converted.player1);
-						case 'gf': converted.gfVersion = normalizeGodotChartCharacter(lineCharacter, converted.gfVersion);
-						default: converted.player2 = normalizeGodotChartCharacter(lineCharacter, converted.player2);
+						case 'player': converted.player = normalizeGodotChartCharacter(lineCharacter, converted.player);
+						case 'gf': converted.girlfriend = normalizeGodotChartCharacter(lineCharacter, converted.girlfriend);
+						default: converted.opponent = normalizeGodotChartCharacter(lineCharacter, converted.opponent);
 					}
 				}
 
@@ -789,7 +1120,48 @@ class ConvertersMenuState extends MusicBeatState
 		if(converted.notes.length < 1)
 			converted.notes.push(makeCodenameChartSection());
 
+		finalizeCodenameSections(converted);
 		return converted;
+	}
+
+	/** Fix camera focus: opponent/GF-only sections get mustHitSection=false and lanes remapped. */
+	static function finalizeCodenameSections(song:SwagSong):Void
+	{
+		if(song == null || song.notes == null) return;
+		for (section in song.notes)
+		{
+			if(section == null || section.sectionNotes == null) continue;
+			var hasPlayer:Bool = false;
+			var hasOpponent:Bool = false;
+			for (n in section.sectionNotes)
+			{
+				if(n == null || !Std.isOfType(n, Array)) continue;
+				var arr:Array<Dynamic> = cast n;
+				if(arr.length < 2) continue;
+				var nd:Int = Std.int(codenameChartToFloat(arr[1], 0));
+				if(nd >= 4) hasOpponent = true;
+				else hasPlayer = true;
+			}
+
+			// Opponent/GF only → camera on opponent, remap 4-7 → 0-3
+			if(hasOpponent && !hasPlayer)
+			{
+				section.mustHitSection = false;
+				for (n in section.sectionNotes)
+				{
+					if(n == null || !Std.isOfType(n, Array)) continue;
+					var arr:Array<Dynamic> = cast n;
+					if(arr.length < 2) continue;
+					var nd:Int = Std.int(codenameChartToFloat(arr[1], 0));
+					if(nd >= 4) arr[1] = nd - 4;
+					else arr[1] = nd + 4;
+				}
+			}
+			else
+			{
+				section.mustHitSection = true;
+			}
+		}
 	}
 
 	static function addCodenameChartNote(song:SwagSong, note:Dynamic, lineKind:String, bpm:Float):Void
@@ -798,15 +1170,22 @@ class ConvertersMenuState extends MusicBeatState
 		var lane:Int = codenameChartNoteLane(note);
 		if(lane < 0) return;
 
+		// Psych with mustHitSection=true:
+		//   noteData 0-3 = player side, 4-7 = opponent side
 		var noteData:Int = lane % 4;
 		switch(lineKind)
 		{
-			case 'player': noteData += 4;
-			case 'gf': noteData += 8;
+			case 'player':
+				// player stays 0-3
+			case 'gf':
+				// GF sits on opponent side of the grid (4-7) + gfSection
+				noteData += 4;
 			default:
+				// opponent 4-7
+				noteData += 4;
 		}
 
-		var sustain:Float = codenameChartNoteSustain(note);
+		var sustain:Float = codenameChartNoteSustain(note, bpm);
 		var noteType:String = codenameChartNoteType(note);
 		var noteDataArray:Array<Dynamic> = [strumTime, noteData, sustain];
 		if(noteType.length > 0) noteDataArray.push(noteType);
@@ -904,14 +1283,29 @@ class ConvertersMenuState extends MusicBeatState
 		return Std.int(codenameChartFloat(note, ['id', 'lane', 'data', 'noteData', 'direction'], 0));
 	}
 
-	static function codenameChartNoteSustain(note:Dynamic):Float
+	static function codenameChartNoteSustain(note:Dynamic, bpm:Float = 100):Float
 	{
+		var raw:Float = 0;
 		if(Std.isOfType(note, Array))
 		{
 			var arr:Array<Dynamic> = cast note;
-			return arr.length > 2 ? codenameChartToFloat(arr[2], 0) : 0;
+			raw = arr.length > 2 ? codenameChartToFloat(arr[2], 0) : 0;
 		}
-		return codenameChartFloat(note, ['length', 'sustainLength', 'duration', 'hold'], 0);
+		else
+		{
+			raw = codenameChartFloat(note, ['sustainLength', 'length', 'sLen', 'slen', 'duration', 'hold', 'sus'], 0);
+		}
+		if(raw <= 0) return 0;
+
+		// Codename often stores sustain in steps; if value is small treat as steps → ms
+		// Heuristic: values under 200 are likely steps/beats, not milliseconds.
+		if(raw < 200)
+		{
+			var stepMs:Float = (60000 / (bpm > 0 ? bpm : 100)) / 4;
+			// Prefer steps (Codename default); if field name was beat-like, still close enough
+			return raw * stepMs;
+		}
+		return raw;
 	}
 
 	static function codenameChartNoteType(note:Dynamic):String
@@ -1197,11 +1591,12 @@ class ConvertersMenuState extends MusicBeatState
 			healthicon: iconField(godot, ['HealthIcon', 'healthIcon'], baseName),
 			position: [0, 0],
 			camera_position: intPoint(camera),
-			flip_x: godotFlipX != isPlayer,
+			flip_x: godotFlipX,
 			no_antialiasing: false,
 			healthbar_colors: color,
 			vocals_file: '',
-			characterType: isPlayer ? 'Player' : 'Opponent'
+			characterType: isPlayer ? 'Player' : 'Opponent',
+			_editor_isPlayer: isPlayer
 		});
 	}
 
@@ -1226,6 +1621,8 @@ class ConvertersMenuState extends MusicBeatState
 			animations.push(makeAnimation(anim, prefix, offsets, fps, loop));
 		}
 
+		var characterType:String = isPlayer ? 'Player' : predictCharacterType(baseName);
+		// Preserve visual flipX from XML; Psych also stores editor player flag separately
 		return printCharacter({
 			animations: animations,
 			image: normalizeAssetPath(xmlString(root, 'sprite', baseName), baseName),
@@ -1234,11 +1631,12 @@ class ConvertersMenuState extends MusicBeatState
 			healthicon: xmlString(root, 'icon', baseName),
 			position: [Std.int(xmlFloat(root, 'x', 0)), Std.int(xmlFloat(root, 'y', 0))],
 			camera_position: [Std.int(xmlFloat(root, 'camx', 0)), Std.int(xmlFloat(root, 'camy', 0))],
-			flip_x: visualFlipX != isPlayer,
+			flip_x: visualFlipX,
 			no_antialiasing: !xmlBool(root, 'antialiasing', true),
 			healthbar_colors: colorArrayField(xmlString(root, 'color', '#A1A1A1')),
 			vocals_file: '',
-			characterType: isPlayer ? 'Player' : predictCharacterType(baseName)
+			characterType: characterType,
+			_editor_isPlayer: isPlayer || characterType == 'Player'
 		});
 	}
 
@@ -1266,7 +1664,7 @@ class ConvertersMenuState extends MusicBeatState
 		}
 
 		var image = normalizeAssetPath(stringField(data, ['image', 'assetPath', 'sprite', 'spritesheet', 'texture', 'asset'], baseName), baseName);
-		var visualFlipX = boolField(data, ['flipX', 'FlipX'], boolField(data, ['flip_x'], false) != isPlayer);
+		var visualFlipX = boolField(data, ['flipX', 'FlipX', 'flip_x'], false);
 		var position = pointField(data, source == SOURCE_VSLICE ? ['offsets', 'position', 'globalOffset'] : ['position', 'globalOffset', 'positionOffset', 'offsets'], [0, 0]);
 		var camera = pointField(data, ['camera_position', 'cameraPosition', 'cameraOffsets', 'cameraOffset', 'camera'], [0, 0]);
 
@@ -1278,11 +1676,12 @@ class ConvertersMenuState extends MusicBeatState
 			healthicon: iconField(data, ['healthicon', 'healthIcon', 'icon', 'iconName'], baseName),
 			position: intPoint(position),
 			camera_position: intPoint(camera),
-			flip_x: visualFlipX != isPlayer,
+			flip_x: visualFlipX,
 			no_antialiasing: boolField(data, ['no_antialiasing', 'noAntialiasing'], !boolField(data, ['antialiasing', 'antialias'], true)),
 			healthbar_colors: colorField(data, ['healthbar_colors', 'healthBarColor', 'healthbarColor', 'HealthBarColor', 'healthColor', 'color'], [161, 161, 161]),
 			vocals_file: stringField(data, ['vocals_file', 'vocalsFile'], ''),
-			characterType: characterType
+			characterType: characterType,
+			_editor_isPlayer: isPlayer || characterType == 'Player'
 		});
 	}
 
@@ -1691,7 +2090,7 @@ class ConvertersMenuState extends MusicBeatState
 			return true;
 
 		var typeName = Paths.formatToSongPath(xmlStringAny(xml, ['type', 'kind'], ''));
-		return ['sprite', 'animatedsprite', 'animated-sprite', 'sparrow', 'object', 'prop', 'image', 'graphic', 'background', 'foreground', 'square', 'rect', 'solid'].contains(typeName);
+		return ['sprite', 'animatedsprite', 'animated-sprite', 'sparrow', 'object', 'prop', 'image', 'graphic', 'background', 'foreground', 'square', 'rect', 'solid', 'beat', 'loop', 'onbeat', 'dance', 'none'].contains(typeName);
 	}
 
 	static function convertXmlStageObject(xml:Xml, objects:Array<Dynamic>, index:Int):Dynamic
@@ -1699,7 +2098,14 @@ class ConvertersMenuState extends MusicBeatState
 		var nodeName = Paths.formatToSongPath(xml.nodeName);
 		var typeName = Paths.formatToSongPath(xmlStringAny(xml, ['type', 'kind'], nodeName));
 		var isSquare = ['square', 'rect', 'solid'].contains(typeName) || ['square', 'rect', 'solid'].contains(nodeName);
-		var animated = !isSquare && (typeName.contains('animated') || typeName == 'sparrow' || nodeName.contains('animated') || nodeName == 'sparrow' || xmlBoolAny(xml, ['animated'], false) || xmlHasAnimationChildren(xml));
+		// Codename: type="beat" / "loop" / "onbeat" = animated; type="none" = static
+		var danceType = Paths.formatToSongPath(xmlStringAny(xml, ['type', 'kind', 'animType', 'dance'], ''));
+		var animated = !isSquare && (
+			typeName.contains('animated') || typeName == 'sparrow' || typeName == 'beat' || typeName == 'loop' || typeName == 'onbeat' || typeName == 'dance' ||
+			nodeName.contains('animated') || nodeName == 'sparrow' ||
+			danceType == 'beat' || danceType == 'loop' || danceType == 'onbeat' || danceType == 'dance' || danceType == 'sparrow' ||
+			xmlBoolAny(xml, ['animated'], false) || xmlHasAnimationChildren(xml)
+		);
 		var type = isSquare ? 'square' : (animated ? 'animatedSprite' : 'sprite');
 		var rawImage = xmlStringAny(xml, ['image', 'sprite', 'graphic', 'texture', 'asset', 'path', 'src', 'file'], '');
 		var fallbackName = rawImage.length > 0 ? getFileBase(rawImage) : 'sprite$index';
@@ -1710,8 +2116,8 @@ class ConvertersMenuState extends MusicBeatState
 			name: name,
 			x: xmlFloatAny(xml, ['x', 'posX', 'positionX'], 0),
 			y: xmlFloatAny(xml, ['y', 'posY', 'positionY'], 0),
-			scale: xmlPair(xml, ['scaleX', 'sx'], ['scaleY', 'sy'], ['scale'], [1, 1]),
-			scroll: xmlPair(xml, ['scrollX', 'scrollFactorX', 'parallaxX'], ['scrollY', 'scrollFactorY', 'parallaxY'], ['scroll', 'scrollFactor', 'parallax'], [1, 1]),
+			scale: xmlPair(xml, ['scaleX', 'sx', 'scalex'], ['scaleY', 'sy', 'scaley', 'scale_y'], ['scale'], [1.0, 1.0]),
+			scroll: xmlPair(xml, ['scrollX', 'scrollFactorX', 'parallaxX', 'scrollx'], ['scrollY', 'scrollFactorY', 'parallaxY', 'scrolly', 'scroll_y'], ['scroll', 'scrollFactor', 'parallax'], [1.0, 1.0]),
 			alpha: xmlFloatAny(xml, ['alpha', 'opacity'], 1),
 			angle: xmlFloatAny(xml, ['angle', 'rotation'], 0),
 			color: normalizeStageColor(xmlStringAny(xml, ['color', 'tint'], 'FFFFFF')),
@@ -1913,10 +2319,13 @@ class ConvertersMenuState extends MusicBeatState
 			var trimmed = part.trim();
 			if(trimmed.length < 1) continue;
 			var parsed = Std.parseFloat(trimmed);
-			output.push(Math.isNaN(parsed) ? fallback[output.length] : parsed);
+			output.push(Math.isNaN(parsed) ? (output.length < fallback.length ? fallback[output.length] : 0) : parsed);
 			if(output.length >= fallback.length) break;
 		}
 		if(output.length < 1) return null;
+		// Single scalar (e.g. scale="1.5") applies to BOTH axes
+		if(output.length == 1 && fallback.length >= 2)
+			output.push(output[0]);
 		while(output.length < fallback.length) output.push(fallback[output.length]);
 		return output;
 	}
@@ -2209,8 +2618,10 @@ class ConvertersMenuState extends MusicBeatState
 	{
 		return switch(source)
 		{
+			case SOURCE_PSYCH: 'Psych Engine';
 			case SOURCE_GODOT: 'Godot';
 			case SOURCE_CODENAME: 'Codename Engine';
+			case SOURCE_NIGHTMAREVISION: 'NightmareVision';
 			case SOURCE_VSLICE: 'V-Slice';
 			case SOURCE_FOREVER: 'Forever Engine';
 			default: 'Unknown';
@@ -2225,7 +2636,8 @@ class ConvertersMenuState extends MusicBeatState
 
 	static function stageFilter(source:String):Array<FileFilter>
 	{
-		if(source == SOURCE_VSLICE) return [new FileFilter('Stage JSON', 'json')];
+		if(source == SOURCE_VSLICE || source == SOURCE_NIGHTMAREVISION)
+			return [new FileFilter('Stage JSON', 'json')];
 		return [new FileFilter('Stage XML', 'xml')];
 	}
 

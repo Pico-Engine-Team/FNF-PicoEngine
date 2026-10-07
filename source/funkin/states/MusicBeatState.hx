@@ -82,7 +82,7 @@ class MusicBeatState extends FlxState
 		}
 
 		if(subState == null && Controls.instance != null && controls.justPressed('fps_display_toggle'))
-			ClientPrefs.toggleFPSDisplay();
+			Preferences.toggleFPSDisplay();
 		
 		stagesFunc(function(stage:BaseStage) {
 			stage.update(elapsed);
@@ -134,7 +134,7 @@ class MusicBeatState extends FlxState
 	{
 		var lastChange = Conductor.getBPMFromSeconds(Conductor.songPosition);
 
-		var shit = ((Conductor.songPosition - ClientPrefs.data.noteOffset) - lastChange.songTime) / lastChange.stepCrochet;
+		var shit = ((Conductor.songPosition - Preferences.data.noteOffset) - lastChange.songTime) / lastChange.stepCrochet;
 		curDecStep = lastChange.stepTime + shit;
 		curStep = lastChange.stepTime + Math.floor(shit);
 	}

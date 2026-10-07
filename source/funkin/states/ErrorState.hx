@@ -11,7 +11,6 @@ class ErrorState extends MusicBeatState
 		this.errorMsg = error;
 		this.acceptCallback = accept;
 		this.backCallback = back;
-
 		super();
 	}
 
@@ -19,9 +18,9 @@ class ErrorState extends MusicBeatState
 	public var errorText:FlxText;
 	override function create()
 	{
-		var bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+		var bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
 		bg.color = FlxColor.GRAY;
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
 

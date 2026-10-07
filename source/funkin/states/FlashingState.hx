@@ -6,16 +6,14 @@ import lime.app.Application;
 
 class FlashingState extends MusicBeatState
 {
-	public static var leftState:Bool = false;
-
 	var isYes:Bool = true;
 	var texts:FlxTypedSpriteGroup<FlxText>;
 	var bg:FlxSprite;
 
+	public static var leftState:Bool = false;
 	override function create()
 	{
 		super.create();
-
 		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
@@ -24,9 +22,9 @@ class FlashingState extends MusicBeatState
 		add(texts);
 
 		var warnText:FlxText = new FlxText(0, 0, FlxG.width,
-			"Hey, watch out!\n
-			This Mod contains some flashing lights!\n
-			Do you wish to disable them?");
+			"Hey!,\nwatch out!\n
+			This Engine Contains Some Flashing Lights!\n
+			Do you wish to Disable them?");
 		warnText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
 		warnText.screenCenter(Y);
 		texts.add(warnText);
@@ -62,29 +60,29 @@ class FlashingState extends MusicBeatState
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 			if(!back) {
-				ClientPrefs.data.flashing = !isYes;
-				ClientPrefs.saveSettings();
+				Preferences.data.flashing = !isYes;
+				Preferences.saveSettings();
 				FlxG.sound.play(Paths.sound('confirmMenu'));
 				final button = texts.members[isYes ? 1 : 2];
 				FlxFlicker.flicker(button, 1, 0.1, false, true, function(flk:FlxFlicker) {
 					new FlxTimer().start(0.5, function (tmr:FlxTimer) {
 						FlxTween.tween(texts, {alpha: 0}, 0.2, {
-							onComplete: (_) -> MusicBeatState.switchState(new funkin.states.TitleState())
+							onComplete: (_) -> MusicBeatState.switchState(new funkin.states.TitleMenuState())
 						});
 					});
 				});
 			} else {
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				FlxTween.tween(texts, {alpha: 0}, 1, {
-					onComplete: (_) -> MusicBeatState.switchState(new funkin.states.TitleState())
+					onComplete: (_) -> MusicBeatState.switchState(new funkin.states.TitleMenuState())
 				});
 			}
 		}
 		super.update(elapsed);
 	}
 
-	function updateItems() {
-		// it's clunky but it works.
+	function updateItems()
+	{
 		texts.members[1].alpha = isYes ? 1.0 : 0.6;
 		texts.members[2].alpha = isYes ? 0.6 : 1.0;
 	}

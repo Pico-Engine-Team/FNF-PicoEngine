@@ -4,7 +4,7 @@ import funkin.play.Song;
 import funkin.play.Highscore;
 
 import funkin.data.WeekData;
-import funkin.states.options.OptionsState;
+import funkin.states.options.OptionsMenuState;
 import funkin.states.editors.data.ChartingState;
 
 import funkin.states.menus.freeplay.FreeplayMenuState;
@@ -32,12 +32,58 @@ class PauseMenuState extends MusicBeatSubstate
 	
 	public static var songName:String = null;
 
+	/** When true, pause was opened during a video / cutscene / dialogue. */
+	public var inSpecialPause:Bool = false;
+	public var cutsceneAllowSkipping:Bool = true;
+	public var cutsceneHardReset:Bool = true;
+	public var specialAction:PauseSpecialAction = NOTHING;
+	public var cutsceneBranding:String = '';
+	var cutsceneResetTxt:String = '';
+	var cutsceneSkipTxt:String = '';
+
 	#if LUA_ALLOWED
 	var pauseLuaScripts:Array<funkin.modding.scripting.FunkinLuaProgramming> = [];
 	#end
 	#if HSCRIPT_ALLOWED
 	var pauseHScripts:Array<funkin.modding.scripting.FunkinHSProgramming> = [];
 	#end
+
+	/**
+	 * @param inCutscene  true when pausing a video, cutscene or dialogue
+	 * @param type        VIDEO | CUTSCENE | DIALOGUE (only used if inCutscene)
+	 */
+	public function new(inCutscene:Bool = false, type:PauseType = CUTSCENE)
+	{
+		super();
+		this.inSpecialPause = inCutscene;
+		if(inCutscene)
+		{
+			cutsceneBranding = switch(type)
+			{
+				case VIDEO: Language.getPhrase('pause_branding_video', 'Video');
+				case DIALOGUE: Language.getPhrase('pause_branding_dialogue', 'Dialogue');
+				default: Language.getPhrase('pause_branding_cutscene', 'Cutscene');
+			};
+			cutsceneResetTxt = Language.getPhrase('pause_branding_restart', 'Restart {1}', [cutsceneBranding]);
+			cutsceneSkipTxt = Language.getPhrase('pause_branding_skip', 'Skip {1}', [cutsceneBranding]);
+		}
+	}
+
+	/** Allow scripts / PlayState to toggle skip button for cutscenes. */
+	public function setCutsceneAllowSkipping(value:Bool):Void
+	{
+		cutsceneAllowSkipping = value;
+	}
+
+	public function setCutsceneHardReset(value:Bool):Void
+	{
+		cutsceneHardReset = value;
+	}
+
+	public function getSpecialAction():PauseSpecialAction
+	{
+		return specialAction;
+	}
 
 	override function create()
 	{
@@ -83,7 +129,10 @@ class PauseMenuState extends MusicBeatSubstate
 		if(showDifficulty) add(levelDifficulty);
 
 		var blueballedY:Float = showDifficulty ? 15 + 64 : 15 + 32;
-		var blueballedTxt:FlxText = new FlxText(20, blueballedY, 0, Language.getPhrase("blueballed", "{1} Death", [PlayState.deathCounter]), 32);
+		var ballsLabel:String = inSpecialPause
+			? Language.getPhrase('pause_branding', '{1} Paused', [cutsceneBranding])
+			: Language.getPhrase('blueballed', '{1} Death', [PlayState.deathCounter]);
+		var blueballedTxt:FlxText = new FlxText(20, blueballedY, 0, ballsLabel, 32);
 		blueballedTxt.scrollFactor.set();
 		blueballedTxt.setFormat(Paths.font('vcr.ttf'), 32);
 		blueballedTxt.updateHitbox();
@@ -158,6 +207,15 @@ class PauseMenuState extends MusicBeatSubstate
 
 	function buildPauseMenuItems():Array<String>
 	{
+		// Video / Cutscene / Dialogue pause menu
+		if(inSpecialPause)
+		{
+			var items:Array<String> = ['Resume', cutsceneResetTxt, cutsceneSkipTxt, 'Options', 'Exit to menu'];
+			if(!cutsceneAllowSkipping)
+				items.remove(cutsceneSkipTxt);
+			return items;
+		}
+
 		var items:Array<String> = menuItemsOG.copy();
 		if(Difficulty.list.length < 2) items.remove('Change Difficulty'); //No need to change difficulty if there is only one!
 		if(PlayState.chartingMode)
@@ -165,10 +223,11 @@ class PauseMenuState extends MusicBeatSubstate
 			items.remove('Change Difficulty');
 			items.remove('Change Gameplay Settings');
 			items.remove('Options');
-			items.remove('Exit to menu');
-			items.push('Return to Chart Editor');
+			// Keep Exit to menu so you can leave without only returning to the chart editor
+			if(!items.contains('Return to Chart Editor'))
+				items.push('Return to Chart Editor');
 		}
-		else if(PlayState.instance.practiceMode && !PlayState.instance.startingSong)
+		else if(PlayState.instance != null && PlayState.instance.practiceMode && !PlayState.instance.startingSong)
 			items.insert(3, 'Skip Time');
 
 		return items;
@@ -186,7 +245,7 @@ class PauseMenuState extends MusicBeatSubstate
 		if(formattedSongName == 'none') return null;
 		if(formattedSongName != '') return formattedSongName;
 
-		var formattedPauseMusic:String = resolvePauseMusicKey(ClientPrefs.data.pauseMusic);
+		var formattedPauseMusic:String = resolvePauseMusicKey(Preferences.data.pauseMusic);
 		if(formattedPauseMusic == 'none') return null;
 		return formattedPauseMusic;
 	}
@@ -224,6 +283,7 @@ class PauseMenuState extends MusicBeatSubstate
 
 		if(controls.BACK)
 		{
+			specialAction = RESUME;
 			close();
 			return;
 		}
@@ -322,6 +382,7 @@ class PauseMenuState extends MusicBeatSubstate
 			switch (daSelected)
 			{
 				case "Resume":
+					specialAction = RESUME;
 					close();
 				case 'Change Difficulty':
 					menuItems = difficultyChoices;
@@ -356,14 +417,14 @@ class PauseMenuState extends MusicBeatSubstate
 					PlayState.instance.paused = true; // For lua
 					PlayState.instance.vocals.volume = 0;
 					PlayState.instance.canResync = false;
-					MusicBeatState.switchState(new OptionsState());
-					if(ClientPrefs.data.pauseMusic != 'None')
+					MusicBeatState.switchState(new OptionsMenuState());
+					if(Preferences.data.pauseMusic != 'None')
 					{
-						FlxG.sound.playMusic(Paths.music(resolvePauseMusicKey(ClientPrefs.data.pauseMusic)), pauseMusic.volume);
+						FlxG.sound.playMusic(Paths.music(resolvePauseMusicKey(Preferences.data.pauseMusic)), pauseMusic.volume);
 						FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
 						FlxG.sound.music.time = pauseMusic.time;
 					}
-					OptionsState.onPlayState = true;
+					OptionsMenuState.onPlayState = true;
 				case "Exit to menu":
 					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
 					PlayState.deathCounter = 0;
@@ -372,7 +433,7 @@ class PauseMenuState extends MusicBeatSubstate
 					PlayState.instance.canResync = false;
 					Mods.loadTopMod();
 					if(PlayState.isStoryMode)
-						MusicBeatState.switchState(new StoryMenuState());
+						MusicBeatState.switchState(new StoryModeMenuState());
 					else
 						MusicBeatState.switchState(new FreeplayMenuState());
 
@@ -380,6 +441,23 @@ class PauseMenuState extends MusicBeatSubstate
 					PlayState.changedDifficulty = false;
 					PlayState.chartingMode = false;
 					FlxG.camera.followLerp = 0;
+				default:
+					// Cutscene / Video / Dialogue options use localized labels
+					if(inSpecialPause && daSelected == cutsceneSkipTxt)
+					{
+						specialAction = SKIP;
+						close();
+					}
+					else if(inSpecialPause && daSelected == cutsceneResetTxt)
+					{
+						if(cutsceneHardReset)
+							restartSong();
+						else
+						{
+							specialAction = RESTART;
+							close();
+						}
+					}
 			}
 		}
 	}
@@ -551,7 +629,7 @@ class PauseMenuState extends MusicBeatSubstate
 					{
 						var script = new funkin.modding.scripting.FunkinLuaProgramming(rel);
 						pauseLuaScripts.push(script);
-						trace('[PauseState] Loaded lua: ' + rel);
+						trace('[PauseMenuState] Loaded lua: ' + rel);
 					}
 					catch(e:Dynamic)
 					{
@@ -560,11 +638,11 @@ class PauseMenuState extends MusicBeatSubstate
 						{
 							var script = new funkin.modding.scripting.FunkinLuaProgramming(full);
 							pauseLuaScripts.push(script);
-							trace('[PauseState] Loaded lua (full): ' + full);
+							trace('[PauseMenuState] Loaded lua (full): ' + full);
 						}
 						catch(e2:Dynamic)
 						{
-							trace('[PauseState] Failed lua ' + file + ': ' + e2);
+							trace('[PauseMenuState] Failed lua ' + file + ': ' + e2);
 						}
 					}
 				}
@@ -578,11 +656,11 @@ class PauseMenuState extends MusicBeatSubstate
 						var hs = new funkin.modding.scripting.FunkinHSProgramming(null, full);
 						if(hs.exists('onCreate')) hs.call('onCreate');
 						pauseHScripts.push(hs);
-						trace('[PauseState] Loaded hscript: ' + full);
+						trace('[PauseMenuState] Loaded hscript: ' + full);
 					}
 					catch(e:Dynamic)
 					{
-						trace('[PauseState] Failed hscript ' + file + ': ' + e);
+						trace('[PauseMenuState] Failed hscript ' + file + ': ' + e);
 					}
 				}
 				#end
@@ -620,4 +698,21 @@ class PauseMenuState extends MusicBeatSubstate
 		}
 		#end
 	}
+}
+
+/** Returned by PauseMenuState when closing during video/cutscene/dialogue. */
+enum PauseSpecialAction
+{
+	NOTHING;
+	RESTART;
+	SKIP;
+	RESUME;
+}
+
+/** Kind of non-gameplay content that was paused. */
+enum PauseType
+{
+	VIDEO;
+	CUTSCENE;
+	DIALOGUE;
 }

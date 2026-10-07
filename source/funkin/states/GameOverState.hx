@@ -1,8 +1,8 @@
 package funkin.states;
 
 import funkin.data.WeekData;
-import funkin.menus.StoryMenuState;
-import funkin.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.StoryModeMenuState;
+import funkin.states.menus.freeplay.FreeplayMenuState;
 import funkin.data.objects.game.characters.Character;
 
 import flixel.FlxObject;
@@ -11,9 +11,9 @@ import flixel.math.FlxPoint;
 
 class GameOverState extends MusicBeatSubstate
 {
-	public var boyfriend:Character;
 	var camFollow:FlxObject;
 	var stagePostfix:String = "";
+	public var boyfriend:Character;
 
 	public static var characterName:String = 'bf-dead';
 	public static var deathSoundName:String = 'fnf_loss_sfx';
@@ -31,7 +31,8 @@ class GameOverState extends MusicBeatSubstate
 		super();
 	}
 
-	public static function resetVariables() {
+	public static function resetVariables()
+	{
 		characterName = 'bf-dead';
 		deathSoundName = 'fnf_loss_sfx';
 		loopSoundName = 'gameOver';
@@ -91,7 +92,7 @@ class GameOverState extends MusicBeatSubstate
 			overlay.frames = Paths.getSparrowAtlas('Pico_Death_Retry');
 			overlay.animation.addByPrefix('deathLoop', 'Retry Text Loop', 24, true);
 			overlay.animation.addByPrefix('deathConfirm', 'Retry Text Confirm', 24, false);
-			overlay.antialiasing = ClientPrefs.data.antialiasing;
+			overlay.antialiasing = Preferences.data.antialiasing;
 			overlayConfirmOffsets.set(250, 200);
 			overlay.visible = false;
 			add(overlay);
@@ -117,7 +118,7 @@ class GameOverState extends MusicBeatSubstate
 				var neneKnife:FlxSprite = new FlxSprite(boyfriend.x - 450, boyfriend.y - 250);
 				neneKnife.frames = Paths.getSparrowAtlas('NeneKnifeToss');
 				neneKnife.animation.addByPrefix('anim', 'knife toss', 24, false);
-				neneKnife.antialiasing = ClientPrefs.data.antialiasing;
+				neneKnife.antialiasing = Preferences.data.antialiasing;
 				neneKnife.animation.finishCallback = function(_)
 				{
 					remove(neneKnife);
@@ -166,7 +167,7 @@ class GameOverState extends MusicBeatSubstate
 	
 				Mods.loadTopMod();
 				if (PlayState.isStoryMode)
-					MusicBeatState.switchState(new StoryMenuState());
+					MusicBeatState.switchState(new StoryModeMenuState());
 				else
 					MusicBeatState.switchState(new FreeplayMenuState());
 	
@@ -181,7 +182,7 @@ class GameOverState extends MusicBeatSubstate
 						coolStartDeath(0.2);
 						
 						var exclude:Array<Int> = [];
-						//if(!ClientPrefs.cursing) exclude = [1, 3, 8, 13, 17, 21];
+						//if(!Preferences.cursing) exclude = [1, 3, 8, 13, 17, 21];
 	
 						FlxG.sound.play(Paths.sound('jeffGameover/jeffGameover-' + FlxG.random.int(1, 25, exclude)), 1, false, null, true, function() {
 							if(!isEnding)
