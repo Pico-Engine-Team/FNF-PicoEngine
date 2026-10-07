@@ -159,9 +159,9 @@ class FunkinHSProgramming extends Iris
 		set('FlxColor', CustomFlxColor);
 		set('Countdown', funkin.stages.BaseStage.Countdown);
 		set('PlayState', funkin.states.PlayState);
-		set('Paths', funkin.Paths);
+		set('Paths', funkin.utils.Paths);
 		set('Conductor', funkin.play.Conductor);
-		set('ClientPrefs', funkin.data.ClientPrefs);
+		set('Preferences', Preferences);
 
 		#if ACHIEVEMENTS_ALLOWED
 		set('Achievements', funkin.states.achievements.data.Achievements);

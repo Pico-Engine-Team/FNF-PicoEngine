@@ -12,7 +12,7 @@ import funkin.data.objects.game.notes.data.NoteSplash;
 import funkin.data.objects.game.notes.config.StrumNote;
 import funkin.data.objects.game.characters.Character;
 
-import funkin.states.PauseState;
+import funkin.states.PauseMenuState;
 import funkin.states.GameOverState;
 
 import funkin.states.menus.MainMenuState;
@@ -184,34 +184,34 @@ class FunkinLuaProgramming
 		}
 
 		// Other settings
-		set('downscroll', ClientPrefs.data.downScroll);
-		set('middlescroll', ClientPrefs.data.middleScroll);
-		set('framerate', ClientPrefs.data.framerate);
-		set('ghostTapping', ClientPrefs.data.ghostTapping);
-		set('hideHud', ClientPrefs.data.hideHud);
-		set('timeBarType', ClientPrefs.data.timeBarType);
-		set('scoreZoom', ClientPrefs.data.scoreZoom);
-		set('cameraZoomOnBeat', ClientPrefs.data.camZooms);
-		set('flashingLights', ClientPrefs.data.flashing);
-		set('noteOffset', ClientPrefs.data.noteOffset);
-		set('healthBarAlpha', ClientPrefs.data.healthBarAlpha);
-		set('noResetButton', ClientPrefs.data.noReset);
-		set('lowQuality', ClientPrefs.isLowQuality);
-		set('shadersEnabled', ClientPrefs.data.shaders);
+		set('downscroll', Preferences.data.downScroll);
+		set('middlescroll', Preferences.data.middleScroll);
+		set('framerate', Preferences.data.framerate);
+		set('ghostTapping', Preferences.data.ghostTapping);
+		set('hideHud', Preferences.data.hideHud);
+		set('timeBarType', Preferences.data.timeBarType);
+		set('scoreZoom', Preferences.data.scoreZoom);
+		set('cameraZoomOnBeat', Preferences.data.camZooms);
+		set('flashingLights', Preferences.data.flashing);
+		set('noteOffset', Preferences.data.noteOffset);
+		set('healthBarAlpha', Preferences.data.healthBarAlpha);
+		set('noResetButton', Preferences.data.noReset);
+		set('lowQuality', Preferences.isLowQuality);
+		set('shadersEnabled', Preferences.data.shaders);
 		set('scriptName', scriptName);
 		set('currentModDirectory', Mods.currentModDirectory);
 
 		// Noteskin/Splash
-		set('noteSkin', ClientPrefs.data.noteSkin);
+		set('noteSkin', Preferences.data.noteSkin);
 		set('noteSkinPostfix', Note.getNoteSkinPostfix());
-		set('splashSkin', ClientPrefs.data.splashSkin);
+		set('splashSkin', Preferences.data.splashSkin);
 		set('splashSkinPostfix', NoteSplash.getSplashSkinPostfix());
-		set('splashAlpha', ClientPrefs.data.splashAlpha);
+		set('splashAlpha', Preferences.data.splashAlpha);
 
-		set('useCombo', ClientPrefs.data.useCombo);
-		set('useHoldCover', ClientPrefs.data.useHoldCover);
-		set('useHoldAnimation', ClientPrefs.data.useHoldAnimation);
-		set('useNoteSkins', ClientPrefs.data.useNoteSkins);
+		set('useCombo', Preferences.data.useCombo);
+		set('useHoldCover', Preferences.data.useHoldCover);
+		set('useHoldAnimation', Preferences.data.useHoldAnimation);
+		set('useCharacterNoteStyle', Preferences.data.useCharacterNoteStyle);
 
 		// build target (windows, mac, linux, etc.)
 		set('buildTarget', LuaUtils.getBuildTarget());
@@ -392,7 +392,7 @@ class FunkinLuaProgramming
 			Song.loadFromJson(poop, name);
 			PlayState.storyDifficulty = difficultyNum;
 			FlxG.state.persistentUpdate = false;
-			LoadingScreenState.loadAndSwitchState(new PlayState());
+			LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 
 			FlxG.sound.music.pause();
 			FlxG.sound.music.volume = 0;
@@ -770,7 +770,7 @@ class FunkinLuaProgramming
 		Lua_helper.add_callback(lua, "restartSong", function(?skipTransition:Bool = false) {
 			game.persistentUpdate = false;
 			FlxG.camera.followLerp = 0;
-			PauseState.restartSong(skipTransition);
+			PauseMenuState.restartSong(skipTransition);
 			return true;
 		});
 		Lua_helper.add_callback(lua, "exitSong", function(?skipTransition:Bool = false) {
@@ -781,7 +781,7 @@ class FunkinLuaProgramming
 			}
 
 			if(PlayState.isStoryMode)
-				MusicBeatState.switchState(new StoryMenuState());
+				MusicBeatState.switchState(new StoryModeMenuState());
 			else
 				MusicBeatState.switchState(new FreeplayMenuState());
 
@@ -1272,7 +1272,7 @@ class FunkinLuaProgramming
 			var path:String;
 			var songPath:String = Paths.formatToSongPath(Song.loadedSongName);
 			#if TRANSLATIONS_ALLOWED
-			path = Paths.getPath('data/$songPath/${dialogueFile}_${ClientPrefs.data.language}.json', TEXT);
+			path = Paths.getPath('data/$songPath/${dialogueFile}_${Preferences.data.language}.json', TEXT);
 			#if MODS_ALLOWED
 			if(!FileSystem.exists(path))
 			#else
@@ -1834,7 +1834,7 @@ class FunkinLuaProgramming
 
 	public function initLuaShader(name:String)
 	{
-		if(!ClientPrefs.data.shaders) return false;
+		if(!Preferences.data.shaders) return false;
 
 		#if (!flash && sys)
 		if(runtimeShaders.exists(name))
