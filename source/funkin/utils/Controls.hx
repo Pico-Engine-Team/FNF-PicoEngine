@@ -1,9 +1,9 @@
 package funkin.utils;
 
+import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepadButton;
 import flixel.input.gamepad.FlxGamepadInputID;
 import flixel.input.gamepad.mappings.FlxGamepadMapping;
-import flixel.input.keyboard.FlxKey;
 
 class Controls
 {
@@ -71,18 +71,25 @@ class Controls
 	private function get_NOTE_LEFT_R() return justReleased('note_left');
 	private function get_NOTE_RIGHT_R() return justReleased('note_right');
 
-
 	// Pressed buttons (others)
 	public var ACCEPT(get, never):Bool;
 	public var BACK(get, never):Bool;
 	public var PAUSE(get, never):Bool;
 	public var RESET(get, never):Bool;
+	public var PAGE_UP(get, never):Bool;
+	public var PAGE_DOWN(get, never):Bool;
+	public var CUTSCENES_SKIP(get, never):Bool;
+	public var DIALOGUE_SKIP(get, never):Bool;
 	public var RELOAD_STATE(get, never):Bool;
 	private function get_ACCEPT() return justPressed('accept');
 	private function get_BACK() return justPressed('back');
 	private function get_PAUSE() return justPressed('pause');
 	private function get_RESET() return justPressed('reset');
 	private function get_RELOAD_STATE() return justPressed('reload_state');
+	private function get_CUTSCENES_SKIP() return justPressed('accept_cutscene');
+	private function get_DIALOGUE_SKIP() return justPressed('key_dialogue');
+	private function get_PAGE_UP() return justPressed('page_up');
+	private function get_PAGE_DOWN() return justPressed('page_down');
 
 	//Gamepad & Keyboard stuff
 	public var keyboardBinds:Map<String, Array<FlxKey>>;
@@ -127,6 +134,7 @@ class Controls
 		}
 		return false;
 	}
+
 	private function _myGamepadPressed(keys:Array<FlxGamepadInputID>):Bool
 	{
 		if(keys != null)
@@ -142,6 +150,7 @@ class Controls
 		}
 		return false;
 	}
+
 	private function _myGamepadJustReleased(keys:Array<FlxGamepadInputID>):Bool
 	{
 		if(keys != null)
@@ -162,7 +171,7 @@ class Controls
 	public static var instance:Controls;
 	public function new()
 	{
-		keyboardBinds = ClientPrefs.keyBinds;
-		gamepadBinds = ClientPrefs.gamepadBinds;
+		keyboardBinds = Preferences.keyBinds;
+		gamepadBinds = Preferences.gamepadBinds;
 	}
 }

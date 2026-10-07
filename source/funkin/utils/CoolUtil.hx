@@ -8,8 +8,8 @@ class CoolUtil {
 		if (url == null || url.length == 0)
 			url = "https://raw.githubusercontent.com/Pico-Engine-Team/FNF-Pico-Engine/refs/heads/master/gitVersion.txt";
 		var version:String = funkin.states.menus.MainMenuState.PicoVersion.trim();
-		if(ClientPrefs.data.checkForUpdates) {
-			trace('checking for updates');
+		if(Preferences.data.checkForUpdates) {
+			trace('Checking For Engine Update...');
 			var http = new haxe.Http(url);
 			http.onData = function (data:String)
 			{
