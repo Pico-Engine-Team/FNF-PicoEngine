@@ -47,11 +47,13 @@ class ModsMenuState extends MusicBeatState
 
 	var _lastControllerMode:Bool = false;
 	var startMod:String = null;
+
 	public function new(startMod:String = null)
 	{
 		this.startMod = startMod;
 		super();
 	}
+
 	override function create()
 	{
 		Paths.clearStoredMemory();
@@ -63,20 +65,19 @@ class ModsMenuState extends MusicBeatState
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Mods Menu", 'Selecting a Mod');
+		DiscordClient.changePresence("In Mods Menu", 'Selecting a Mod');
 		#end
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
 		bg.color = 0xFF665AFF;
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
-		bg.screenCenter();
 
+		bg.screenCenter();
 		bgList = FlxSpriteUtil.drawRoundRect(new FlxSprite(40, 40).makeGraphic(340, 440, FlxColor.TRANSPARENT), 0, 0, 340, 440, 15, 15, FlxColor.BLACK);
 		bgList.alpha = 0.6;
 
 		modsGroup = new FlxTypedGroup<ModItem>();
-
 		for (i => mod in modsList.all)
 		{
 			if(startMod == mod) curSelectedMod = i;
@@ -93,7 +94,6 @@ class ModsMenuState extends MusicBeatState
 		var mod:ModItem = modsGroup.members[curSelectedMod];
 		if(mod != null) bg.color = mod.bgColor;
 
-		//
 		var buttonX = bgList.x;
 		var buttonWidth = Std.int(bgList.width);
 		var buttonHeight = 80;
@@ -175,7 +175,6 @@ class ModsMenuState extends MusicBeatState
 			changeSelectedMod();
 			return super.create();
 		}
-		//
 
 		bgTitle = FlxSpriteUtil.drawRoundRectComplex(new FlxSprite(bgList.x + bgList.width + 20, 40).makeGraphic(840, 180, FlxColor.TRANSPARENT), 0, 0, 840, 180, 15, 15, 0, 0, FlxColor.BLACK);
 		bgTitle.alpha = 0.6;
@@ -216,13 +215,13 @@ class ModsMenuState extends MusicBeatState
 		add(button);
 		buttons.push(button);
 		
-		var button = new MenuButton(buttonsX + 100, buttonsY, 80, 80, Paths.image('menus/mods/modsMenuButtons'), function() moveModToPosition(curSelectedMod - 1), 54, 54); //Move up
+		var button = new MenuButton(buttonsX + 100, buttonsY, 80, 80, Paths.image('menus/mods_menu/modsMenuButtons'), function() moveModToPosition(curSelectedMod - 1), 54, 54); //Move up
 		button.icon.animation.add('icon', [1]);
 		button.icon.animation.play('icon', true);
 		add(button);
 		buttons.push(button);
 		
-		var button = new MenuButton(buttonsX + 200, buttonsY, 80, 80, Paths.image('menus/mods/modsMenuButtons'), function() moveModToPosition(curSelectedMod + 1), 54, 54); //Move down
+		var button = new MenuButton(buttonsX + 200, buttonsY, 80, 80, Paths.image('menus/mods_menu/modsMenuButtons'), function() moveModToPosition(curSelectedMod + 1), 54, 54); //Move down
 		button.icon.animation.add('icon', [2]);
 		button.icon.animation.play('icon', true);
 		add(button);
@@ -234,7 +233,7 @@ class ModsMenuState extends MusicBeatState
 				button.enabled = false;
 		}
 
-		settingsButton = new MenuButton(buttonsX + 300, buttonsY, 80, 80, Paths.image('menus/mods/modsMenuButtons'), function() //Settings
+		settingsButton = new MenuButton(buttonsX + 300, buttonsY, 80, 80, Paths.image('menus/mods_menu/modsMenuButtons'), function() //Settings
 		{
 			var curMod:ModItem = modsGroup.members[curSelectedMod];
 			if(curMod != null && curMod.settings != null && curMod.settings.length > 0)
@@ -251,7 +250,7 @@ class ModsMenuState extends MusicBeatState
 		if(modsGroup.members[curSelectedMod].settings == null || modsGroup.members[curSelectedMod].settings.length < 1)
 			settingsButton.enabled = false;
 
-		var button = new MenuButton(buttonsX + 400, buttonsY, 80, 80, Paths.image('menus/mods/modsMenuButtons'), function() //On/Off
+		var button = new MenuButton(buttonsX + 400, buttonsY, 80, 80, Paths.image('menus/mods_menu/modsMenuButtons'), function() //On/Off
 		{
 			var curMod:ModItem = modsGroup.members[curSelectedMod];
 			var mod:String = curMod.folder;
@@ -313,8 +312,8 @@ class ModsMenuState extends MusicBeatState
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			if(waitingToRestart)
 			{
-				TitleState.initialized = false;
-				TitleState.closedState = false;
+				TitleMenuState.initialized = false;
+				TitleMenuState.closedState = false;
 				FlxG.sound.music.fadeOut(0.3);
 				if(FreeplayMenuState.vocals != null)
 				{
@@ -326,7 +325,7 @@ class ModsMenuState extends MusicBeatState
 			else MusicBeatState.switchState(new funkin.states.menus.MainMenuState());
 
 			persistentUpdate = false;
-			FlxG.autoPause = ClientPrefs.data.autoPause;
+			FlxG.autoPause = Preferences.data.autoPause;
 			FlxG.mouse.visible = false;
 			return;
 		}
@@ -764,7 +763,7 @@ class ModsMenuState extends MusicBeatState
 	function reload()
 	{
 		saveTxt();
-		FlxG.autoPause = ClientPrefs.data.autoPause;
+		FlxG.autoPause = Preferences.data.autoPause;
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
 		var curMod:ModItem = modsGroup.members[curSelectedMod];
@@ -785,7 +784,7 @@ class ModsMenuState extends MusicBeatState
 			fileStr += '$mod|$on';
 		}
 
-		var path:String = 'modsList.txt';
+		var path:String = Paths.modsListFile();
 		File.saveContent(path, fileStr);
 		Mods.parseList();
 		Mods.loadTopMod();
@@ -848,7 +847,7 @@ class ModItem extends FlxSpriteGroup
 		add(selectBg);
 
 		icon = new FlxSprite(5, 5);
-		icon.antialiasing = ClientPrefs.data.antialiasing;
+		icon.antialiasing = Preferences.data.antialiasing;
 		add(icon);
 
 		text = new FlxText(95, 38, 230, "", 16);

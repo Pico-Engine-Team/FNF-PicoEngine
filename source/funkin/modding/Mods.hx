@@ -3,8 +3,7 @@ package funkin.modding;
 import openfl.utils.Assets;
 import haxe.Json;
 
-typedef ModsList =
-{
+typedef ModsList = {
 	enabled:Array<String>,
 	disabled:Array<String>,
 	all:Array<String>
@@ -18,8 +17,7 @@ typedef ModsList =
  *   - V-Slice mod.json / meta.json
  *   - Polymod _polymod_meta.json
  */
-typedef ModPackInfo =
-{
+typedef ModPackInfo = {
 	var folder:String;
 	var name:String;
 	var description:String;
@@ -36,6 +34,11 @@ typedef ModPackInfo =
 	@:optional var credits:Array<String>;
 	@:optional var discordRichPresence:Bool;
 	@:optional var discordAppId:String;
+	/** License string from meta_mod (mod_License / license). */
+	@:optional var license:String;
+	/** Official download page (GameBanana / GameJolt preferred). */
+	@:optional var downloadUrl:String;
+	@:optional var homepage:String;
 	@:optional var raw:Dynamic;
 };
 
@@ -46,8 +49,11 @@ typedef ModPackInfo =
  *   1. currentModDirectory
  *   2. other enabled mods (modsList order, top of list = higher priority)
  *   3. global-running mods (runsGlobally)
- *   4. mods/ root loose files
+ *   4. content/mods/ root loose files
  *   5. base game assets
+ *
+ * Mods live under: content/mods/<modName>/
+ * List file: content/modsList.txt
  *
  * Metadata files (first found wins):
  *   1. meta_mod.json  (Pico format)
@@ -67,8 +73,7 @@ class Mods
 	/** If true, enabled list order is top-first (index 0 wins). */
 	public static var topModHighestPriority:Bool = true;
 
-	public static final ignoreModFolders:Array<String> =
-	[
+	public static final ignoreModFolders:Array<String> = [
 		'characters',
 		'data',
 		'songs',
@@ -83,12 +88,10 @@ class Mods
 		'scripts',
 		'achievements'
 	];
-
 	private static var globalMods:Array<String> = [];
 	private static var packCache:Map<String, ModPackInfo> = new Map();
 
-	// ---------- Basic API ----------
-
+	// Basic API
 	inline public static function getGlobalMods():Array<String>
 		return globalMods;
 
@@ -649,6 +652,22 @@ class Mods
 		if(credits == null)
 			credits = parseStringList(Reflect.field(data, 'mod_Credits'));
 
+		var license:String = null;
+		var downloadUrl:String = null;
+		var homepage:String = null;
+		var modData:Dynamic = Reflect.field(data, 'mod_data');
+		var assts:Dynamic = Reflect.field(data, 'mod_assts');
+		if(assts == null) assts = Reflect.field(data, 'mod_assets');
+		license = nestedStr(modData, ['mod_License', 'license', 'licence']);
+		if(license == null) license = strField(data, ['mod_License', 'license', 'licence']);
+		downloadUrl = nestedStr(modData, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
+		if(downloadUrl == null) downloadUrl = nestedStr(assts, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
+		if(downloadUrl == null) downloadUrl = strField(data, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl', 'url']);
+		homepage = nestedStr(modData, ['homepage', 'website']);
+		if(homepage == null) homepage = strField(data, ['homepage', 'website', 'url']);
+		if((downloadUrl == null || downloadUrl.length < 1) && homepage != null)
+			downloadUrl = homepage;
+
 		return {
 			folder: folder,
 			name: name,
@@ -666,6 +685,9 @@ class Mods
 			credits: credits,
 			discordRichPresence: discordRP,
 			discordAppId: discordAppId,
+			license: license,
+			downloadUrl: downloadUrl,
+			homepage: homepage,
 			raw: data
 		};
 	}
@@ -790,7 +812,7 @@ class Mods
 		#if MODS_ALLOWED
 		try
 		{
-			for (mod in CoolUtil.coolTextFile('modsList.txt'))
+			for (mod in CoolUtil.coolTextFile(Paths.modsListFile()))
 			{
 				if(mod.trim().length < 1) continue;
 
@@ -817,7 +839,7 @@ class Mods
 		var added:Array<String> = [];
 		try
 		{
-			for (mod in CoolUtil.coolTextFile('modsList.txt'))
+			for (mod in CoolUtil.coolTextFile(Paths.modsListFile()))
 			{
 				var dat:Array<String> = mod.split("|");
 				var folder:String = dat[0];
@@ -850,7 +872,7 @@ class Mods
 			fileStr += values[0] + '|' + (values[1] ? '1' : '0');
 		}
 
-		File.saveContent('modsList.txt', fileStr);
+		File.saveContent(Paths.modsListFile(), fileStr);
 		updatedOnState = true;
 		clearPackCache();
 		#end
