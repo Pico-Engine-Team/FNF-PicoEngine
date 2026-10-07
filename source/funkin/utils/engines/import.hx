@@ -1,6 +1,5 @@
 package funkin.utils.engines;
 
-import funkin.utils.engines.vslice.VsliceOptions;
 import funkin.utils.engines.pico.stages.StagesPicoEnigne;
 
 import funkin.utils.engines.pico.*;
