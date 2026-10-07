@@ -3,7 +3,7 @@ package funkin.states.editors.data;
 import funkin.data.dialogue.DialogueBoxPsych;
 import funkin.data.dialogue.DialogueCharacter;
 
-import funkin.utils.editors.Prompt;
+import funkin.states.editors.components.Prompt;
 import funkin.utils.TypedAlphabet;
 
 import openfl.net.FileReference;
@@ -89,7 +89,7 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		mainGroup.add(ghostIdle);
 
 		box = new FlxSprite(70, 370);
-		box.antialiasing = ClientPrefs.data.antialiasing;
+		box.antialiasing = Preferences.data.antialiasing;
 		box.frames = Paths.getSparrowAtlas('speech_bubble');
 		box.scrollFactor.set();
 		box.animation.addByPrefix('normal', 'speech bubble normal', 24);
@@ -166,15 +166,15 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		characterTypeRadio = new PsychUIRadioGroup(10, 20, ['Left', 'Center', 'Right'], 40);
 		characterTypeRadio.checked = 0;
 		characterTypeRadio.onClick = function() {
-			switch(characterTypeRadio.checked)
+			var pos:String = switch(characterTypeRadio.checked)
 			{
-				case 0:
-					character.jsonFile.dialogue_pos = 'left';
-				case 1:
-					character.jsonFile.dialogue_pos = 'center';
-				case 2:
-					character.jsonFile.dialogue_pos = 'right';
-			}
+				case 0: 'left';
+				case 1: 'center';
+				default: 'right';
+			};
+			character.jsonFile.dialogue_pos = pos;
+			character.jsonFile.dialogueType = pos;
+			unsavedProgress = true;
 			updateCharTypeBox();
 		}
 		tab_group.add(characterTypeRadio);
@@ -236,9 +236,12 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 					anim: theAnim,
 					loop_name: loopInputText.text,
 					loop_offsets: [0, 0],
-					idle_name: idleInputText.text,
-					idle_offsets: [0, 0]
-				}
+					idle_name: idleInputText.text.length > 0 ? idleInputText.text : loopInputText.text,
+					idle_offsets: [0, 0],
+					fps: 24,
+					loop: true
+				};
+				if(character.jsonFile.animations == null) character.jsonFile.animations = [];
 				character.jsonFile.animations.push(newAnim);
 
 				var lastSelected:String = animationDropDown.selectedLabel;
@@ -276,8 +279,8 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		
 		tab_group.add(new FlxText(animationDropDown.x, animationDropDown.y - 18, 0, 'Animations:'));
 		tab_group.add(new FlxText(animationInputText.x, animationInputText.y - 18, 0, 'Animation name:'));
-		tab_group.add(new FlxText(loopInputText.x, loopInputText.y - 18, 0, 'Loop name on .XML file:'));
-		tab_group.add(new FlxText(idleInputText.x, idleInputText.y - 18, 0, 'Idle/Finished name on .XML file:'));
+		tab_group.add(new FlxText(loopInputText.x, loopInputText.y - 18, 0, 'Prefix on .XML (loop):'));
+		tab_group.add(new FlxText(idleInputText.x, idleInputText.y - 18, 0, 'Idle prefix on .XML (optional):'));
 		tab_group.add(animationInputText);
 		tab_group.add(loopInputText);
 		tab_group.add(idleInputText);
@@ -289,8 +292,12 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 
 	function reloadAnimationsDropDown() {
 		animationArray = [];
-		for (anim in character.jsonFile.animations) {
-			animationArray.push(anim.anim);
+		if(character.jsonFile.animations != null)
+		{
+			for (anim in character.jsonFile.animations) {
+				if(anim != null && anim.anim != null)
+					animationArray.push(anim.anim);
+			}
 		}
 
 		if(animationArray.length < 1) animationArray = [''];
@@ -301,12 +308,24 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 	var scaleStepper:PsychUINumericStepper;
 	var xStepper:PsychUINumericStepper;
 	var yStepper:PsychUINumericStepper;
+	var flipXCheckbox:PsychUICheckBox;
 	function addCharacterUI() {
 		var tab_group = UI_mainbox.getTab('Character').menu;
 
-		imageInputText = new PsychUIInputText(10, 30, 80, character.jsonFile.image, 8);
-		xStepper = new PsychUINumericStepper(imageInputText.x, imageInputText.y + 50, 10, character.jsonFile.position[0], -2000, 2000, 0);
-		yStepper = new PsychUINumericStepper(imageInputText.x + 80, xStepper.y, 10, character.jsonFile.position[1], -2000, 2000, 0);
+		var initialAsset:String = character.jsonFile.assetPath;
+		if(initialAsset == null || initialAsset.length < 1) initialAsset = character.jsonFile.image;
+		if(initialAsset == null) initialAsset = '';
+
+		var pos0:Float = 0;
+		var pos1:Float = 0;
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 0)
+			pos0 = character.jsonFile.position[0];
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 1)
+			pos1 = character.jsonFile.position[1];
+
+		imageInputText = new PsychUIInputText(10, 30, 160, initialAsset, 8);
+		xStepper = new PsychUINumericStepper(imageInputText.x, imageInputText.y + 50, 10, pos0, -2000, 2000, 0);
+		yStepper = new PsychUINumericStepper(imageInputText.x + 80, xStepper.y, 10, pos1, -2000, 2000, 0);
 		scaleStepper = new PsychUINumericStepper(imageInputText.x, xStepper.y + 50, 0.05, character.jsonFile.scale, 0.1, 10, 2);
 
 		var noAntialiasingCheckbox:PsychUICheckBox = new PsychUICheckBox(scaleStepper.x + 80, scaleStepper.y, "No Antialiasing", 100);
@@ -315,16 +334,28 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		{
 			character.jsonFile.no_antialiasing = noAntialiasingCheckbox.checked;
 			character.antialiasing = !character.jsonFile.no_antialiasing;
+			unsavedProgress = true;
+		};
+
+		flipXCheckbox = new PsychUICheckBox(noAntialiasingCheckbox.x, noAntialiasingCheckbox.y + 25, "Flip X", 100);
+		flipXCheckbox.checked = (character.jsonFile.flip_x == true);
+		flipXCheckbox.onClick = function()
+		{
+			character.jsonFile.flip_x = flipXCheckbox.checked;
+			character.flipX = flipXCheckbox.checked;
+			character.flipXFromJson = flipXCheckbox.checked;
+			unsavedProgress = true;
 		};
 		
-		tab_group.add(new FlxText(10, imageInputText.y - 18, 0, 'Image file name:'));
-		tab_group.add(new FlxText(10, xStepper.y - 18, 0, 'Position Offset:'));
+		tab_group.add(new FlxText(10, imageInputText.y - 18, 0, 'Asset Path (Paths.image):'));
+		tab_group.add(new FlxText(10, xStepper.y - 18, 0, 'Dialogue Offsets:'));
 		tab_group.add(new FlxText(10, scaleStepper.y - 18, 0, 'Scale:'));
 		tab_group.add(imageInputText);
 		tab_group.add(xStepper);
 		tab_group.add(yStepper);
 		tab_group.add(scaleStepper);
 		tab_group.add(noAntialiasingCheckbox);
+		tab_group.add(flipXCheckbox);
 
 		var reloadImageButton:PsychUIButton = new PsychUIButton(10, scaleStepper.y + 60, "Reload Image", function() {
 			reloadCharacter();
@@ -343,7 +374,10 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 	
 	function updateCharTypeBox()
 	{
-		switch(character.jsonFile.dialogue_pos)
+		var pos:String = character.jsonFile.dialogueType;
+		if(pos == null || pos.length < 1) pos = character.jsonFile.dialogue_pos;
+		if(pos == null) pos = 'right';
+		switch(pos.toLowerCase())
 		{
 			case 'left':
 				characterTypeRadio.checked = 0;
@@ -360,17 +394,30 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 
 	function reloadCharacter() {
 		var charsArray:Array<DialogueCharacter> = [character, ghostLoop, ghostIdle];
+		// Keep assetPath / image in sync with the text field
+		if(imageInputText != null)
+		{
+			var ap:String = imageInputText.text.trim();
+			character.jsonFile.assetPath = ap;
+			character.jsonFile.image = ap;
+		}
 		for (char in charsArray) {
-			char.frames = Paths.getSparrowAtlas('dialogue/' + character.jsonFile.image);
 			char.jsonFile = character.jsonFile;
+			char.flipXFromJson = character.jsonFile.flip_x == true;
+			try { char.loadDialogueFrames(); } catch(e:Dynamic) {}
 			char.reloadAnimations();
-			char.setGraphicSize(Std.int(char.width * DialogueCharacter.DEFAULT_SCALE * character.jsonFile.scale));
+			var sc:Float = (character.jsonFile != null ? character.jsonFile.scale : 1);
+			char.setGraphicSize(Std.int(char.width * DialogueCharacter.DEFAULT_SCALE * sc));
 			char.updateHitbox();
+			char.flipX = character.jsonFile.flip_x == true;
 		}
 		character.x = DialogueBoxPsych.LEFT_CHAR_X;
 		character.y = DialogueBoxPsych.DEFAULT_CHAR_Y;
 
-		switch(character.jsonFile.dialogue_pos) {
+		var posType:String = character.jsonFile.dialogueType;
+		if(posType == null || posType.length < 1) posType = character.jsonFile.dialogue_pos;
+		if(posType == null) posType = 'left';
+		switch(posType.toLowerCase()) {
 			case 'right':
 				character.x = FlxG.width - character.width + DialogueBoxPsych.RIGHT_CHAR_X;
 			
@@ -378,38 +425,52 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 				character.x = FlxG.width / 2;
 				character.x -= character.width / 2;
 		}
-		character.x += character.jsonFile.position[0] + mainGroup.x;
-		character.y += character.jsonFile.position[1] + mainGroup.y;
-		character.playAnim(character.jsonFile.animations[0].anim);
-		if(character.jsonFile.animations.length > 0) {
+		var offX:Float = 0;
+		var offY:Float = 0;
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 0)
+			offX = character.jsonFile.position[0];
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 1)
+			offY = character.jsonFile.position[1];
+		character.x += offX + mainGroup.x;
+		character.y += offY + mainGroup.y;
+		if(character.jsonFile.animations != null && character.jsonFile.animations.length > 0) {
+			character.playAnim(character.jsonFile.animations[0].anim);
 			curSelectedAnim = character.jsonFile.animations[0].anim;
 			var animShit:DialogueAnimArray = character.dialogueAnimations.get(curSelectedAnim);
-			ghostLoop.playAnim(animShit.anim);
-			ghostIdle.playAnim(animShit.anim, true);
-			offsetLoopText.text = 'Loop: ' + animShit.loop_offsets;
-			offsetIdleText.text = 'Idle: ' + animShit.idle_offsets;
+			if(animShit != null) {
+				ghostLoop.playAnim(animShit.anim);
+				ghostIdle.playAnim(animShit.anim, true);
+				offsetLoopText.text = 'Loop: ' + animShit.loop_offsets;
+				offsetIdleText.text = 'Idle: ' + animShit.idle_offsets;
+			}
 		}
 
 		curAnim = 0;
-		animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+		animText.text = (character.jsonFile.animations != null && character.jsonFile.animations.length > 0)
+			? ('Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll')
+			: 'Animation: (none)';
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("Dialogue Character Editor", "Editting: " + character.jsonFile.image);
+		var editName:String = character.jsonFile.assetPath;
+		if(editName == null || editName.length < 1) editName = character.jsonFile.image;
+		DiscordClient.changePresence("Dialogue Character Editor", "Editing: " + editName);
 		#end
 	}
 
 	function updateTextBox() {
 		box.flipX = false;
 		var anim:String = 'normal';
-		switch(character.jsonFile.dialogue_pos) {
+		var posType:String = character.jsonFile.dialogueType;
+		if(posType == null || posType.length < 1) posType = character.jsonFile.dialogue_pos;
+		if(posType == null) posType = 'left';
+		switch(posType.toLowerCase()) {
 			case 'left':
 				box.flipX = true;
 			case 'center':
 				anim = 'center';
 		}
 		box.animation.play(anim, true);
-		DialogueBoxPsych.updateBoxOffsets(box);
 	}
 
 	public function UIEvent(id:String, sender:Dynamic) {
@@ -418,17 +479,23 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 			unsavedProgress = true;
 
 		if(id == PsychUIInputText.CHANGE_EVENT && sender == imageInputText) {
-			character.jsonFile.image = imageInputText.text;
+			var ap:String = imageInputText.text.trim();
+			character.jsonFile.assetPath = ap;
+			character.jsonFile.image = ap;
 			unsavedProgress = true;
 		} else if(id == PsychUINumericStepper.CHANGE_EVENT && (sender is PsychUINumericStepper)) {
 			if(sender == scaleStepper) {
 				character.jsonFile.scale = scaleStepper.value;
 				reloadCharacter();
 			} else if(sender == xStepper) {
+				if(character.jsonFile.position == null) character.jsonFile.position = [0, 0];
 				character.jsonFile.position[0] = xStepper.value;
+				character.jsonFile.dialogueOffsets = character.jsonFile.position;
 				reloadCharacter();
 			} else if(sender == yStepper) {
+				if(character.jsonFile.position == null) character.jsonFile.position = [0, 0];
 				character.jsonFile.position[1] = yStepper.value;
+				character.jsonFile.dialogueOffsets = character.jsonFile.position;
 				reloadCharacter();
 			}
 			unsavedProgress = true;
@@ -455,7 +522,7 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 
 		if(PsychUIInputText.focusOn == null)
 		{
-			ClientPrefs.toggleVolumeKeys(true);
+			Preferences.toggleVolumeKeys(true);
 			if(FlxG.keys.justPressed.SPACE && UI_mainbox.selectedName == 'Character') {
 				character.playAnim(character.jsonFile.animations[curAnim].anim);
 				daText.resetDialogue();
@@ -606,7 +673,7 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 					FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
 					transitioning = true;
 				}
-				else openSubState(new funkin.utils.editors.Prompt.ExitConfirmationPrompt(function() transitioning = true));
+				else openSubState(new funkin.states.editors.components.Prompt.ExitConfirmationPrompt(function() transitioning = true));
 			}
 
 			ghostLoop.setPosition(character.x, character.y);
@@ -614,7 +681,7 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 			hudGroup.x = mainGroup.x;
 			hudGroup.y = mainGroup.y;
 		}
-		else ClientPrefs.toggleVolumeKeys(false);
+		else Preferences.toggleVolumeKeys(false);
 	}
 	
 	var _file:FileReference = null;
@@ -641,21 +708,37 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		if(fullPath != null) {
 			var rawJson:String = File.getContent(fullPath);
 			if(rawJson != null) {
-				var loadedChar:DialogueCharacterFile = cast Json.parse(rawJson);
-				if(loadedChar.dialogue_pos != null) //Make sure it's really a dialogue character
+				var parsed:Dynamic = Json.parse(rawJson);
+				// Accept new format (assetPath / dialogueType / dialogue_animations) or legacy
+				var isDialogue:Bool = parsed != null && (
+					Reflect.hasField(parsed, 'dialogue_pos') || Reflect.hasField(parsed, 'dialogueType') ||
+					Reflect.hasField(parsed, 'assetPath') || Reflect.hasField(parsed, 'dialogue_animations') ||
+					Reflect.hasField(parsed, 'animations')
+				);
+				if(isDialogue)
 				{
 					var cutName:String = _file.name.substr(0, _file.name.length - 5);
 					trace("Successfully loaded file: " + cutName);
-					character.jsonFile = loadedChar;
+					// Re-parse through DialogueCharacter normalizer
+					character.curCharacter = cutName;
+					// Write temp-style normalize by assigning via reloadCharacterJson path:
+					// Use internal normalize by reloading from the raw JSON string fields
+					applyLoadedDialogueJson(parsed, cutName);
 					reloadCharacter();
 					reloadAnimationsDropDown();
 					updateCharTypeBox();
 					updateTextBox();
 					daText.resetDialogue();
-					imageInputText.text = character.jsonFile.image;
+					var ap:String = character.jsonFile.assetPath;
+					if(ap == null || ap.length < 1) ap = character.jsonFile.image;
+					imageInputText.text = ap != null ? ap : '';
 					scaleStepper.value = character.jsonFile.scale;
-					xStepper.value = character.jsonFile.position[0];
-					yStepper.value = character.jsonFile.position[1];
+					if(character.jsonFile.position != null && character.jsonFile.position.length > 0)
+						xStepper.value = character.jsonFile.position[0];
+					if(character.jsonFile.position != null && character.jsonFile.position.length > 1)
+						yStepper.value = character.jsonFile.position[1];
+					if(flipXCheckbox != null)
+						flipXCheckbox.checked = character.jsonFile.flip_x == true;
 					_file = null;
 					return;
 				}
@@ -692,18 +775,175 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 	}
 
 	function saveCharacter() {
-		var data:String = haxe.Json.stringify(character.jsonFile, "\t");
+		var exportData:Dynamic = buildExportDialogueJson();
+		var data:String = haxe.Json.stringify(exportData, "\t");
 		if (data.length > 0)
 		{
-			var splittedImage:Array<String> = imageInputText.text.trim().split('_');
-			var characterName:String = splittedImage[0].toLowerCase().replace(' ', '');
+			var asset:String = imageInputText != null ? imageInputText.text.trim() : '';
+			if(asset.length < 1 && character.jsonFile.assetPath != null) asset = character.jsonFile.assetPath;
+			var base:String = asset.replace('\\', '/');
+			if(base.contains('/')) base = base.substr(base.lastIndexOf('/') + 1);
+			base = base.toLowerCase().replace(' ', '');
+			if(base.endsWith('.png') || base.endsWith('.xml')) base = base.substr(0, base.lastIndexOf('.'));
+			if(base.length < 1) base = character.curCharacter != null ? character.curCharacter : 'character';
 
 			_file = new FileReference();
 			_file.addEventListener(#if desktop Event.SELECT #else Event.COMPLETE #end, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-			_file.save(data, characterName + ".json");
+			// Preferred save name matches data/dialogue/<name>.json
+			_file.save(data, base + ".json");
 		}
+	}
+
+	/** Build the new dialogue character JSON format for export. */
+	function buildExportDialogueJson():Dynamic
+	{
+		var anims:Array<Dynamic> = [];
+		if(character.jsonFile.animations != null)
+		{
+			for (a in character.jsonFile.animations)
+			{
+				if(a == null) continue;
+				var off:Array<Int> = a.loop_offsets != null ? a.loop_offsets : [0, 0];
+				anims.push({
+					offsets: off,
+					name: a.anim,
+					prefix: a.loop_name,
+					fps: Reflect.hasField(a, 'fps') ? Std.int(Std.parseFloat(Std.string(Reflect.field(a, 'fps')))) : 24,
+					loop: a.loop != false
+				});
+			}
+		}
+
+		var asset:String = character.jsonFile.assetPath;
+		if(asset == null || asset.length < 1) asset = character.jsonFile.image;
+		if(asset == null) asset = '';
+
+		var dtype:String = character.jsonFile.dialogueType;
+		if(dtype == null || dtype.length < 1) dtype = character.jsonFile.dialogue_pos;
+		if(dtype == null || dtype.length < 1) dtype = 'right';
+
+		var offsets:Array<Float> = [0, 0];
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 0)
+			offsets[0] = character.jsonFile.position[0];
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 1)
+			offsets[1] = character.jsonFile.position[1];
+
+		return {
+			dialogue_animations: anims,
+			assetPath: asset,
+			dialogueOffsets: offsets,
+			flip_x: character.jsonFile.flip_x == true,
+			dialogueType: dtype,
+			scale: character.jsonFile.scale
+		};
+	}
+
+	/** Apply a loaded raw JSON (new or legacy) onto character.jsonFile. */
+	function applyLoadedDialogueJson(parsed:Dynamic, characterName:String):Void
+	{
+		// Reuse DialogueCharacter normalization by temporarily writing through reload path
+		var dc = character;
+		// Store as string and re-parse with the same logic used at runtime
+		var tmp:String = haxe.Json.stringify(parsed);
+		// Manual normalize mirroring DialogueCharacter.normalizeDialogueCharacterFile
+		var file:DialogueCharacterFile = {
+			image: '',
+			assetPath: '',
+			dialogue_pos: 'left',
+			dialogueType: 'left',
+			no_antialiasing: false,
+			animations: [],
+			dialogue_animations: [],
+			position: [0, 0],
+			dialogueOffsets: [0, 0],
+			scale: 1,
+			flip_x: false
+		};
+
+		var assetPath:Dynamic = Reflect.field(parsed, 'assetPath');
+		if(assetPath == null) assetPath = Reflect.field(parsed, 'image');
+		if(assetPath != null)
+		{
+			file.assetPath = Std.string(assetPath);
+			file.image = file.assetPath;
+		}
+
+		var offsets:Dynamic = Reflect.field(parsed, 'dialogueOffsets');
+		if(offsets == null) offsets = Reflect.field(parsed, 'position');
+		if(Std.isOfType(offsets, Array))
+		{
+			var arr:Array<Dynamic> = cast offsets;
+			file.position = [
+				arr.length > 0 ? Std.parseFloat(Std.string(arr[0])) : 0,
+				arr.length > 1 ? Std.parseFloat(Std.string(arr[1])) : 0
+			];
+			file.dialogueOffsets = file.position;
+		}
+
+		var dtype:Dynamic = Reflect.field(parsed, 'dialogueType');
+		if(dtype == null) dtype = Reflect.field(parsed, 'dialogue_pos');
+		if(dtype != null)
+		{
+			file.dialogueType = Std.string(dtype).toLowerCase();
+			file.dialogue_pos = file.dialogueType;
+		}
+
+		var sc:Dynamic = Reflect.field(parsed, 'scale');
+		if(sc != null)
+		{
+			var p = Std.parseFloat(Std.string(sc));
+			if(!Math.isNaN(p) && p > 0) file.scale = p;
+		}
+
+		var flip:Dynamic = Reflect.field(parsed, 'flip_x');
+		if(flip == null) flip = Reflect.field(parsed, 'flipX');
+		file.flip_x = (flip == true);
+
+		if(Reflect.hasField(parsed, 'no_antialiasing'))
+			file.no_antialiasing = Reflect.field(parsed, 'no_antialiasing') == true;
+
+		var animsRaw:Dynamic = Reflect.field(parsed, 'dialogue_animations');
+		if(animsRaw == null) animsRaw = Reflect.field(parsed, 'animations');
+		var anims:Array<DialogueAnimArray> = [];
+		if(Std.isOfType(animsRaw, Array))
+		{
+			var arr:Array<Dynamic> = cast animsRaw;
+			for (entry in arr)
+			{
+				if(entry == null) continue;
+				var name:String = Reflect.hasField(entry, 'name') ? Std.string(Reflect.field(entry, 'name')) :
+					(Reflect.hasField(entry, 'anim') ? Std.string(Reflect.field(entry, 'anim')) : 'talk');
+				var prefix:String = Reflect.hasField(entry, 'prefix') ? Std.string(Reflect.field(entry, 'prefix')) :
+					(Reflect.hasField(entry, 'loop_name') ? Std.string(Reflect.field(entry, 'loop_name')) : name);
+				var idle:String = Reflect.hasField(entry, 'idle_name') ? Std.string(Reflect.field(entry, 'idle_name')) : prefix;
+				var fps:Int = Reflect.hasField(entry, 'fps') ? Std.int(Std.parseFloat(Std.string(Reflect.field(entry, 'fps')))) : 24;
+				var loop:Bool = !Reflect.hasField(entry, 'loop') || Reflect.field(entry, 'loop') == true;
+				var off:Array<Int> = [0, 0];
+				var offRaw:Dynamic = Reflect.field(entry, 'offsets');
+				if(offRaw == null) offRaw = Reflect.field(entry, 'loop_offsets');
+				if(Std.isOfType(offRaw, Array))
+				{
+					var oa:Array<Dynamic> = cast offRaw;
+					if(oa.length > 0) off[0] = Std.int(Std.parseFloat(Std.string(oa[0])));
+					if(oa.length > 1) off[1] = Std.int(Std.parseFloat(Std.string(oa[1])));
+				}
+				anims.push({
+					anim: name,
+					loop_name: prefix,
+					loop_offsets: off,
+					idle_name: idle,
+					idle_offsets: off.copy(),
+					fps: fps,
+					loop: loop
+				});
+			}
+		}
+		file.animations = anims;
+		file.dialogue_animations = cast anims;
+		character.jsonFile = file;
+		character.curCharacter = characterName;
 	}
 
 	function onSaveComplete(_):Void

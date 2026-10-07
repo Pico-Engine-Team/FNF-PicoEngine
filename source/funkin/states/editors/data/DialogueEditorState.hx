@@ -3,7 +3,7 @@ package funkin.states.editors.data;
 import funkin.data.dialogue.DialogueBoxPsych;
 import funkin.data.dialogue.DialogueCharacter;
 
-import funkin.utils.editors.Prompt;
+import funkin.states.editors.components.Prompt;
 import funkin.utils.TypedAlphabet;
 
 import openfl.net.FileReference;
@@ -40,6 +40,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		};
 
 		dialogueFile = {
+			style: null,
 			dialogue: [
 				copyDefaultLine()
 			]
@@ -50,7 +51,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		add(character);
 
 		box = new FlxSprite(70, 370);
-		box.antialiasing = ClientPrefs.data.antialiasing;
+		box.antialiasing = Preferences.data.antialiasing;
 		box.frames = Paths.getSparrowAtlas('speech_bubble');
 		box.scrollFactor.set();
 		box.animation.addByPrefix('normal', 'speech bubble normal', 24);
@@ -163,7 +164,11 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		var isAngry:Bool = angryCheckbox.checked;
 		var anim:String = isAngry ? 'angry' : 'normal';
 
-		switch(character.jsonFile.dialogue_pos) {
+		var posType:String = character.jsonFile != null ? character.jsonFile.dialogueType : null;
+		if(posType == null || posType.length < 1)
+			posType = character.jsonFile != null ? character.jsonFile.dialogue_pos : 'left';
+		if(posType == null) posType = 'left';
+		switch(posType.toLowerCase()) {
 			case 'left':
 				box.flipX = true;
 			case 'center':
@@ -174,33 +179,45 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 				}
 		}
 		box.animation.play(anim, true);
-		DialogueBoxPsych.updateBoxOffsets(box);
 	}
 
 	function reloadCharacter() {
-		character.frames = Paths.getSparrowAtlas('dialogue/' + character.jsonFile.image);
-		character.jsonFile = character.jsonFile;
+		if(character.jsonFile == null) return;
+		try { character.loadDialogueFrames(); } catch(e:Dynamic) {}
 		character.reloadAnimations();
-		character.setGraphicSize(Std.int(character.width * DialogueCharacter.DEFAULT_SCALE * character.jsonFile.scale));
+		var sc:Float = character.jsonFile.scale;
+		if(sc <= 0) sc = 1;
+		character.setGraphicSize(Std.int(character.width * DialogueCharacter.DEFAULT_SCALE * sc));
 		character.updateHitbox();
+		character.flipX = character.jsonFile.flip_x == true;
 		character.x = DialogueBoxPsych.LEFT_CHAR_X;
 		character.y = DialogueBoxPsych.DEFAULT_CHAR_Y;
 
-		switch(character.jsonFile.dialogue_pos) {
+		var posType:String = character.jsonFile.dialogueType;
+		if(posType == null || posType.length < 1) posType = character.jsonFile.dialogue_pos;
+		if(posType == null) posType = 'left';
+		switch(posType.toLowerCase()) {
 			case 'right':
 				character.x = FlxG.width - character.width + DialogueBoxPsych.RIGHT_CHAR_X;
-			
 			case 'center':
 				character.x = FlxG.width / 2;
 				character.x -= character.width / 2;
 		}
-		character.x += character.jsonFile.position[0];
-		character.y += character.jsonFile.position[1];
-		character.playAnim(); //Plays random animation
+		var offX:Float = 0;
+		var offY:Float = 0;
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 0)
+			offX = character.jsonFile.position[0];
+		if(character.jsonFile.position != null && character.jsonFile.position.length > 1)
+			offY = character.jsonFile.position[1];
+		character.x += offX;
+		character.y += offY;
+		character.playAnim(); // Plays random animation
 		characterAnimSpeed();
 
-		if(character.animation.curAnim != null && character.jsonFile.animations != null) {
-			animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+		if(character.animation.curAnim != null && character.jsonFile.animations != null && character.jsonFile.animations.length > 0) {
+			var idx:Int = curAnim;
+			if(idx < 0 || idx >= character.jsonFile.animations.length) idx = 0;
+			animText.text = 'Animation: ' + character.jsonFile.animations[idx].anim + ' (' + (idx + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
 		} else {
 			animText.text = 'ERROR! NO ANIMATIONS FOUND';
 		}
@@ -219,7 +236,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 			daText.finishText();
 		else if(daText.delay > 0)
 		{
-			if(character.jsonFile.animations.length > curAnim && character.jsonFile.animations[curAnim] != null) {
+			if(character.jsonFile.animations != null && character.jsonFile.animations.length > curAnim && character.jsonFile.animations[curAnim] != null) {
 				character.playAnim(character.jsonFile.animations[curAnim].anim);
 			}
 			characterAnimSpeed();
@@ -246,9 +263,9 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 			{
 				character.reloadCharacterJson(characterInputText.text);
 				reloadCharacter();
-				if(character.jsonFile.animations.length > 0) {
+				if(character.jsonFile.animations != null && character.jsonFile.animations.length > 0) {
 					curAnim = 0;
-					if(character.jsonFile.animations.length > curAnim && character.jsonFile.animations[curAnim] != null) {
+					if(character.jsonFile.animations != null && character.jsonFile.animations.length > curAnim && character.jsonFile.animations[curAnim] != null) {
 						character.playAnim(character.jsonFile.animations[curAnim].anim, daText.finishedText);
 						animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
 					} else {
@@ -308,7 +325,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 
 		if(PsychUIInputText.focusOn == null)
 		{
-			ClientPrefs.toggleVolumeKeys(true);
+			Preferences.toggleVolumeKeys(true);
 			if(FlxG.keys.justPressed.SPACE) {
 				reloadText(false);
 			}
@@ -319,14 +336,14 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 					FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
 					transitioning = true;
 				}
-				else openSubState(new funkin.utils.editors.Prompt.ExitConfirmationPrompt(function() transitioning = true));
+				else openSubState(new funkin.states.editors.components.Prompt.ExitConfirmationPrompt(function() transitioning = true));
 				return;
 			}
 			var negaMult:Array<Int> = [1, -1];
 			var controlAnim:Array<Bool> = [FlxG.keys.justPressed.W, FlxG.keys.justPressed.S];
 			var controlText:Array<Bool> = [FlxG.keys.justPressed.D, FlxG.keys.justPressed.A];
 			for (i in 0...controlAnim.length) {
-				if(controlAnim[i] && character.jsonFile.animations.length > 0) {
+				if(controlAnim[i] && character.jsonFile.animations != null && character.jsonFile.animations.length > 0) {
 					curAnim -= negaMult[i];
 					if(curAnim < 0) curAnim = character.jsonFile.animations.length - 1;
 					else if(curAnim >= character.jsonFile.animations.length) curAnim = 0;
@@ -357,7 +374,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 				changeText(1);
 			}
 		}
-		else ClientPrefs.toggleVolumeKeys(false);
+		else Preferences.toggleVolumeKeys(false);
 		super.update(elapsed);
 	}
 

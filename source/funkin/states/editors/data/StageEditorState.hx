@@ -4,9 +4,10 @@ import funkin.stages.StageData;
 import funkin.data.objects.game.characters.Character;
 import funkin.data.objects.game.characters.Character;
 
-import funkin.utils.editors.Prompt;
+import funkin.states.editors.components.Prompt;
+import funkin.states.editors.components.PreloadListSubState;
+
 import funkin.utils.engines.psych.PsychCamera;
-import funkin.utils.editors.PreloadListSubState;
 import funkin.utils.engines.psych.PsychJsonPrinter;
 
 import funkin.modding.scripting.psychlua.LuaUtils;
@@ -1436,7 +1437,7 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 				MusicBeatState.switchState(new funkin.states.editors.EditorsMenus());
 				FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
 			}
-			else openSubState(new funkin.utils.editors.Prompt.ExitConfirmationPrompt());
+			else openSubState(new funkin.states.editors.components.Prompt.ExitConfirmationPrompt());
 			return;
 		}
 
@@ -2107,7 +2108,7 @@ class StageEditorMetaSprite
 	public var antialiasing(default, set):Bool = true;
 	function set_antialiasing(v:Bool)
 	{
-		sprite.antialiasing = (v && ClientPrefs.data.antialiasing);
+		sprite.antialiasing = (v && Preferences.data.antialiasing);
 		return (antialiasing = v);
 	}
 
