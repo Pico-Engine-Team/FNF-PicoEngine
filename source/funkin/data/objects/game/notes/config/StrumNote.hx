@@ -2,6 +2,7 @@ package funkin.data.objects.game.notes.config;
 
 import funkin.data.shaders.RGBPalette;
 import funkin.data.objects.game.notes.data.Note;
+import funkin.data.objects.game.notes.NoteData;
 import funkin.data.shaders.RGBPalette.RGBShaderReference;
 import funkin.utils.engines.psych.PsychAnimationController;
 
@@ -26,7 +27,8 @@ class StrumNote extends FlxSprite
 	}
 
 	public var useRGBShader:Bool = true;
-	public function new(x:Float, y:Float, leData:Int, player:Int) {
+	public function new(x:Float, y:Float, leData:Int, player:Int)
+	{
 		animation = new PsychAnimationController(this);
 
 		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(leData));
@@ -34,9 +36,9 @@ class StrumNote extends FlxSprite
 
 		// RGB controlado por noteStyle.allowRGB (disableNoteRGB removido)
 		
-		var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[leData];
+		var arr:Array<FlxColor> = Preferences.data.arrowRGB[leData];
 		if(Note.noteStyleUsesPixel())
-			arr = ClientPrefs.data.arrowRGBPixel[leData];
+			arr = Preferences.data.arrowRGBPixel[leData];
 		
 		if(arr != null && leData > -1 && leData <= arr.length)
 		{
@@ -96,7 +98,9 @@ class StrumNote extends FlxSprite
 			}
 
 			antialiasing = false;
-			setGraphicSize(Std.int(width * Note.noteSkinScale(noteSkinConfig, assetType)));
+			var sc:Float = Note.noteSkinScale(noteSkinConfig, assetType);
+			try { sc = NoteData.noteStyle.strumScale(texture, sc); } catch(e:Dynamic) {}
+			setGraphicSize(Std.int(width * sc));
 
 			// Agora também respeita o allowRGB no pixel
 			if(noteSkinConfig != null && !noteSkinConfig.allowRGB)
@@ -111,10 +115,12 @@ class StrumNote extends FlxSprite
 			if(frames == null)
 				return;
 
-			antialiasing = ClientPrefs.data.antialiasing;
+			antialiasing = Preferences.data.antialiasing;
 			if(noteSkinConfig != null && !noteSkinConfig.allowRGB)
 				useRGBShader = false;
-			setGraphicSize(Std.int(width * Note.noteSkinScale(noteSkinConfig, 'noteStrumline')));
+			var sc2:Float = Note.noteSkinScale(noteSkinConfig, 'noteStrumline');
+			try { sc2 = NoteData.noteStyle.strumScale(texture, sc2); } catch(e:Dynamic) {}
+			setGraphicSize(Std.int(width * sc2));
 		}
 
 		Note.addAnimationFromConfig(animation, 'green', noteSkinConfig, 'green');

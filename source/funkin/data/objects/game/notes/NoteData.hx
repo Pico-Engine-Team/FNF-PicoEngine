@@ -20,7 +20,10 @@ using StringTools;
  *   scripts/states/notestyle/<name>.lua
  *   data/notestyles/<name>/notestyle.json
  *   data/notestyles/<name>.lua          (legacy)
- *   pico_assets/.../custom-notes/data/<name>.json  (character styles)
+ *   Paths.getPicoFunkinFolder('game/custom-notes/data/<name>.json')  (character styles)
+ *   Paths.getPicoFunkinFolder('game/custom-splashes/data/<name>.json') (character splash packs)
+ *   Song styles use data/notestyles + Paths.image (noteSkins)
+ *   Character styles gated by Preferences.useCharacterNoteStyle (Gameplay Settings)
  *
  * JSON v2+:
  *   noteSkin_assets.note_sprite / note_position / note_animations
@@ -33,7 +36,10 @@ using StringTools;
  * Splash ONLY from notestyle (no noteSplash.json).
  */
 typedef PicoNoteAnim = {
+	/** Atlas frame prefix (Sparrow) */
 	@:optional var prefix:String;
+	/** Optional animation id used when adding/playing the anim (noteSplash_splashAnimations name) */
+	@:optional var name:String;
 	@:optional var fps:Null<Int>;
 	@:optional var loop:Null<Bool>;
 	@:optional var indices:Array<Int>;
@@ -73,6 +79,8 @@ typedef PicoNoteStyleRuntime = {
 	var splashSprite:String;
 	var splashOffsets:Array<Float>;
 	var splashAnims:Map<String, Array<PicoNoteAnim>>;
+	/** noteSplash_splashEnabled — when false, note splashes are not spawned */
+	var splashEnabled:Bool;
 	var allowRGB:Bool;
 	var allowPixel:Bool;
 	var noteScale:Float;
@@ -101,6 +109,9 @@ class NoteData
 	/** Active runtime for current song side */
 	public static function runtime(?mustPress:Bool = true):PicoNoteStyleRuntime
 		return noteStyle.getRuntime(songStyle(mustPress), noteStyle.usesCharacterNoteStyle(mustPress));
+
+	public static function splashEnabled(?mustPress:Bool = true):Bool
+		return noteStyle.splashEnabled(null, mustPress);
 }
 
 class NoteStyleData
@@ -140,18 +151,28 @@ class NoteStyleData
 
 	public function characterNoteStyleKey(mustPress:Bool):String
 	{
+		// Global toggle from Gameplay Settings (Preferences.useCharacterNoteStyle)
+		// Read via Reflect so Bool/String saves both work after preference migrations.
+		try
+		{
+			var flag:Dynamic = Reflect.field(Preferences.data, 'useCharacterNoteStyle');
+			if(flag == false || flag == 0)
+				return null;
+			if(flag != null && Std.isOfType(flag, String))
+			{
+				var s:String = Std.string(flag).trim().toLowerCase();
+				if(s == 'false' || s == '0' || s == 'off' || s == 'no')
+					return null;
+			}
+		}
+		catch(e:Dynamic) {}
+
 		if(PlayState.instance == null) return null;
 		var char:Character = mustPress ? PlayState.instance.boyfriend : PlayState.instance.dad;
 		if(char == null) return null;
 		var rawStyle:Dynamic = Reflect.field(char, 'noteStyle');
 		if(rawStyle == null || Std.string(rawStyle).trim().length < 1)
 			return null;
-		try
-		{
-			if(Reflect.field(char, 'useNotestyle') == false)
-				return null;
-		}
-		catch(e:Dynamic) {}
 		var raw:String = Std.string(rawStyle).trim();
 		var key:String = normalizeCharacterNoteStyleName(raw);
 		return (key != null && key.length > 0) ? key : raw;
@@ -308,6 +329,7 @@ class NoteStyleData
 			splashSprite: null,
 			splashOffsets: [0, 0],
 			splashAnims: new Map(),
+			splashEnabled: true,
 			allowRGB: true,
 			allowPixel: false,
 			noteScale: 0.7,
@@ -327,34 +349,50 @@ class NoteStyleData
 		if(data == null) return;
 		rt.raw = data;
 
-		// Detect v2 (has assets.noteSkin_assets) vs legacy
-		var assets:Dynamic = Reflect.field(data, 'assets');
-		if(assets != null && Reflect.hasField(assets, 'noteSkin_assets'))
+		// Shared header fields
+		if(Reflect.hasField(data, 'noteStyle_Name'))
+			rt.name = Std.string(Reflect.field(data, 'noteStyle_Name'));
+		else if(Reflect.hasField(data, 'note_Name'))
+			rt.name = Std.string(Reflect.field(data, 'note_Name'));
+		if(Reflect.hasField(data, 'author'))
+			rt.author = Std.string(Reflect.field(data, 'author'));
+		var fb:Dynamic = Reflect.field(data, 'fallback');
+		if(fb != null && Std.string(fb) != 'null' && Std.string(fb).trim().length > 0)
+			rt.fallback = Std.string(fb).trim();
+
+		// NEW format: data_Assets.noteStyle_data + noteSplash_data + UI_Assets
+		var dataAssets:Dynamic = Reflect.field(data, 'data_Assets');
+		if(dataAssets == null) dataAssets = Reflect.field(data, 'dataAssets');
+		if(dataAssets != null)
 		{
-			if(Reflect.hasField(data, 'note_Name'))
-				rt.name = Std.string(Reflect.field(data, 'note_Name'));
-			if(Reflect.hasField(data, 'author'))
-				rt.author = Std.string(Reflect.field(data, 'author'));
-			var fb:Dynamic = Reflect.field(data, 'fallback');
-			if(fb != null && Std.string(fb) != 'null' && Std.string(fb).trim().length > 0)
-				rt.fallback = Std.string(fb).trim();
-
-			parseNoteSkinAssets(rt, Reflect.field(assets, 'noteSkin_assets'));
-			parseSplashData(rt, Reflect.field(assets, 'Splash_data'));
-			parseUiBlocks(rt, assets);
-
-			// Strum scale from Strumline; keep note_scale if set in noteSkin_assets
+			parseNewDataAssets(rt, dataAssets);
+			var uiRoot:Dynamic = Reflect.field(data, 'UI_Assets');
+			if(uiRoot == null) uiRoot = Reflect.field(data, 'ui_Assets');
+			if(uiRoot == null) uiRoot = Reflect.field(dataAssets, 'UI_Assets');
+			parseUiBlocks(rt, uiRoot);
+			applyAllowFlags(rt, uiRoot);
+			applyAllowFlags(rt, dataAssets);
 			if(rt.strumScale > 0)
 			{
 				if(rt.noteScale <= 0) rt.noteScale = rt.strumScale;
 				if(rt.holdScale <= 0) rt.holdScale = rt.strumScale;
 			}
+			return;
+		}
 
-			if(Reflect.hasField(assets, 'allowRGB'))
-				rt.allowRGB = Reflect.field(assets, 'allowRGB') != false;
-			if(Reflect.hasField(assets, 'allowPixel'))
-				rt.allowPixel = Reflect.field(assets, 'allowPixel') == true;
-			// Legacy only: top-level note_scale / hold_scale / strum_scale (prefer Strumline_assets.strum_scale)
+		// v2 format: assets.noteSkin_assets
+		var assets:Dynamic = Reflect.field(data, 'assets');
+		if(assets != null && Reflect.hasField(assets, 'noteSkin_assets'))
+		{
+			parseNoteSkinAssets(rt, Reflect.field(assets, 'noteSkin_assets'));
+			parseSplashData(rt, Reflect.field(assets, 'Splash_data'));
+			parseUiBlocks(rt, assets);
+			applyAllowFlags(rt, assets);
+			if(rt.strumScale > 0)
+			{
+				if(rt.noteScale <= 0) rt.noteScale = rt.strumScale;
+				if(rt.holdScale <= 0) rt.holdScale = rt.strumScale;
+			}
 			if(Reflect.hasField(assets, 'strum_scale'))
 			{
 				var ss:Float = Std.parseFloat(Std.string(Reflect.field(assets, 'strum_scale')));
@@ -383,6 +421,222 @@ class NoteStyleData
 			}
 		}
 		catch(e:Dynamic) {}
+	}
+
+	function applyAllowFlags(rt:PicoNoteStyleRuntime, block:Dynamic):Void
+	{
+		if(block == null) return;
+		if(Reflect.hasField(block, 'allowRGB'))
+			rt.allowRGB = Reflect.field(block, 'allowRGB') != false;
+		if(Reflect.hasField(block, 'allowPixel'))
+			rt.allowPixel = Reflect.field(block, 'allowPixel') == true;
+	}
+
+	/**
+	 * New noteStyle format (data_Assets):
+	 *   noteStyle_data { noteStyle_notePath, noteStyle_noteScale, noteStyle_noteAnimations_Data,
+	 *                    holdNote_data, noteStrumline_data }
+	 *   noteSplash_data { noteSplash_splashPath, noteSplash_splashAnimations, ... }
+	 */
+	function parseNewDataAssets(rt:PicoNoteStyleRuntime, dataAssets:Dynamic):Void
+	{
+		if(dataAssets == null) return;
+
+		var styleData:Dynamic = Reflect.field(dataAssets, 'noteStyle_data');
+		if(styleData == null) styleData = Reflect.field(dataAssets, 'noteStyle_Data');
+		if(styleData != null)
+		{
+			// Note sprite / scale / offsets / anims
+			var notePath:Dynamic = Reflect.field(styleData, 'noteStyle_notePath');
+			if(notePath == null) notePath = Reflect.field(styleData, 'note_sprite');
+			if(notePath != null && Std.string(notePath).trim().length > 0)
+				rt.noteSprite = cleanAssetPath(Std.string(notePath));
+
+			var nsc:Dynamic = Reflect.field(styleData, 'noteStyle_noteScale');
+			if(nsc == null) nsc = Reflect.field(styleData, 'note_scale');
+			if(nsc != null)
+			{
+				var nf:Float = Std.parseFloat(Std.string(nsc));
+				if(!Math.isNaN(nf) && nf > 0)
+				{
+					rt.noteScale = nf;
+					if(rt.holdScale <= 0) rt.holdScale = nf;
+				}
+			}
+
+			var off:Dynamic = Reflect.field(styleData, 'noteStyle_noteOffsets');
+			if(off != null && Std.isOfType(off, Array))
+			{
+				var arr:Array<Dynamic> = cast off;
+				rt.notePosition = [
+					arr.length > 0 ? Std.parseFloat(Std.string(arr[0])) : 0,
+					arr.length > 1 ? Std.parseFloat(Std.string(arr[1])) : 0
+				];
+			}
+
+			var noteAnims:Dynamic = Reflect.field(styleData, 'noteStyle_noteAnimations_Data');
+			if(noteAnims == null) noteAnims = Reflect.field(styleData, 'note_animations');
+			parseAnimMap(rt.noteAnims, noteAnims);
+
+			// Hold notes
+			var hold:Dynamic = Reflect.field(styleData, 'holdNote_data');
+			if(hold != null)
+			{
+				var holdPath:Dynamic = Reflect.field(hold, 'holdNote_holdNotePath');
+				if(holdPath == null) holdPath = Reflect.field(hold, 'holdNote_sprite');
+				if(holdPath == null) holdPath = Reflect.field(hold, 'hold_sprite');
+				if(holdPath != null && Std.string(holdPath).trim().length > 0)
+					rt.holdSprite = cleanAssetPath(Std.string(holdPath));
+
+				var holdOff:Dynamic = Reflect.field(hold, 'holdNote_holdNoteOffsets');
+				// offsets optional on runtime bag — ignored if no field
+
+				var holdAnims:Dynamic = Reflect.field(hold, 'holdNote_holdNoteAnimations');
+				if(holdAnims == null) holdAnims = Reflect.field(hold, 'holdNote_animations');
+				parseAnimMap(rt.holdAnims, holdAnims);
+			}
+
+			// Strumline
+			var strum:Dynamic = Reflect.field(styleData, 'noteStrumline_data');
+			if(strum != null)
+			{
+				var strumPath:Dynamic = Reflect.field(strum, 'noteStrum_strumPath');
+				if(strumPath == null) strumPath = Reflect.field(strum, 'strum_sprite');
+				if(strumPath != null && Std.string(strumPath).trim().length > 0)
+					rt.strumSprite = cleanAssetPath(Std.string(strumPath));
+
+				var ssc:Dynamic = Reflect.field(strum, 'noteStrum_strumScale');
+				if(ssc == null) ssc = Reflect.field(strum, 'strum_scale');
+				if(ssc != null)
+				{
+					var sf:Float = Std.parseFloat(Std.string(ssc));
+					if(!Math.isNaN(sf) && sf > 0) rt.strumScale = sf;
+				}
+
+				var strumAnims:Dynamic = Reflect.field(strum, 'noteStrum_strumAnimations');
+				if(strumAnims == null) strumAnims = Reflect.field(strum, 'strum_animations');
+				parseAnimMap(rt.strumAnims, strumAnims);
+				normalizeNewStrumAnimKeys(rt);
+			}
+		}
+
+		// Splash block (sibling of noteStyle_data inside data_Assets)
+		var splash:Dynamic = Reflect.field(dataAssets, 'noteSplash_data');
+		if(splash == null) splash = Reflect.field(dataAssets, 'Splash_data');
+		if(splash != null)
+			parseNewSplashData(rt, splash);
+	}
+
+	/** Map noteUpStatic / noteUpPress / noteUpConfirm → static2 / pressed2 / confirm2 */
+	function normalizeNewStrumAnimKeys(rt:PicoNoteStyleRuntime):Void
+	{
+		if(rt == null || rt.strumAnims == null) return;
+		var dirMap:Map<String, Int> = [
+			'up' => 2, 'down' => 1, 'left' => 0, 'right' => 3
+		];
+		var extra:Map<String, PicoNoteAnim> = new Map();
+		for (key => anim in rt.strumAnims)
+		{
+			var k:String = key.toLowerCase();
+			// noteUpStatic, noteLeftPress, noteRightConfirmHold
+			if(StringTools.startsWith(k, 'note'))
+				k = k.substr(4);
+			var dir:Int = -1;
+			var kind:String = null;
+			for (name => id in dirMap)
+			{
+				if(StringTools.startsWith(k, name))
+				{
+					dir = id;
+					var rest:String = k.substr(name.length);
+					if(rest == 'static' || rest == '') kind = 'static';
+					else if(rest == 'press' || rest == 'pressed') kind = 'pressed';
+					else if(rest.indexOf('confirm') >= 0) kind = 'confirm';
+					break;
+				}
+			}
+			if(dir < 0 || kind == null) continue;
+			extra.set(kind + dir, anim);
+		}
+		for (k => v in extra)
+			if(!rt.strumAnims.exists(k))
+				rt.strumAnims.set(k, v);
+		// Also run legacy normalizer
+		normalizeStrumAnimKeys(rt);
+	}
+
+	function parseNewSplashData(rt:PicoNoteStyleRuntime, block:Dynamic):Void
+	{
+		if(block == null) return;
+
+		// noteSplash_splashEnabled — enable/disable splashes for this style
+		if(Reflect.hasField(block, 'noteSplash_splashEnabled'))
+			rt.splashEnabled = Reflect.field(block, 'noteSplash_splashEnabled') != false;
+		else if(Reflect.hasField(block, 'splash_enabled'))
+			rt.splashEnabled = Reflect.field(block, 'splash_enabled') != false;
+		else if(Reflect.hasField(block, 'splashEnabled'))
+			rt.splashEnabled = Reflect.field(block, 'splashEnabled') != false;
+
+		var sprite:Dynamic = Reflect.field(block, 'noteSplash_splashPath');
+		if(sprite == null) sprite = Reflect.field(block, 'splash_sprite');
+		if(sprite != null && Std.string(sprite).trim().length > 0)
+			rt.splashSprite = cleanAssetPath(Std.string(sprite));
+
+		var off:Dynamic = Reflect.field(block, 'noteSplash_splashOffsets');
+		if(off == null) off = Reflect.field(block, 'splash_offsets');
+		if(off != null && Std.isOfType(off, Array))
+		{
+			var arr:Array<Dynamic> = cast off;
+			rt.splashOffsets = [
+				arr.length > 0 ? Std.parseFloat(Std.string(arr[0])) : 0,
+				arr.length > 1 ? Std.parseFloat(Std.string(arr[1])) : 0
+			];
+		}
+
+		var ssc:Dynamic = Reflect.field(block, 'noteSplash_splashScale');
+		if(ssc == null) ssc = Reflect.field(block, 'splash_scale');
+		if(ssc != null)
+		{
+			var sf:Float = Std.parseFloat(Std.string(ssc));
+			if(!Math.isNaN(sf) && sf > 0) rt.splashScale = sf;
+		}
+
+		var anims:Dynamic = Reflect.field(block, 'noteSplash_splashAnimations');
+		if(anims == null) anims = Reflect.field(block, 'splash_animations');
+		if(anims != null)
+		{
+			for (k in Reflect.fields(anims))
+			{
+				var list:Array<PicoNoteAnim> = [];
+				var val:Dynamic = Reflect.field(anims, k);
+				if(Std.isOfType(val, Array))
+				{
+					for (item in (cast val:Array<Dynamic>))
+					{
+						var a:PicoNoteAnim = parseAnim(item);
+						if(a != null) list.push(a);
+					}
+				}
+				else
+				{
+					var a2:PicoNoteAnim = parseAnim(val);
+					if(a2 != null) list.push(a2);
+				}
+				if(list.length > 0)
+				{
+					var key:String = k;
+					// noteSplash_Up → up / upSplashes
+					var lower:String = k.toLowerCase();
+					if(StringTools.startsWith(lower, 'notesplash_'))
+						key = lower.substr('notesplash_'.length);
+					// fix typo Righ → right
+					if(key == 'righ') key = 'right';
+					rt.splashAnims.set(key, list);
+					rt.splashAnims.set(key + 'Splashes', list);
+					rt.splashAnims.set(key.toLowerCase() + 'splashes', list);
+				}
+			}
+		}
 	}
 
 	function parseNoteSkinAssets(rt:PicoNoteStyleRuntime, block:Dynamic):Void
@@ -529,6 +783,12 @@ class NoteStyleData
 	function parseSplashData(rt:PicoNoteStyleRuntime, block:Dynamic):Void
 	{
 		if(block == null) return;
+		if(Reflect.hasField(block, 'noteSplash_splashEnabled'))
+			rt.splashEnabled = Reflect.field(block, 'noteSplash_splashEnabled') != false;
+		else if(Reflect.hasField(block, 'splash_enabled'))
+			rt.splashEnabled = Reflect.field(block, 'splash_enabled') != false;
+		else if(Reflect.hasField(block, 'splashEnabled'))
+			rt.splashEnabled = Reflect.field(block, 'splashEnabled') != false;
 		var sprite:Dynamic = Reflect.field(block, 'splash_sprite');
 		if(sprite != null && Std.string(sprite).trim().length > 0)
 			rt.splashSprite = cleanAssetPath(Std.string(sprite));
@@ -578,8 +838,10 @@ class NoteStyleData
 	function parseUiBlocks(rt:PicoNoteStyleRuntime, assets:Dynamic):Void
 	{
 		if(assets == null) return;
+		// If someone accidentally used an array for UI_Assets, ignore
+		if(Std.isOfType(assets, Array)) return;
 
-		// countdown
+		// countdown (countdownThree / countdownTwo / ...)
 		for (name in ['countdownThree', 'countdownTwo', 'countdownOne', 'countdownGo'])
 		{
 			var block:Dynamic = Reflect.field(assets, name);
@@ -590,41 +852,81 @@ class NoteStyleData
 				ui.assetPath = cleanAssetPath(Std.string(sp));
 			var snd:Dynamic = Reflect.field(block, 'countdown_sound');
 			if(snd != null) ui.audioPath = Std.string(snd);
-			if(Reflect.hasField(block, 'scale'))
+			if(Reflect.hasField(block, 'countdownScale'))
+				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'countdownScale')));
+			else if(Reflect.hasField(block, 'scale'))
 				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'scale')));
 			rt.uiAssets.set(name, ui);
 		}
 
-		// ratings
-		for (name in ['rating_marvelous', 'rating_perfect', 'rating_sick', 'rating_good', 'rating_bad', 'rating_shit'])
+		// ratings — new keys judgementMarvelous / judgementSick OR legacy rating_*
+		var ratingPairs:Array<Array<String>> = [
+			['judgementMarvelous', 'marvelous'],
+			['judgementSick', 'sick'],
+			['judgementGood', 'good'],
+			['judgementBad', 'bad'],
+			['judgementShit', 'shit'],
+			['judgementPerfect', 'perfect'],
+			['rating_marvelous', 'marvelous'],
+			['rating_sick', 'sick'],
+			['rating_good', 'good'],
+			['rating_bad', 'bad'],
+			['rating_shit', 'shit'],
+			['rating_perfect', 'perfect']
+		];
+		for (pair in ratingPairs)
 		{
-			var block:Dynamic = Reflect.field(assets, name);
+			var block:Dynamic = Reflect.field(assets, pair[0]);
 			if(block == null) continue;
 			var ui:NoteSkinUiAsset = {};
-			var sp:Dynamic = Reflect.field(block, 'rating_sprite');
+			var sp:Dynamic = Reflect.field(block, 'judgement_sprite');
+			if(sp == null) sp = Reflect.field(block, 'rating_sprite');
 			if(sp != null) ui.assetPath = cleanAssetPath(Std.string(sp));
-			if(Reflect.hasField(block, 'rating_scale'))
+			if(Reflect.hasField(block, 'judgementScale'))
+				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'judgementScale')));
+			else if(Reflect.hasField(block, 'rating_scale'))
 				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'rating_scale')));
-			rt.uiAssets.set(name, ui);
-			// also short keys: marvelous, sick...
-			var short:String = name.substr('rating_'.length);
-			rt.uiAssets.set(short, ui);
+			rt.uiAssets.set(pair[0], ui);
+			rt.uiAssets.set(pair[1], ui);
+			rt.uiAssets.set('rating_' + pair[1], ui);
 		}
 
-		// combo numbers
+		// combo word
+		var comboBlock:Dynamic = Reflect.field(assets, 'combo');
+		if(comboBlock != null)
+		{
+			var ui:NoteSkinUiAsset = {};
+			var sp:Dynamic = Reflect.field(comboBlock, 'combo_sprite');
+			if(sp != null) ui.assetPath = cleanAssetPath(Std.string(sp));
+			if(Reflect.hasField(comboBlock, 'comboScale'))
+				ui.scale = Std.parseFloat(Std.string(Reflect.field(comboBlock, 'comboScale')));
+			else if(Reflect.hasField(comboBlock, 'combo_scale'))
+				ui.scale = Std.parseFloat(Std.string(Reflect.field(comboBlock, 'combo_scale')));
+			if(Reflect.hasField(comboBlock, 'comboHidden'))
+				ui.hidden = Reflect.field(comboBlock, 'comboHidden') == true;
+			else if(Reflect.hasField(comboBlock, 'combo_hidden'))
+				ui.hidden = Reflect.field(comboBlock, 'combo_hidden') == true;
+			rt.uiAssets.set('combo', ui);
+		}
+
+		// combo numbers — comboNumber0..9 or number0..9
 		for (i in 0...10)
 		{
-			var name:String = 'number' + i;
-			var block:Dynamic = Reflect.field(assets, name);
+			var block:Dynamic = Reflect.field(assets, 'comboNumber' + i);
+			if(block == null) block = Reflect.field(assets, 'number' + i);
 			if(block == null) continue;
 			var ui:NoteSkinUiAsset = {};
 			var sp:Dynamic = Reflect.field(block, 'combo_sprite');
 			if(sp != null) ui.assetPath = cleanAssetPath(Std.string(sp));
-			if(Reflect.hasField(block, 'combo_scale'))
+			if(Reflect.hasField(block, 'comboScale'))
+				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'comboScale')));
+			else if(Reflect.hasField(block, 'combo_scale'))
 				ui.scale = Std.parseFloat(Std.string(Reflect.field(block, 'combo_scale')));
-			if(Reflect.hasField(block, 'combo_hidden'))
+			if(Reflect.hasField(block, 'comboHidden'))
+				ui.hidden = Reflect.field(block, 'comboHidden') == true;
+			else if(Reflect.hasField(block, 'combo_hidden'))
 				ui.hidden = Reflect.field(block, 'combo_hidden') == true;
-			rt.uiAssets.set(name, ui);
+			rt.uiAssets.set('number' + i, ui);
 			rt.uiAssets.set('comboNumber' + i, ui);
 		}
 	}
@@ -633,11 +935,27 @@ class NoteStyleData
 	{
 		if(v == null) return null;
 		if(Std.isOfType(v, String))
-			return {prefix: Std.string(v), fps: 24, loop: false};
+			return {prefix: Std.string(v), name: Std.string(v), fps: 24, loop: false};
+
+		var nameField:Dynamic = Reflect.field(v, 'name');
 		var prefix:Dynamic = Reflect.field(v, 'prefix');
-		if(prefix == null || Std.string(prefix).trim().length < 1)
+		var nameStr:String = (nameField != null) ? Std.string(nameField).trim() : '';
+		var prefixStr:String = (prefix != null) ? Std.string(prefix).trim() : '';
+
+		// Allow { "name": "greenSplash" } alone (group label) or with prefix
+		// Allow { "prefix": "..." } without name
+		if(prefixStr.length < 1 && nameStr.length < 1)
 			return null;
-		var anim:PicoNoteAnim = {prefix: Std.string(prefix)};
+
+		var anim:PicoNoteAnim = {};
+		if(prefixStr.length > 0)
+			anim.prefix = prefixStr;
+		if(nameStr.length > 0)
+			anim.name = nameStr;
+		// If only name was given, use it as prefix too so Sparrow still works
+		if((anim.prefix == null || anim.prefix.length < 1) && nameStr.length > 0)
+			anim.prefix = nameStr;
+
 		if(Reflect.hasField(v, 'fps'))
 			anim.fps = Std.parseInt(Std.string(Reflect.field(v, 'fps')));
 		if(Reflect.hasField(v, 'loop'))
@@ -860,8 +1178,13 @@ class NoteStyleData
 		if(rt != null && rt.uiAssets.exists(assetName))
 		{
 			var a:NoteSkinUiAsset = rt.uiAssets.get(assetName);
-			if(a != null && a.assetPath != null && a.assetPath.length > 0)
-				return a.assetPath;
+			// Only override when a real path is set (null/empty keeps Psych fallbacks like ready/num0)
+			if(a != null && a.assetPath != null)
+			{
+				var path:String = Std.string(a.assetPath).trim();
+				if(path.length > 0 && path.toLowerCase() != 'null')
+					return path;
+			}
 		}
 		return fallback;
 	}
@@ -987,6 +1310,15 @@ class NoteStyleData
 	{
 		var rt = getRuntime(style != null ? style : songStyle(true));
 		return (rt != null && rt.splashScale > 0) ? rt.splashScale : fallback;
+	}
+
+	/** noteSplash_splashEnabled from noteStyle (default true) */
+	public function splashEnabled(?style:String, ?mustPress:Bool = true):Bool
+	{
+		var rt = getRuntime(style != null ? style : songStyle(mustPress),
+			style == null && usesCharacterNoteStyle(mustPress));
+		if(rt == null) return true;
+		return rt.splashEnabled != false;
 	}
 
 	/** Force reload a style from disk (editors / hot reload). */
@@ -1131,14 +1463,23 @@ class NoteStyleData
 		var list:Array<String> = [];
 		if(fromCharacter)
 		{
+			// Character noteStyle → pico_assets only (Paths.getPicoFunkinFolder)
 			try
 			{
 				list.push(Paths.getPicoFunkinFolder('game/custom-notes/data/' + style + '.json'));
 			}
 			catch(e:Dynamic) {}
+			list.push('assets/pico_assets/game/custom-notes/data/' + style + '.json');
 			list.push('pico_assets/game/custom-notes/data/' + style + '.json');
-			list.push('custom-notes/data/' + style + '.json');
+			// Optional splash-side style metadata (same name under custom-splashes)
+			try
+			{
+				list.push(Paths.getPicoFunkinFolder('game/custom-splashes/data/' + style + '.json'));
+			}
+			catch(e:Dynamic) {}
+			list.push('assets/pico_assets/game/custom-splashes/data/' + style + '.json');
 		}
+		// Song / chart noteStyle → shared data/notestyles (Paths.image / noteSkins assets inside JSON)
 		list.push('data/notestyles/' + style + '.json');
 		list.push('data/notestyles/' + style + '/notestyle.json');
 		list.push('data/notestyles/' + style + '/notes.json');
@@ -1181,11 +1522,17 @@ class NoteStyleData
 		ordered.push('data/notestyles/' + styleKey + '/notestyle.lua');
 		ordered.push('data/notestyles/' + styleKey + '/script.lua');
 
-		// 3) Character pico custom-notes
+		// 3) Character pico custom-notes / custom-splashes
 		if(fromCharacter)
 		{
+			try
+			{
+				ordered.push(Paths.getPicoFunkinFolder('game/custom-notes/data/' + styleKey + '.lua'));
+				ordered.push(Paths.getPicoFunkinFolder('game/custom-splashes/data/' + styleKey + '.lua'));
+			}
+			catch(e:Dynamic) {}
+			ordered.push('assets/pico_assets/game/custom-notes/data/' + styleKey + '.lua');
 			ordered.push('pico_assets/game/custom-notes/data/' + styleKey + '.lua');
-			ordered.push('custom-notes/data/' + styleKey + '.lua');
 		}
 
 		for (p in ordered)

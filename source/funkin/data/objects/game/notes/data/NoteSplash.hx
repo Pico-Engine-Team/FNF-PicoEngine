@@ -2,6 +2,7 @@ package funkin.data.objects.game.notes.data;
 
 import funkin.data.shaders.RGBPalette;
 import funkin.data.objects.game.notes.data.Note;
+import funkin.data.objects.game.notes.NoteData;
 import funkin.data.objects.game.notes.config.StrumNote;
 import funkin.utils.engines.psych.PsychAnimationController;
 import flixel.system.FlxAssets.FlxShader;
@@ -44,7 +45,7 @@ class NoteSplash extends FlxSprite
 	var spawned:Bool = false;
 	var noteDataMap:Map<Int, String> = new Map();
 
-	public static var defaultNoteSplash(default, never):String = "data/splashes/noteSplashes";
+	public static var defaultNoteSplash(default, never):String = "splashes/noteSplashes"; // images/splashes/... or data path via NoteData
 	public static var configs:Map<String, NoteSplashConfig> = new Map();
 
 	public function new(?x:Float = 0, ?y:Float = 0, ?splash:String)
@@ -70,7 +71,13 @@ class NoteSplash extends FlxSprite
 		}
 
 		var fallbackSplash:String = defaultNoteSplash + getSplashSkinPostfix();
-		var candidates:Array<String> = [splash, fallbackSplash, defaultNoteSplash];
+		// Prefer notestyle Splash_data, then data/splashes (images/splashes/...)
+		var candidates:Array<String> = [];
+		if(splash != null && splash.length > 0) candidates.push(splash);
+		candidates.push(fallbackSplash);
+		candidates.push(defaultNoteSplash);
+		candidates.push('splashes/noteSplashes');
+		candidates.push('noteSplashes');
 		frames = null;
 		for (candidate in candidates)
 		{
@@ -109,49 +116,34 @@ class NoteSplash extends FlxSprite
 		}
 		if(frames == null) return;
 
-		var path:String = 'images/$texture';
-		if (configs.exists(path))
+		// Build config from NoteData Splash_data (no noteSplash.json)
+		var cacheKey:String = 'notestyle:' + texture;
+		if (configs.exists(cacheKey))
 		{
-			this.config = configs.get(path);
+			this.config = configs.get(cacheKey);
 			for (anim in this.config.animations)
-			{
 				if (anim.noteData % 4 == 0)
 					maxAnims++;
-			}
 			return;
 		}
-		else if (Paths.fileExists('$path.json', TEXT))
+
+		var fromStyle:NoteSplashConfig = buildConfigFromNoteStyle(texture);
+		if (fromStyle != null)
 		{
-			var config:Dynamic = haxe.Json.parse(Paths.getTextFromFile('$path.json'));
-			if (config != null)
-			{
-				var tempConfig:NoteSplashConfig = {
-					animations: new Map(),
-					scale: config.scale,
-					allowRGB: config.allowRGB,
-					allowPixel: config.allowPixel,
-					rgb: config.rgb
-				}
-
-				for (i in Reflect.fields(config.animations))
-				{
-					var anim:NoteSplashAnim = Reflect.field(config.animations, i);
-					tempConfig.animations.set(i, anim);
-					if (anim.noteData % 4 == 0)
-						maxAnims++;
-				}
-
-				this.config = tempConfig;
-				configs.set(path, this.config);
-				return;
-			}
+			this.config = fromStyle;
+			for (anim in this.config.animations)
+				if (anim.noteData % 4 == 0)
+					maxAnims++;
+			configs.set(cacheKey, this.config);
+			return;
 		}
 
-		// Splashes with no json
+		// Prefix fallback when Splash_data has no anim list (scan atlas)
 		var tempConfig:NoteSplashConfig = createConfig();
 		var anim:String = 'note splash';
 		var fps:Array<Null<Int>> = [22, 26];
 		var offsets:Array<Array<Float>> = [[0, 0]];
+		var path:String = 'images/' + texture;
 		if (Paths.fileExists('$path.txt', TEXT)) // Backwards compatibility with 0.7 splash txts
 		{
 			var configFile:Array<String> = CoolUtil.listFromString(Paths.getTextFromFile('$path.txt'));
@@ -212,13 +204,22 @@ class NoteSplash extends FlxSprite
 		}
 
 		this.config = tempConfig;
-		configs.set(path, this.config);
+		configs.set(cacheKey, this.config);
 	}
 
 	public function spawnSplashNote(?x:Float = 0, ?y:Float = 0, ?noteData:Int = 0, ?note:Note, ?randomize:Bool = true)
 	{
 		if (note != null && note.noteSplashData.disabled)
 			return;
+
+		// noteStyle noteSplash_splashEnabled
+		var isPlayerSplash:Bool = note != null ? note.mustPress : true;
+		try
+		{
+			if(!NoteData.notestyles.splashEnabled(null, isPlayerSplash))
+				return;
+		}
+		catch(e:Dynamic) {}
 
 		aliveTime = 0;
 
@@ -255,7 +256,7 @@ class NoteSplash extends FlxSprite
 		var anim:String = playDefaultAnim();
 
 		var tempShader:RGBPalette = null;
-		if (config.allowRGB)
+		if (config != null && config.allowRGB)
 		{
 			Note.initializeGlobalRGBShader(noteData % Note.colArray.length);
 			// RGB via noteStyle.allowRGB / noteSplashData (disableNoteRGB removido)
@@ -272,8 +273,8 @@ class NoteSplash extends FlxSprite
 						{
 							if (i > 2) break;
 
-							var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[noteData % Note.colArray.length];
-							if (PlayState.isPixelStage) arr = ClientPrefs.data.arrowRGBPixel[noteData % Note.colArray.length];
+							var arr:Array<FlxColor> = Preferences.data.arrowRGB[noteData % Note.colArray.length];
+							if (PlayState.isPixelStage) arr = Preferences.data.arrowRGBPixel[noteData % Note.colArray.length];
 
 							var rgb = colors[i];
 							if (rgb == null)
@@ -311,13 +312,25 @@ class NoteSplash extends FlxSprite
 			}
 		}
 		rgbShader.copyValues(tempShader);
-		if (!config.allowPixel) rgbShader.pixelAmount = 1;
+		if (config == null || !config.allowPixel) rgbShader.pixelAmount = 1;
 		else if (PlayState.isPixelStage) rgbShader.pixelAmount = 6;
 
 		offset.set(10, 10);
-		var conf:NoteSplashAnim = config.animations.get(anim);
+		// Global offsets from notestyle Splash_data.splash_offsets
+		try
+		{
+			var isPlayer:Bool = note != null ? note.mustPress : true;
+			var styleOff = NoteData.noteStyle.splashOffsets(null, isPlayer);
+			if(styleOff != null && styleOff.length >= 2)
+			{
+				offset.x += styleOff[0];
+				offset.y += styleOff[1];
+			}
+		}
+		catch(e:Dynamic) {}
+		var conf:NoteSplashAnim = config != null ? config.animations.get(anim) : null;
 		var offsets:Array<Float> = [0, 0];
-		if (conf != null) offsets = conf.offsets;
+		if (conf != null && conf.offsets != null) offsets = conf.offsets;
 		if (offsets != null)
 		{
 			offset.x += offsets[0];
@@ -329,12 +342,12 @@ class NoteSplash extends FlxSprite
 			spawned = false;
 		}
 
-		alpha = ClientPrefs.data.splashAlpha;
+		alpha = Preferences.data.splashAlpha;
 		if (note != null) alpha = note.noteSplashData.a;
 
-		antialiasing = ClientPrefs.data.antialiasing;
+		antialiasing = Preferences.data.antialiasing;
 		if (note != null) antialiasing = note.noteSplashData.antialiasing;
-		if (PlayState.isPixelStage && config.allowPixel) antialiasing = false;
+		if (PlayState.isPixelStage && config != null && config.allowPixel) antialiasing = false;
 
 		var minFps:Int = 22;
 		var maxFps:Int = 26;
@@ -398,10 +411,81 @@ class NoteSplash extends FlxSprite
 
 	public static function getSplashSkinPostfix()
 	{
-		var skin:String = '';
-		if (ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
-			skin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '-');
-		return skin;
+		// splashSkin removed — noteStyle Splash_data controls splash texture
+		return '';
+	}
+
+	function buildConfigFromNoteStyle(texture:String):NoteSplashConfig
+	{
+		var temp:NoteSplashConfig = createConfig();
+		var keys:Array<String> = ['leftSplashes', 'downSplashes', 'upSplashes', 'rightSplashes'];
+		var colKeys:Array<String> = ['purple', 'blue', 'green', 'red'];
+		var found:Int = 0;
+
+		for (dir in 0...4)
+		{
+			var list:Array<Dynamic> = null;
+			try
+			{
+				list = cast NoteData.noteStyle.splashAnims(keys[dir], null, true);
+			}
+			catch(e:Dynamic)
+			{
+				list = null;
+			}
+			if(list == null || list.length < 1)
+			{
+				try
+				{
+					list = cast NoteData.noteStyle.splashAnims(['left','down','up','right'][dir], null, true);
+				}
+				catch(e:Dynamic)
+				{
+					list = null;
+				}
+			}
+			if(list == null || list.length < 1) continue;
+
+			for (i in 0...list.length)
+			{
+				var a:Dynamic = list[i];
+				if(a == null) continue;
+				var prefix:String = Reflect.field(a, 'prefix');
+				if(prefix == null || Std.string(prefix).length < 1) continue;
+				prefix = Std.string(prefix);
+
+				// Prefer JSON "name" for the animation id when present
+				var animName:String = null;
+				var nameField:Dynamic = Reflect.field(a, 'name');
+				if(nameField != null && Std.string(nameField).trim().length > 0)
+					animName = Std.string(nameField).trim();
+				if(animName == null || animName.length < 1)
+					animName = colKeys[dir] + (i > 0 ? Std.string(i + 1) : '');
+
+				var fpsVal:Null<Int> = Reflect.field(a, 'fps');
+				var fpsArr:Array<Int> = fpsVal != null ? [fpsVal, fpsVal] : [22, 26];
+				var indices:Array<Int> = Reflect.field(a, 'indices');
+				if(indices == null) indices = [];
+				var data:Int = dir + (i * 4);
+				addAnimationToConfig(temp, 1, animName, prefix, fpsArr, [0, 0], indices, data);
+				found++;
+			}
+		}
+
+		if(found < 1) return null;
+
+		try
+		{
+			var rt = NoteData.runtime(true);
+			if(rt != null)
+			{
+				temp.allowRGB = rt.allowRGB;
+				temp.allowPixel = rt.allowPixel;
+			}
+		}
+		catch(e:Dynamic) {}
+
+		return temp;
 	}
 
 	public static function createConfig():NoteSplashConfig
