@@ -53,6 +53,20 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Characters Note Skins',
+			"If checked,\nUse NoteStyle To Characters",
+			'useCharacterNoteStyle',
+			STRING,
+			['Both', 'Player', 'Opponent', 'Disabled']);
+		addOption(option);
+
+		var option:Option = new Option('Accuracy Style',
+			"Choose what the Score Text shows next to Score and Misses.\nAccuracy = percent | Rank = letter (P+, S, A...).",
+			'ScoreTextAccuracy',
+			STRING);
+		option.options = ['Accuracy', 'Rank'];
+		addOption(option);
+
 		var option:Option = new Option('Use Epic Ratings',
 			'If checked, adds Marvelous as a bonus judgement above Sick.',
 			'useEpicRankings',
@@ -139,8 +153,8 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 	}
 
 	function onChangeHitsoundVolume()
-		FlxG.sound.play(Paths.sound('hitsound'), ClientPrefs.data.hitsoundVolume);
+		FlxG.sound.play(Paths.sound('hitsound'), Preferences.data.hitsoundVolume);
 
 	function onChangeAutoPause()
-		FlxG.autoPause = ClientPrefs.data.autoPause;
+		FlxG.autoPause = Preferences.data.autoPause;
 }

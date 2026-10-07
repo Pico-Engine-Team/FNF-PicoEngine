@@ -1,10 +1,10 @@
 package funkin.states.options.data;
 
-import funkin.states.PauseState;
+import funkin.states.PauseMenuState;
 import funkin.data.objects.Alphabet;
+import funkin.states.options.config.*;
 
 import funkin.utils.windows.Main;
-import funkin.states.options.config.*;
 import funkin.substates.MusicBeatSubstate;
 
 class VisualsSettingsSubState extends BaseOptionsMenu
@@ -15,9 +15,9 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Visuals Settings Menu';
 
 		// Migrate legacy time bar prefs
-		var tb:String = ClientPrefs.data.timeBarType;
+		var tb:String = Preferences.data.timeBarType;
 		if(tb == 'Time Left' || tb == 'Time Elapsed')
-			ClientPrefs.data.timeBarType = 'Combined';
+			Preferences.data.timeBarType = 'Combined';
 
 		var option:Option = new Option('Note Splash Opacity',
 			'How much transparent should the Note Splashes be.',
@@ -37,15 +37,15 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		// Migrate legacy comboCam values
-		var cc:String = Std.string(ClientPrefs.data.comboCam);
+		var cc:String = Std.string(Preferences.data.comboCam);
 		switch(cc)
 		{
 			case 'camHUD', 'CamHUD', 'HUD', 'hud':
-				ClientPrefs.data.comboCam = 'Combo HUD';
+				Preferences.data.comboCam = 'Combo HUD';
 			case 'camGame', 'CamGame', 'Game', 'game':
-				ClientPrefs.data.comboCam = 'Combo Game';
+				Preferences.data.comboCam = 'Combo Game';
 			case 'none', 'None', 'Off', 'off':
-				ClientPrefs.data.comboCam = 'Disabled';
+				Preferences.data.comboCam = 'Disabled';
 		}
 
 		var option:Option = new Option('Combo Camera:',
@@ -143,15 +143,15 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 	{
 		if(Main.fpsVar != null)
 		{
-			Main.fpsVar.visible = (ClientPrefs.data.fpsDisplay != 'Disabled');
-			Main.fpsVar.updateDebugType(ClientPrefs.data.fpsDisplay);
+			Main.fpsVar.visible = (Preferences.data.fpsDisplay != 'Disabled');
+			Main.fpsVar.updateDebugType(Preferences.data.fpsDisplay);
 		}
 	}
 
 	function onChangeDebugDisplayBG()
 	{
 		if(Main.fpsVar != null)
-			Main.fpsVar.updateBackgroundAlpha(ClientPrefs.data.debugDisplayBG);
+			Main.fpsVar.updateBackgroundAlpha(Preferences.data.debugDisplayBG);
 	}
 	#end
 }

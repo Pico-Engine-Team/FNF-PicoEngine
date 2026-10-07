@@ -86,7 +86,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		{
 			var castedSprite:FlxSprite = cast sprite;
 			if(castedSprite != null && (castedSprite is FlxSprite) && !(castedSprite is FlxText)) {
-				castedSprite.antialiasing = ClientPrefs.data.antialiasing;
+				castedSprite.antialiasing = Preferences.data.antialiasing;
 			}
 		}
 	}
@@ -100,14 +100,14 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			try {
 				if (FlxG.stage.application.window.displayMode != null)
 					displayRefresh = FlxG.stage.application.window.displayMode.refreshRate;
-				switch (ClientPrefs.data.vsync)
+				switch (Preferences.data.vsync)
 				{
 					case 'On' | 'ON':
 						FlxG.stage.application.window.frameRate = displayRefresh;
 					case 'Adaptive':
-						FlxG.stage.application.window.frameRate = Std.int(Math.max(ClientPrefs.data.framerate, displayRefresh));
+						FlxG.stage.application.window.frameRate = Std.int(Math.max(Preferences.data.framerate, displayRefresh));
 					default:
-						FlxG.stage.application.window.frameRate = ClientPrefs.data.framerate;
+						FlxG.stage.application.window.frameRate = Preferences.data.framerate;
 				}
 			} catch (e:Dynamic) {
 				trace('Error applying VSync/frameRate: ' + e);
@@ -118,15 +118,15 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 	function onChangeFramerate()
 	{
-		if(ClientPrefs.data.framerate > FlxG.drawFramerate)
+		if(Preferences.data.framerate > FlxG.drawFramerate)
 		{
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
+			FlxG.updateFramerate = Preferences.data.framerate;
+			FlxG.drawFramerate = Preferences.data.framerate;
 		}
 		else
 		{
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
+			FlxG.drawFramerate = Preferences.data.framerate;
+			FlxG.updateFramerate = Preferences.data.framerate;
 		}
 	}
 

@@ -5,6 +5,7 @@ typedef Keybind = {
 	gamepad:String
 }
 
+// Bool will use checkboxes, Everything else will use a text
 enum OptionType {
 	BOOL;
 	INT;
@@ -22,7 +23,7 @@ class Option
 	public var type:OptionType = BOOL;
 
 	public var scrollSpeed:Float = 50; //Only works on int/float, defines how fast it scrolls per second while holding left/right
-	public var variable(default, null):String = null; //Variable from ClientPrefs.hx
+	public var variable(default, null):String = null; //Variable from Preferences.hx
 	public var defaultValue:Dynamic = null;
 
 	public var curOption:Int = 0; //Don't change this
@@ -49,14 +50,17 @@ class Option
 		this.type = type;
 		this.options = options;
 
-		if(this.type != KEYBIND) this.defaultValue = Reflect.getProperty(ClientPrefs.defaultData, variable);
+		if(this.type != KEYBIND)
+		{
+			if(variable != null && Reflect.hasField(Preferences.defaultData, variable))
+				this.defaultValue = Reflect.getProperty(Preferences.defaultData, variable);
+		}
 		switch(type)
 		{
 			case BOOL:
 				if(defaultValue == null) defaultValue = false;
 			case INT, FLOAT:
 				if(defaultValue == null) defaultValue = 0;
-
 			case PERCENT:
 				if(defaultValue == null) defaultValue = 1;
 				displayFormat = '%v%';
@@ -65,11 +69,10 @@ class Option
 				maxValue = 1;
 				scrollSpeed = 0.5;
 				decimals = 2;
-
 			case STRING:
-			if(options != null && options.length > 0)
-				defaultValue = options[0];
-			if(defaultValue == null)
+				if(options.length > 0)
+					defaultValue = options[0];
+				if(defaultValue == null)
 					defaultValue = '';
 
 			case KEYBIND:
@@ -77,6 +80,7 @@ class Option
 				defaultKeys = {gamepad: 'NONE', keyboard: 'NONE'};
 				keys = {gamepad: 'NONE', keyboard: 'NONE'};
 		}
+
 		try
 		{
 			if(getValue() == null)
@@ -103,25 +107,36 @@ class Option
 
 	dynamic public function getValue():Dynamic
 	{
-		var value = Reflect.getProperty(ClientPrefs.data, variable);
-		if(type == KEYBIND && value != null) return !Controls.instance.controllerMode ? value.keyboard : value.gamepad;
+		if(variable == null || variable.length < 1) return defaultValue;
+		if(!Reflect.hasField(Preferences.data, variable))
+			return defaultValue;
+		var value = Reflect.getProperty(Preferences.data, variable);
+		if(type == KEYBIND)
+		{
+			if(value == null) return 'NONE';
+			return !Controls.instance.controllerMode ? value.keyboard : value.gamepad;
+		}
 		return value;
 	}
 
 	dynamic public function setValue(value:Dynamic)
 	{
+		if(variable == null || variable.length < 1) return value;
+		if(!Reflect.hasField(Preferences.data, variable))
+		{
+			// Unknown preference field — don't crash the options menu
+			trace('[Option] Missing Preferences.data field: ' + variable);
+			return value;
+		}
 		if(type == KEYBIND)
 		{
-			var keys = Reflect.getProperty(ClientPrefs.data, variable);
-			if(keys != null){
-
-				if(!Controls.instance.controllerMode) keys.keyboard = value;
-				else keys.gamepad = value;
-				return value;
-			}
-			else return null;
+			var keys = Reflect.getProperty(Preferences.data, variable);
+			if(keys == null) return value;
+			if(!Controls.instance.controllerMode) keys.keyboard = value;
+			else keys.gamepad = value;
+			return value;
 		}
-		return Reflect.setProperty(ClientPrefs.data, variable, value);
+		return Reflect.setProperty(Preferences.data, variable, value);
 	}
 
 	var _name:String = null;

@@ -38,11 +38,11 @@ class OptionsMenuState extends MusicBeatState
 	override function create()
 	{
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Options Menu", null);
+		DiscordClient.changePresence("In Options Menu", null);
 		#end
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+		bg.antialiasing = Preferences.data.antialiasing;
 		bg.color = 0xFFea71fd;
 		bg.updateHitbox();
 		bg.screenCenter();
@@ -62,7 +62,7 @@ class OptionsMenuState extends MusicBeatState
 		add(selectorLeft);
 
 		changeSelection();
-		ClientPrefs.saveSettings();
+		Preferences.saveSettings();
 		FlxG.sound.playMusic(Paths.music('options/OptionSongMenu'));
 		super.create();
 	}
@@ -70,10 +70,10 @@ class OptionsMenuState extends MusicBeatState
 	override function closeSubState()
 	{
 		super.closeSubState();
-		ClientPrefs.saveSettings();
+		Preferences.saveSettings();
 
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Options Menu", null);
+		DiscordClient.changePresence("In Options Menu", null);
 		#end
 	}
 
@@ -92,7 +92,7 @@ class OptionsMenuState extends MusicBeatState
 			if(onPlayState)
 			{
 				funkin.stages.StageData.loadDirectory(PlayState.SONG);
-				LoadingScreenState.loadAndSwitchState(new PlayState());
+				LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 				FlxG.sound.music.volume = 0;
 			}
 			else
@@ -124,7 +124,7 @@ class OptionsMenuState extends MusicBeatState
 	}
 
 	override function destroy() {
-		ClientPrefs.loadPrefs();
+		Preferences.loadPrefs();
 		super.destroy();
 	}
 }

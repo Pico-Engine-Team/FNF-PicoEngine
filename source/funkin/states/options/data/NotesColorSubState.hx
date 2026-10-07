@@ -1,8 +1,8 @@
 package funkin.states.options.data;
 
 import funkin.data.shaders.RGBPalette;
-import funkin.data.objects.game.notes.data.Note;
 import funkin.data.shaders.RGBPalette.RGBShaderReference;
+import funkin.data.objects.game.notes.data.Note;
 import funkin.data.objects.game.notes.config.StrumNote;
 
 import flixel.addons.display.FlxBackdrop;
@@ -47,18 +47,20 @@ class NotesColorSubState extends MusicBeatSubstate
 	var _lastControllerMode:Bool = false;
 	var tipTxt:FlxText;
 
-	public function new() {
+	public function new()
+	{
 		super();
 		
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Note Colors Menu", null);
+		DiscordClient.changePresence("In Note Colors Menu");
 		#end
 		
 		onPixel = PlayState.isPixelStage;
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
 		bg.color = 0xFFEA71FD;
 		bg.screenCenter();
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 
 		var grid:FlxBackdrop = new FlxBackdrop(FlxGridOverlay.createGrid(80, 80, 160, 160, true, 0x33FFFFFF, 0x0));
@@ -86,6 +88,7 @@ class NotesColorSubState extends MusicBeatSubstate
 		var bg:FlxSprite = new FlxSprite(720).makeGraphic(FlxG.width - 720, FlxG.height, FlxColor.BLACK);
 		bg.alpha = 0.25;
 		add(bg);
+
 		var bg:FlxSprite = new FlxSprite(750, 160).makeGraphic(FlxG.width - 780, 540, FlxColor.BLACK);
 		bg.alpha = 0.25;
 		add(bg);
@@ -95,11 +98,11 @@ class NotesColorSubState extends MusicBeatSubstate
 		text.setScale(0.4);
 		add(text);
 
-		copyButton = new FlxSprite(760, 50).loadGraphic(Paths.image('menus/options/noteColor/copy'));
+		copyButton = new FlxSprite(760, 50).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/copy-color'));
 		copyButton.alpha = 0.6;
 		add(copyButton);
 
-		pasteButton = new FlxSprite(1180, 50).loadGraphic(Paths.image('menus/options/noteColor/paste'));
+		pasteButton = new FlxSprite(1180, 50).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/paste-color'));
 		pasteButton.alpha = 0.6;
 		add(pasteButton);
 
@@ -111,13 +114,13 @@ class NotesColorSubState extends MusicBeatSubstate
 		colorGradientSelector.offset.y = 5;
 		add(colorGradientSelector);
 
-		colorPalette = new FlxSprite(820, 580).loadGraphic(Paths.image('menus/options/noteColor/palette', false));
+		colorPalette = new FlxSprite(820, 580).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/palette', false));
 		colorPalette.scale.set(20, 20);
 		colorPalette.updateHitbox();
 		colorPalette.antialiasing = false;
 		add(colorPalette);
 		
-		colorWheel = new FlxSprite(860, 200).loadGraphic(Paths.image('menus/options/noteColor/colorWheel'));
+		colorWheel = new FlxSprite(860, 200).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/colorWheel'));
 		colorWheel.setGraphicSize(360, 360);
 		colorWheel.updateHitbox();
 		add(colorWheel);
@@ -241,7 +244,6 @@ class NotesColorSubState extends MusicBeatSubstate
 			controllerPointer.y = Math.max(0, Math.min(FlxG.height, controllerPointer.y + analogY * 1000 * elapsed));
 		}
 		var controllerPressed:Bool = (controls.controllerMode && controls.ACCEPT);
-		//
 
 		if(FlxG.keys.justPressed.CONTROL)
 		{
@@ -474,21 +476,23 @@ class NotesColorSubState extends MusicBeatSubstate
 				for (i in 0...3)
 				{
 					var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
-					var color:FlxColor = !onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][i] :
-													ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][i];
+					var color:FlxColor = !onPixel ? Preferences.defaultData.arrowRGB[curSelectedNote][i] :
+													Preferences.defaultData.arrowRGBPixel[curSelectedNote][i];
+					var sh = getShader();
+					if(sh == null) continue;
 					switch(i)
 					{
 						case 0:
-							getShader().r = strumRGB.r = color;
+							sh.r = strumRGB.r = color;
 						case 1:
-							getShader().g = strumRGB.g = color;
+							sh.g = strumRGB.g = color;
 						case 2:
-							getShader().b = strumRGB.b = color;
+							sh.b = strumRGB.b = color;
 					}
 					dataArray[curSelectedNote][i] = color;
 				}
 			}
-			setShaderColor(!onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
+			setShaderColor(!onPixel ? Preferences.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : Preferences.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			updateColors();
 		}
@@ -554,8 +558,11 @@ class NotesColorSubState extends MusicBeatSubstate
 		
 		modeBG.visible = false;
 		notesBG.visible = true;
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if(Note.globalRgbShaders != null && curSelectedNote >= 0 && curSelectedNote < Note.globalRgbShaders.length && Note.globalRgbShaders[curSelectedNote] != null)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
 		updateNotes();
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
@@ -577,7 +584,9 @@ class NotesColorSubState extends MusicBeatSubstate
 	var bigNote:Note;
 	public function spawnNotes()
 	{
-		dataArray = !onPixel ? ClientPrefs.data.arrowRGB : ClientPrefs.data.arrowRGBPixel;
+		dataArray = !onPixel ? Preferences.data.arrowRGB : Preferences.data.arrowRGBPixel;
+		if(dataArray == null || dataArray.length < 1)
+			dataArray = Preferences.defaultData != null ? (!onPixel ? Preferences.defaultData.arrowRGB : Preferences.defaultData.arrowRGBPixel) : [[FlxColor.WHITE, FlxColor.WHITE, FlxColor.WHITE]];
 		if (onPixel) PlayState.stageUI = "pixel";
 
 		// clear groups
@@ -603,10 +612,10 @@ class NotesColorSubState extends MusicBeatSubstate
 			bigNote.destroy();
 		}
 
-		// respawn stuff
+		// Respawn Stuff
 		var res:Int = onPixel ? 160 : 17;
-		skinNote = new FlxSprite(48, 24).loadGraphic(Paths.image('menus/options/noteColor/pixel/' + (onPixel ? 'note' : 'notePixel')), true, res, res);
-		skinNote.antialiasing = ClientPrefs.data.antialiasing;
+		skinNote = new FlxSprite(48, 24).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/' + (onPixel ? 'default-note' : 'pixel-note')), true, res, res);
+		skinNote.antialiasing = Preferences.data.antialiasing;
 		skinNote.setGraphicSize(68);
 		skinNote.updateHitbox();
 		skinNote.animation.add('anim', [0], 24, true);
@@ -617,8 +626,8 @@ class NotesColorSubState extends MusicBeatSubstate
 		var res:Int = !onPixel ? 160 : 17;
 		for (i in 0...3)
 		{
-			var newNote:FlxSprite = new FlxSprite(230 + (100 * i), 100).loadGraphic(Paths.image('menus/options/noteColor/pixel/' + (!onPixel ? 'note' : 'notePixel')), true, res, res);
-			newNote.antialiasing = ClientPrefs.data.antialiasing;
+			var newNote:FlxSprite = new FlxSprite(230 + (100 * i), 100).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/' + (!onPixel ? 'default-note' : 'pixel-note')), true, res, res);
+			newNote.antialiasing = Preferences.data.antialiasing;
 			newNote.setGraphicSize(85);
 			newNote.updateHitbox();
 			newNote.animation.add('anim', [i], 24, true);
@@ -644,8 +653,11 @@ class NotesColorSubState extends MusicBeatSubstate
 		bigNote.setPosition(250, 325);
 		bigNote.setGraphicSize(250);
 		bigNote.updateHitbox();
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if(Note.globalRgbShaders != null && curSelectedNote >= 0 && curSelectedNote < Note.globalRgbShaders.length && Note.globalRgbShaders[curSelectedNote] != null)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
 		for (i in 0...Note.colArray.length)
 		{
 			if(!onPixel) bigNote.animation.addByPrefix('note$i', Note.colArray[i] + '0', 24, true);
@@ -692,21 +704,41 @@ class NotesColorSubState extends MusicBeatSubstate
 		}
 		colorGradientSelector.y = colorGradient.y + colorGradient.height * (1 - color.brightness);
 
-		var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
+		if(myNotes == null || myNotes.members == null || curSelectedNote < 0 || curSelectedNote >= myNotes.members.length) return;
+		var noteMember = myNotes.members[curSelectedNote];
+		if(noteMember == null) return;
+		var strumRGB:RGBShaderReference = noteMember.rgbShader;
+		var shader = getShader();
+		if(shader == null || strumRGB == null) return;
 		switch(curSelectedMode)
 		{
 			case 0:
-				getShader().r = strumRGB.r = color;
+				shader.r = strumRGB.r = color;
 			case 1:
-				getShader().g = strumRGB.g = color;
+				shader.g = strumRGB.g = color;
 			case 2:
-				getShader().b = strumRGB.b = color;
+				shader.b = strumRGB.b = color;
 		}
 	}
 
-	function setShaderColor(value:FlxColor) dataArray[curSelectedNote][curSelectedMode] = value;
-	function getShaderColor() return dataArray[curSelectedNote][curSelectedMode];
-	function getShader() return Note.globalRgbShaders[curSelectedNote];
+	function setShaderColor(value:FlxColor)
+	{
+		if(dataArray == null || curSelectedNote < 0 || curSelectedNote >= dataArray.length) return;
+		if(dataArray[curSelectedNote] == null || curSelectedMode < 0 || curSelectedMode >= dataArray[curSelectedNote].length) return;
+		dataArray[curSelectedNote][curSelectedMode] = value;
+	}
+	function getShaderColor():FlxColor
+	{
+		if(dataArray == null || curSelectedNote < 0 || curSelectedNote >= dataArray.length) return FlxColor.WHITE;
+		if(dataArray[curSelectedNote] == null || curSelectedMode < 0 || curSelectedMode >= dataArray[curSelectedNote].length) return FlxColor.WHITE;
+		return dataArray[curSelectedNote][curSelectedMode];
+	}
+	function getShader():RGBPalette
+	{
+		if(Note.globalRgbShaders == null || curSelectedNote < 0 || curSelectedNote >= Note.globalRgbShaders.length)
+			return null;
+		return Note.globalRgbShaders[curSelectedNote];
+	}
 
 	override function destroy()
 	{
