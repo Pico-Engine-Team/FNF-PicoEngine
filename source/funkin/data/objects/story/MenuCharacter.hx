@@ -63,7 +63,7 @@ class MenuCharacter extends FlxSprite
 		if(character == this.character) return;
 
 		this.character = character;
-		antialiasing = ClientPrefs.data.antialiasing;
+		antialiasing = Preferences.data.antialiasing;
 		useAlternative = false;
 		hasConfirmAnimation = false;
 		danceLeft = false;
@@ -379,7 +379,7 @@ class MenuCharacter extends FlxSprite
 		if(file.prop_disabled_Antialiasing)
 			antialiasing = false;
 		else
-			antialiasing = ClientPrefs.data.antialiasing;
+			antialiasing = Preferences.data.antialiasing;
 
 		var sc:Float = file.propScale;
 		if(Math.isNaN(sc) || sc <= 0) sc = 1;
