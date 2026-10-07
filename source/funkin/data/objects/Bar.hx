@@ -2,38 +2,40 @@ package funkin.data.objects;
 
 import flixel.math.FlxRect;
 
-class Bar extends FlxSpriteGroup {
+class Bar extends FlxSpriteGroup
+{
+	public var bg:FlxSprite;
 	public var leftBar:FlxSprite;
 	public var rightBar:FlxSprite;
-	public var bg:FlxSprite;
+
 	public var valueFunction:Void->Float = null;
 	public var percent(default, set):Float = 0;
 	public var bounds:Dynamic = {min: 0, max: 1};
 	public var leftToRight(default, set):Bool = true;
-	public var barCenter(default, null):Float = 0;
 
-	// you might need to change this if you want to use a custom bar
+	public var barCenter(default, null):Float = 0;
 	public var barWidth(default, set):Int = 1;
 	public var barHeight(default, set):Int = 1;
 	public var barOffset:FlxPoint = new FlxPoint(3, 3);
 
-	public function new(x:Float, y:Float, image:String = 'ui/healthBar', valueFunction:Void->Float = null, boundX:Float = 0, boundY:Float = 1) {		
+	public function new(x:Float, y:Float, image:String = 'ui/healthBar', valueFunction:Void->Float = null, boundX:Float = 0, boundY:Float = 1)
+	{		
 		super(x, y);
 
 		this.valueFunction = valueFunction;
 		setBounds(boundX, boundY);
 		
 		bg = new FlxSprite().loadGraphic(Paths.image(image));
-		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.antialiasing = Preferences.data.antialiasing;
 		barWidth = Std.int(bg.width - 6);
 		barHeight = Std.int(bg.height - 6);
 
 		leftBar = new FlxSprite().makeGraphic(Std.int(bg.width), Std.int(bg.height), FlxColor.WHITE);
-		leftBar.antialiasing = antialiasing = ClientPrefs.data.antialiasing;
+		leftBar.antialiasing = antialiasing = Preferences.data.antialiasing;
 
 		rightBar = new FlxSprite().makeGraphic(Std.int(bg.width), Std.int(bg.height), FlxColor.WHITE);
 		rightBar.color = FlxColor.BLACK;
-		rightBar.antialiasing = ClientPrefs.data.antialiasing;
+		rightBar.antialiasing = Preferences.data.antialiasing;
 
 		add(leftBar);
 		add(rightBar);
@@ -42,7 +44,8 @@ class Bar extends FlxSpriteGroup {
 	}
 
 	public var enabled:Bool = true;
-	override function update(elapsed:Float) {
+	override function update(elapsed:Float)
+	{
 		if(!enabled)
 		{
 			super.update(elapsed);
@@ -95,7 +98,6 @@ class Bar extends FlxSpriteGroup {
 
 		barCenter = leftBar.x + leftSize + barOffset.x;
 
-		// flixel is retarded
 		leftBar.clipRect = leftBar.clipRect;
 		rightBar.clipRect = rightBar.clipRect;
 	}
