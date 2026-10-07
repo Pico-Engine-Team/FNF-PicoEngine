@@ -18,9 +18,9 @@ import sys.io.*;
 import js.html.*;
 #end
 
-// Pico Engine Stuff - v2.26.7
-import funkin.Paths;
-import funkin.data.ClientPrefs;
+// Pico Engine New Source Code Structure
+import funkin.Preferences;
+import funkin.utils.Paths;
 import funkin.data.objects.Alphabet;
 
 import funkin.states.PlayState;
@@ -58,8 +58,7 @@ import funkin.modding.scripting.psychlua.*;
 #end
 
 #if PSYCH_ALLOWED
-// Psych UI Elements
-import funkin.utils.engines.psych.ui.*;
+import funkin.utils.engines.psych.ui.*; // Psych Engine (PE) UI Elements
 #end
 
 #if flxanimate
@@ -67,7 +66,7 @@ import funkin.utils.engines.psych.PsychFlxAnimate as FlxAnimate;
 import flxanimate.*;
 #end
 
-// News Flixel and openfl
+// New Imports
 import flixel.sound.FlxSound;
 import flixel.FlxG;
 import flixel.FlxSprite;
