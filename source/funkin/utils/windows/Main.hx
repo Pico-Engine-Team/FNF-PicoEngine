@@ -1,9 +1,9 @@
 package funkin.utils.windows;
 
 import funkin.play.Highscore;
-import funkin.states.TitleState;
-import funkin.utils.windows.DebugDisplay as FPSCounter; // By Betadciu and Nightmare Vision
+import funkin.states.TitleMenuState;
 import funkin.utils.Native;
+import funkin.utils.windows.DebugDisplay as FPSCounter;
 
 #if desktop
 import funkin.utils.windows.ALSoftConfig;
@@ -26,7 +26,7 @@ import openfl.display.StageScaleMode;
 import lime.app.Application;
 
 #if HSCRIPT_ALLOWED
-import funkin.modding.scripting.HScript.HScriptInfos;
+import funkin.modding.scripting.FunkinHSProgramming.HScriptInfos;
 import crowplexus.iris.Iris;
 #end
 
@@ -52,7 +52,7 @@ class Main extends Sprite
 	public static final game = {
 		width: 1280, // WINDOW width
 		height: 720, // WINDOW height
-		initialState: TitleState, // initial game state
+		initialState: TitleMenuState, // initial game state
 		framerate: 60, // default framerate
 		skipSplash: true, // if the default flixel splash screen should be skipped
 		startFullscreen: false // if the game should start at fullscreen mode
@@ -67,7 +67,6 @@ class Main extends Sprite
 	public function new()
 	{
 		super();
-
 		#if (cpp && windows)
 		Native.fixScaling();
 		#end
@@ -86,6 +85,8 @@ class Main extends Sprite
 		Mods.pushGlobalMods();
 		#end
 		Mods.loadTopMod();
+		// AntiPiracy checks run on MainMenu / PlayState (mod license + GameBanana/GameJolt).
+		// Set AntiPiracy.disabled = true in debug if needed.
 
 		FlxG.save.bind('funkin', CoolUtil.getSavePath());
 		Highscore.load();
@@ -149,7 +150,7 @@ class Main extends Sprite
 
 		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(funkin.modding.scripting.psychlua.CallbackHandler.call)); #end
 		Controls.instance = new Controls();
-		ClientPrefs.loadDefaultKeys();
+		Preferences.loadDefaultKeys();
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 		addChild(new FlxGame(game.width, game.height, game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
@@ -159,12 +160,12 @@ class Main extends Sprite
 		Lib.current.stage.align = "tl";
 		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
 		if(fpsVar != null) {
-			fpsVar.visible = (ClientPrefs.data.fpsDisplay != 'Disabled');
-			fpsVar.updateBackgroundAlpha(ClientPrefs.data.debugDisplayBG);
+			fpsVar.visible = (Preferences.data.fpsDisplay != 'Disabled');
+			fpsVar.updateBackgroundAlpha(Preferences.data.debugDisplayBG);
 		}
 		#end
 
-		#if (linux || mac) // fix the app icon not showing up on the Linux Panel / Mac Dock
+		#if (linux || mac)
 		var icon = Image.fromFile("icon.png");
 		Lib.current.stage.window.setIcon(icon);
 		#end
@@ -215,7 +216,7 @@ class Main extends Sprite
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = sanitizeCrashFileName(Date.now().toString());
 
-		path = "./content/logs/" + "PicoCrashLog-" + dateNow + ".txt";
+		path = "./content/logs/" + "CrashLog-" + dateNow + ".txt";
 
 		for (stackItem in callStack)
 		{
@@ -229,13 +230,9 @@ class Main extends Sprite
 		}
 
 		errMsg += "\nUncaught Error: " + e.error;
-		// remove if you're modding and want the crash log message to contain the link
-		// please remember to actually modify the link for the github page to report the issues to.
-		#if officialBuild
-		errMsg += "\nPlease report this error to the GitHub page: https://github.com/ShadowMario/FNF-PsychEngine";
+		#if PICO_ALLOWED
+		errMsg += "\nPlease report this error to the GitHub Page: https://github.com/Pico-Engine-Team/FNF-Pico-Engine/issues";
 		#end
-		errMsg += "\n\n> Crash Handler written by: sqirra-rng";
-
 		try
 		{
 			if (!FileSystem.exists("./content/"))
@@ -251,7 +248,7 @@ class Main extends Sprite
 		}
 
 		Sys.println(errMsg);
-		Sys.println("Crash dump saved in " + Path.normalize(path));
+		Sys.println("Crash Save " + Path.normalize(path));
 
 		if (Application.current != null && Application.current.window != null)
 			Application.current.window.alert(errMsg, "Error!");

@@ -3,9 +3,10 @@ package funkin.utils.windows;
 // New Folder for Source Code
 import funkin.states.PlayState;
 import funkin.states.MusicBeatState;
+import funkin.states.menus.MainMenuState;
+
+import funkin.Preferences;
 import funkin.play.Conductor;
-import funkin.data.ClientPrefs;
-import funkin.menus.MainMenuState;
 
 import openfl.Lib;
 import openfl.display.BitmapData;
@@ -18,7 +19,8 @@ import lime.graphics.opengl.GL;
 import lime.utils.Int32Array;
 import flixel.FlxG;
 
-class DebugDisplay extends Sprite {
+class DebugDisplay extends Sprite
+{
 	var updating:Bool = true;
 	var leftText:TextField;
 	var rightText:TextField;
@@ -30,7 +32,8 @@ class DebugDisplay extends Sprite {
     public var memoryPeak:Float = 0;
 	
 	@:noCompletion private var times:Array<Float>;
-	public function new(x:Float = 10, y:Float = 10, color:Int = 0x000000) {	
+	public function new(x:Float = 10, y:Float = 10, color:Int = 0x000000)
+	{	
 		super();
 
 		this.x = x;
@@ -70,9 +73,9 @@ class DebugDisplay extends Sprite {
 		times = [];
 		FlxG.signals.postStateSwitch.add(() -> updateText = __updateTxt);
 
-		if (ClientPrefs.data.fpsDisplay != null)
-		updateDebugType(ClientPrefs.data.fpsDisplay);
-			updateBackgroundAlpha(ClientPrefs.data.debugDisplayBG);
+		if (Preferences.data.fpsDisplay != null)
+		updateDebugType(Preferences.data.fpsDisplay);
+			updateBackgroundAlpha(Preferences.data.debugDisplayBG);
 	}
 
 	public function updateBackgroundAlpha(value:Float):Void
@@ -102,7 +105,7 @@ class DebugDisplay extends Sprite {
 		
 		currentFPS = times.length < FlxG.updateFramerate ? times.length : FlxG.updateFramerate;
 		updateText();
-		if (ClientPrefs.data.fpsDisplay == "FPS Only" || ClientPrefs.data.fpsDisplay == "FPS and Memory") underlay.width = leftText.width + 3;
+		if (Preferences.data.fpsDisplay == "FPS Only" || Preferences.data.fpsDisplay == "FPS and Memory") underlay.width = leftText.width + 3;
 		else underlay.width = 370;
 		underlay.height = leftText.height;
 
@@ -196,8 +199,8 @@ class DebugDisplay extends Sprite {
 
         return -1;
     }
+	
 	var debugType:String = 'Disabled';
-
 	public function updateDebugType(type:String):Void
 	{
 		updating = true;
