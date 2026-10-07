@@ -19,9 +19,9 @@ class Rating
 		var window:String = name == 'marvelous' ? 'epicRankings' : name + 'Window';
 		try
 		{
-			var rawWindow:Dynamic = Reflect.field(funkin.data.ClientPrefs.data, window);
+			var rawWindow:Dynamic = Reflect.field(Preferences.data, window);
 			if(rawWindow == null && name == 'marvelous')
-				rawWindow = Reflect.field(funkin.data.ClientPrefs.data, 'marvelousWindow');
+				rawWindow = Reflect.field(Preferences.data, 'marvelousWindow');
 			if(rawWindow != null)
 			{
 				var parsedWindow:Float = Std.parseFloat(Std.string(rawWindow));
@@ -37,7 +37,7 @@ class Rating
 		var ratingsData:Array<Rating> = [];
 		var rating:Rating;
 
-		if(funkin.data.ClientPrefs.data.useEpicRankings)
+		if(Preferences.data.useEpicRankings)
 		{
 			rating = new Rating('marvelous');
 			rating.ratingMod = 1;

@@ -170,7 +170,7 @@ class Highscore
 		{
 			for (key in ['opponentplay', 'opponentmode', 'playasopponent', 'opponent'])
 			{
-				var value:Dynamic = ClientPrefs.getGameplaySetting(key);
+				var value:Dynamic = Preferences.getGameplaySetting(key);
 				if(value == true || value == 'true' || value == 1 || value == '1')
 					return true;
 			}

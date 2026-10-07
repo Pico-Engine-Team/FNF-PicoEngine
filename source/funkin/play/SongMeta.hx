@@ -1,6 +1,7 @@
 package funkin.play;
 
 import haxe.Json;
+import funkin.play.Difficulty;
 
 /**
  * Song metadata (meta.json / meta.txt).
@@ -27,8 +28,9 @@ import haxe.Json;
  *   "noteStyle": "funkin",
  *   "songName": "bopeebo",
  *   "displayName": "Bopeebo",
- *   "difficulties": ["easy", "normal", "hard"],
- *   "songVariations": ["Pico", "Darnell"],
+ *   "chart_Difficulties": ["easy", "normal", "hard"],
+ *   "chart_Variations": ["pico", "remix"],
+ *   // legacy also accepted: difficulties / songVariations
  *   "charter": [],
  *   "composers": [],
  *   "freeplayIcon": "dad",
@@ -79,6 +81,10 @@ class SongMeta
 	public var vocalPlayerSuffix:String = null;
 	/** e.g. "-pico" → Voices-pico.ogg */
 	public var vocalOpponentSuffix:String = null;
+	/** Per-difficulty BPM: { "easy": 100, "normal": 120, "hard": 140 } */
+	public var chart_BPM:Map<String, Float> = null;
+	/** Per-difficulty scroll speed: { "easy": 1.5, "normal": 2.4 } */
+	public var chart_scrollSpeed:Map<String, Float> = null;
 
 	public var loadedFormat:String = null;
 	public var loadedPath:String = null;
@@ -89,9 +95,9 @@ class SongMeta
 	{
 		try
 		{
-			var value:Dynamic = Reflect.field(ClientPrefs.data, 'songMetaFormat');
-			if(value == null && ClientPrefs.data.gameplaySettings != null)
-				value = ClientPrefs.data.gameplaySettings.get('songMetaFormat');
+			var value:Dynamic = Reflect.field(Preferences.data, 'songMetaFormat');
+			if(value == null && Preferences.data.gameplaySettings != null)
+				value = Preferences.data.gameplaySettings.get('songMetaFormat');
 			if(value != null)
 			{
 				var s:String = Std.string(value).trim().toLowerCase();
@@ -193,6 +199,8 @@ class SongMeta
 		if(overlay.vocalsSuffix != null) base.vocalsSuffix = overlay.vocalsSuffix;
 		if(overlay.vocalPlayerSuffix != null) base.vocalPlayerSuffix = overlay.vocalPlayerSuffix;
 		if(overlay.vocalOpponentSuffix != null) base.vocalOpponentSuffix = overlay.vocalOpponentSuffix;
+		if(overlay.chart_BPM != null) base.chart_BPM = overlay.chart_BPM;
+		if(overlay.chart_scrollSpeed != null) base.chart_scrollSpeed = overlay.chart_scrollSpeed;
 	}
 
 	static function loadJson(folder:String, extraFreeplay:Bool, ?variationKey:String):SongMeta
@@ -368,8 +376,8 @@ class SongMeta
 		{
 			if(meta.stage == null) meta.stage = strField(playData, ['stage']);
 			if(meta.noteStyle == null) meta.noteStyle = strField(playData, ['noteStyle', 'noteSkin']);
-			if(meta.difficulties == null) meta.difficulties = stringArrayField(playData, ['difficulties']);
-			if(meta.variations == null) meta.variations = stringArrayField(playData, ['songVariations', 'variations']);
+			if(meta.difficulties == null) meta.difficulties = stringArrayField(playData, ['chart_Difficulties', 'difficulties']);
+			if(meta.variations == null) meta.variations = stringArrayField(playData, ['chart_Variations', 'songVariations', 'variations']);
 			if(meta.album == null) meta.album = strField(playData, ['album']);
 
 			var chars:Dynamic = Reflect.field(playData, 'characters');
@@ -387,8 +395,8 @@ class SongMeta
 		if(meta.player == null) meta.player = strField(data, ['player', 'player1', 'bf']);
 		if(meta.opponent == null) meta.opponent = strField(data, ['opponent', 'player2', 'dad']);
 		if(meta.girlfriend == null) meta.girlfriend = strField(data, ['girlfriend', 'gfVersion', 'gf']);
-		if(meta.difficulties == null) meta.difficulties = stringArrayField(data, ['difficulties']);
-		if(meta.variations == null) meta.variations = stringArrayField(data, ['songVariations', 'variations']);
+		if(meta.difficulties == null) meta.difficulties = stringArrayField(data, ['chart_Difficulties', 'difficulties']);
+		if(meta.variations == null) meta.variations = stringArrayField(data, ['chart_Variations', 'songVariations', 'variations']);
 		if(meta.songVariation == null) meta.songVariation = strField(data, ['songVariation', 'variation']);
 
 		if(meta.bpm == null)
@@ -399,6 +407,19 @@ class SongMeta
 				var arr:Array<Dynamic> = cast timeChanges;
 				if(arr.length > 0)
 					meta.bpm = floatField(arr[0], ['bpm', 'b']);
+			}
+		}
+
+		// Per-difficulty BPM / scrollSpeed (objects preferred; malformed arrays ignored)
+		meta.chart_BPM = floatMapField(data, ['chart_BPM', 'chartBpm', 'bpmByDifficulty']);
+		meta.chart_scrollSpeed = floatMapField(data, ['chart_scrollSpeed', 'chartScrollSpeed', 'scrollSpeedByDifficulty']);
+		// If only a single bpm/speed map entry, also set meta.bpm as fallback
+		if(meta.bpm == null && meta.chart_BPM != null)
+		{
+			for (k in meta.chart_BPM.keys())
+			{
+				meta.bpm = meta.chart_BPM.get(k);
+				break;
 			}
 		}
 
@@ -454,9 +475,9 @@ class SongMeta
 			if(!Math.isNaN(bpm)) meta.bpm = bpm;
 		}
 
-		var diffStr:String = mapGet(map, ['difficulties', 'difficulty']);
+		var diffStr:String = mapGet(map, ['chart_difficulties', 'difficulties', 'difficulty']);
 		if(diffStr != null) meta.difficulties = splitList(diffStr);
-		var varStr:String = mapGet(map, ['variations', 'songvariations']);
+		var varStr:String = mapGet(map, ['chart_variations', 'variations', 'songvariations']);
 		if(varStr != null) meta.variations = splitList(varStr);
 
 		var scripts:String = mapGet(map, ['enablesongscripts']);
@@ -481,9 +502,12 @@ class SongMeta
 		meta.charter = strVal(Reflect.field(song, 'charter'));
 		meta.stage = strVal(Reflect.field(song, 'stage'));
 		meta.noteStyle = strVal(Reflect.field(song, 'noteStyle'));
-		meta.player = strVal(Reflect.field(song, 'player1'));
-		meta.opponent = strVal(Reflect.field(song, 'player2'));
-		meta.girlfriend = strVal(Reflect.field(song, 'gfVersion'));
+		meta.player = strVal(Reflect.field(song, 'player'));
+		if(meta.player == null) meta.player = strVal(Reflect.field(song, 'player1'));
+		meta.opponent = strVal(Reflect.field(song, 'opponent'));
+		if(meta.opponent == null) meta.opponent = strVal(Reflect.field(song, 'player2'));
+		meta.girlfriend = strVal(Reflect.field(song, 'girlfriend'));
+		if(meta.girlfriend == null) meta.girlfriend = strVal(Reflect.field(song, 'gfVersion'));
 		meta.pauseSong = strVal(Reflect.field(song, 'pauseSong'));
 		meta.bpm = floatField(song, ['bpm']);
 		meta.enableSongScripts = boolField(song, ['enableSongScripts']);
@@ -517,15 +541,54 @@ class SongMeta
 			if(overwriteExisting || emptyField(Reflect.field(song, 'noteStyle')))
 				Reflect.setField(song, 'noteStyle', Song.cleanNoteStyleName(meta.noteStyle));
 		}
+		// Pico names + Psych legacy aliases
+		setIf(song, 'player', meta.player, overwriteExisting);
+		setIf(song, 'opponent', meta.opponent, overwriteExisting);
+		setIf(song, 'girlfriend', meta.girlfriend, overwriteExisting);
 		setIf(song, 'player1', meta.player, overwriteExisting);
 		setIf(song, 'player2', meta.opponent, overwriteExisting);
 		setIf(song, 'gfVersion', meta.girlfriend, overwriteExisting);
 		setIf(song, 'pauseSong', meta.pauseSong, overwriteExisting);
 
-		if(meta.bpm != null && !Math.isNaN(meta.bpm) && meta.bpm > 0)
+		// BPM: chart_BPM[difficulty] > meta.bpm
+		var bpmVal:Null<Float> = null;
+		if(meta.chart_BPM != null)
 		{
-			if(overwriteExisting || Reflect.field(song, 'bpm') == null)
-				Reflect.setField(song, 'bpm', meta.bpm);
+			var diffKey:String = resolveDifficultyKey();
+			if(diffKey != null && meta.chart_BPM.exists(diffKey))
+				bpmVal = meta.chart_BPM.get(diffKey);
+			else if(meta.chart_BPM.exists('normal'))
+				bpmVal = meta.chart_BPM.get('normal');
+			else
+			{
+				for (k in meta.chart_BPM.keys()) { bpmVal = meta.chart_BPM.get(k); break; }
+			}
+		}
+		if(bpmVal == null) bpmVal = meta.bpm;
+		if(bpmVal != null && !Math.isNaN(bpmVal) && bpmVal > 0)
+		{
+			if(overwriteExisting || Reflect.field(song, 'bpm') == null || Math.isNaN(Reflect.field(song, 'bpm')) || Reflect.field(song, 'bpm') <= 0)
+				Reflect.setField(song, 'bpm', bpmVal);
+		}
+
+		// Scroll speed from meta chart_scrollSpeed (replaces chart-owned speed)
+		if(meta.chart_scrollSpeed != null)
+		{
+			var speedVal:Null<Float> = null;
+			var diffKey2:String = resolveDifficultyKey();
+			if(diffKey2 != null && meta.chart_scrollSpeed.exists(diffKey2))
+				speedVal = meta.chart_scrollSpeed.get(diffKey2);
+			else if(meta.chart_scrollSpeed.exists('normal'))
+				speedVal = meta.chart_scrollSpeed.get('normal');
+			else
+			{
+				for (k in meta.chart_scrollSpeed.keys()) { speedVal = meta.chart_scrollSpeed.get(k); break; }
+			}
+			if(speedVal != null && !Math.isNaN(speedVal) && speedVal > 0)
+			{
+				if(overwriteExisting || Reflect.field(song, 'speed') == null || Math.isNaN(Reflect.field(song, 'speed')) || Reflect.field(song, 'speed') <= 0)
+					Reflect.setField(song, 'speed', speedVal);
+			}
 		}
 		if(meta.enableSongScripts != null)
 		{
@@ -606,8 +669,8 @@ class SongMeta
 		if(noteStyle != null) Reflect.setField(root, 'noteStyle', noteStyle);
 		if(songName != null) Reflect.setField(root, 'songName', songName);
 		if(displayName != null) Reflect.setField(root, 'displayName', displayName);
-		if(difficulties != null) Reflect.setField(root, 'difficulties', difficulties);
-		if(variations != null) Reflect.setField(root, 'songVariations', variations);
+		if(difficulties != null) Reflect.setField(root, 'chart_Difficulties', difficulties);
+		if(variations != null) Reflect.setField(root, 'chart_Variations', variations);
 		if(songVariation != null) Reflect.setField(root, 'songVariation', songVariation);
 		Reflect.setField(root, 'charter', charter != null && charter.length > 0 ? [charter] : []);
 		Reflect.setField(root, 'composers', artist != null && artist.length > 0 ? [artist] : []);
@@ -623,6 +686,18 @@ class SongMeta
 		if(vocalPlayerSuffix != null) Reflect.setField(root, 'vocalPlayerSuffix', vocalPlayerSuffix);
 		if(vocalOpponentSuffix != null) Reflect.setField(root, 'vocalOpponentSuffix', vocalOpponentSuffix);
 		if(enableSongScripts != null) Reflect.setField(root, 'enableSongScripts', enableSongScripts);
+		if(chart_BPM != null)
+		{
+			var bpmObj:Dynamic = {};
+			for (k in chart_BPM.keys()) Reflect.setField(bpmObj, k, chart_BPM.get(k));
+			Reflect.setField(root, 'chart_BPM', bpmObj);
+		}
+		if(chart_scrollSpeed != null)
+		{
+			var spdObj:Dynamic = {};
+			for (k in chart_scrollSpeed.keys()) Reflect.setField(spdObj, k, chart_scrollSpeed.get(k));
+			Reflect.setField(root, 'chart_scrollSpeed', spdObj);
+		}
 		return Json.stringify(root, null, '\t');
 	}
 
@@ -798,5 +873,39 @@ class SongMeta
 			if(s.length > 0) out.push(s);
 		}
 		return out.length > 0 ? out : null;
+	}
+
+	/** Parse { "easy": 1.5, "normal": 2.4 } style maps (not JSON arrays). */
+	static function floatMapField(obj:Dynamic, names:Array<String>):Map<String, Float>
+	{
+		if(obj == null) return null;
+		for (name in names)
+		{
+			var v:Dynamic = Reflect.field(obj, name);
+			if(v == null) continue;
+			if(Std.isOfType(v, Array)) continue; // invalid form in some drafts
+			if(Type.typeof(v) != TObject) continue;
+			var map:Map<String, Float> = new Map();
+			for (k in Reflect.fields(v))
+			{
+				var n:Float = Std.parseFloat(Std.string(Reflect.field(v, k)));
+				if(!Math.isNaN(n) && n > 0)
+					map.set(k.toLowerCase(), n);
+			}
+			if(map.keys().hasNext()) return map;
+		}
+		return null;
+	}
+
+	static function resolveDifficultyKey():String
+	{
+		try
+		{
+			var d:String = Difficulty.getString(null, false);
+			if(d != null && d.trim().length > 0)
+				return Paths.formatToSongPath(d);
+		}
+		catch(e:Dynamic) {}
+		return 'normal';
 	}
 }

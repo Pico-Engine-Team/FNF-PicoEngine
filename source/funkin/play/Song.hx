@@ -4,6 +4,7 @@ import funkin.modding.Mods;
 import funkin.stages.StageData;
 import funkin.states.menus.MainMenuState;
 import funkin.data.objects.game.notes.data.Note;
+import funkin.utils.engines.pico.AntiPiracy;
 
 import haxe.Json;
 import lime.utils.Assets;
@@ -51,6 +52,8 @@ typedef SwagSong = {
 	@:optional var noteStyle:String;
 	@:optional var enableSongScripts:Bool;
 	@:optional var useModcharts:Bool;
+	/** Attached SongMeta from assets/songs/<song>/meta.json (not saved inside chart). */
+	@:optional var meta:SongMeta;
 }
 
 typedef SwagSection = {
@@ -264,7 +267,11 @@ class Song {
 
 		var song:SwagSong = rawData != null ? parseJSON(rawData, jsonInput) : null;
 		if (song != null)
+		{
 			applySongMeta(song, formattedFolder);
+			// External events: assets/songs/<folder>/events.json (overrides empty / merges)
+			loadExternalEvents(song, formattedFolder);
+		}
 		return song;
 	}
 
@@ -324,8 +331,17 @@ class Song {
 			var meta = SongMeta.load(songFolder, null, isExtra, variationKey);
 			if (meta == null) return;
 			SongMeta.applyToSong(song, meta, false);
+			// Keep meta on the song so PlayState.SONG.meta.player etc. work
+			Reflect.setField(song, 'meta', meta);
 			try Paths.applyAudioSuffixesFromSong(song) catch (e:Dynamic) {}
 			trace('[SongMeta] Applied ' + meta.loadedFormat + ' from ' + meta.loadedPath);
+			try
+			{
+				var check = AntiPiracy.checkCurrentMod();
+				if(!check.ok)
+					trace('[Song] AntiPiracy pending: ' + check.reason + ' (mod=' + check.mod + ')');
+			}
+			catch(e:Dynamic) {}
 		}
 		catch (e:Dynamic)
 		{
@@ -387,8 +403,8 @@ class Song {
 	{
 		var parsed:Dynamic = Json.parse(rawData);
 
-		// Pico Engine Chart v2: { songName, displayName, song_Data: { scrollSpeed, chart_notes, chart_events, chart_notetypes } }
-		if(parsed != null && Reflect.hasField(parsed, 'song_Data'))
+		// Pico chart: chartSong_Data (new) or song_Data (legacy)
+		if(parsed != null && (Reflect.hasField(parsed, 'chartSong_Data') || Reflect.hasField(parsed, 'song_Data')))
 			parsed = convertSongDataV2ToSwag(parsed, nameForError);
 
 		var songJson:SwagSong = cast parsed;
@@ -531,15 +547,19 @@ class Song {
 	 */
 	public static function convertSongDataV2ToSwag(root:Dynamic, ?nameForError:String = null):SwagSong
 	{
-		var data:Dynamic = Reflect.field(root, 'song_Data');
+		// Prefer new chartSong_Data; fall back to legacy song_Data
+		var data:Dynamic = Reflect.field(root, 'chartSong_Data');
+		if(data == null) data = Reflect.field(root, 'song_Data');
 		if(data == null) data = {};
 
 		var song:SwagSong = cast {};
 		song.format = 'pico_engine_chart_v2';
 		song.formatChart = FORMAT_PICO_ENGINE_V2;
-		song.generatedBy = defaultGeneratedBy();
+		if(Reflect.hasField(root, 'generatedBy') && root.generatedBy != null)
+			song.generatedBy = Std.string(root.generatedBy);
+		else
+			song.generatedBy = defaultGeneratedBy();
 
-		// songName = folder path key; displayName = UI name
 		var songName:String = '';
 		if(Reflect.hasField(root, 'songName') && root.songName != null)
 			songName = Std.string(root.songName).trim();
@@ -552,12 +572,15 @@ class Song {
 		if(Reflect.hasField(root, 'displayName') && root.displayName != null)
 			song.displayName = Std.string(root.displayName).trim();
 
-		// scrollSpeed: number, string, or { "normal": 1.5 } / array
-		song.speed = parseScrollSpeed(Reflect.field(data, 'scrollSpeed'));
+		// Optional in chart — preferred source is meta chart_scrollSpeed
+		var speedRaw:Dynamic = Reflect.field(data, 'scrollSpeed');
+		if(speedRaw == null) speedRaw = Reflect.field(data, 'chart_scrollSpeed');
+		song.speed = parseScrollSpeed(speedRaw);
 
-		// chart_notes → notes
+		// Sections: note_data (new) or chart_notes (legacy)
 		song.notes = [];
-		var chartNotes:Dynamic = Reflect.field(data, 'chart_notes');
+		var chartNotes:Dynamic = Reflect.field(data, 'note_data');
+		if(chartNotes == null) chartNotes = Reflect.field(data, 'chart_notes');
 		if(chartNotes != null && Std.isOfType(chartNotes, Array))
 		{
 			var sections:Array<Dynamic> = cast chartNotes;
@@ -593,42 +616,19 @@ class Song {
 			}
 		}
 
-		// chart_events → events
-		song.events = [];
-		var chartEvents:Dynamic = Reflect.field(data, 'chart_events');
-		if(chartEvents != null && Std.isOfType(chartEvents, Array))
-		{
-			var evs:Array<Dynamic> = cast chartEvents;
-			for (ev in evs)
-			{
-				if(ev == null) continue;
-				// Already Psych format: [time, [[name, v1, v2], ...]]
-				if(Std.isOfType(ev, Array))
-				{
-					song.events.push(ev);
-					continue;
-				}
-				// Object form: { t/strumTime, event/name, value1, value2 }
-				var t:Float = 0;
-				if(Reflect.hasField(ev, 't')) t = Std.parseFloat(Std.string(ev.t));
-				else if(Reflect.hasField(ev, 'strumTime')) t = Std.parseFloat(Std.string(ev.strumTime));
-				else if(Reflect.hasField(ev, 'position')) t = Std.parseFloat(Std.string(ev.position));
-				if(Math.isNaN(t)) t = 0;
-				var name:String = '';
-				if(Reflect.hasField(ev, 'event')) name = Std.string(ev.event);
-				else if(Reflect.hasField(ev, 'name')) name = Std.string(ev.name);
-				var v1:String = Reflect.hasField(ev, 'value1') ? Std.string(ev.value1) : '';
-				var v2:String = Reflect.hasField(ev, 'value2') ? Std.string(ev.value2) : '';
-				song.events.push([t, [[name, v1, v2]]]);
-			}
-		}
+		// Events: chartEvents / chart_events — normalized to Psych [time, [[name,v1,v2]]]
+		song.events = normalizeChartEvents(Reflect.field(data, 'chartEvents'));
+		if(song.events.length < 1)
+			song.events = normalizeChartEvents(Reflect.field(data, 'chart_events'));
+		if(song.events.length < 1 && Reflect.hasField(root, 'chartEvents'))
+			song.events = normalizeChartEvents(Reflect.field(root, 'chartEvents'));
 
-		// chart_notetypes: optional string list stored for tools (not required at runtime)
-		if(Reflect.hasField(data, 'chart_notetypes'))
-			Reflect.setField(song, 'chart_notetypes', Reflect.field(data, 'chart_notetypes'));
+		// Optional note-type list
+		var nt:Dynamic = Reflect.field(data, 'chartNoteTypes');
+		if(nt == null) nt = Reflect.field(data, 'chart_notetypes');
+		if(nt != null)
+			Reflect.setField(song, 'chart_notetypes', nt);
 
-		// Defaults required by PlayState if meta missing
-		// Float/Bool cannot be null on static platforms (C++/HL)
 		if(song.events == null) song.events = [];
 		if(song.notes == null) song.notes = [];
 		if(Math.isNaN(song.bpm) || song.bpm <= 0) song.bpm = 100;
@@ -639,10 +639,250 @@ class Song {
 		if(song.girlfriend == null || song.girlfriend.length < 1) song.girlfriend = 'gf';
 		if(song.stage == null || song.stage.length < 1) song.stage = 'stage';
 
-		trace('[Song] Loaded Pico Engine Chart v2' + (nameForError != null ? ' ($nameForError)' : '') +
-			' songName=' + song.song + ' displayName=' + song.displayName);
+		trace('[Song] Loaded Pico chart' + (nameForError != null ? ' ($nameForError)' : '') +
+			' song=' + song.song + ' sections=' + song.notes.length + ' events=' + song.events.length);
 		return song;
 	}
+
+
+	/**
+	 * Normalize chartEvents to Psych runtime form: [time, [[name, value1, value2], ...]]
+	 *
+	 * Accepted input forms:
+	 *   1) Psych:   [time, [[name, v1, v2], ...]]
+	 *   2) New flat:[time, [name, v1, v2]]
+	 *   3) Nested group: [[time, [name,v1,v2]], ...]  (unwrap one level)
+	 *   4) Object:  {t/strumTime, event/name, value1, value2}
+	 */
+	public static function normalizeChartEvents(raw:Dynamic):Array<Dynamic>
+	{
+		var out:Array<Dynamic> = [];
+		if(raw == null || !Std.isOfType(raw, Array)) return out;
+
+		var list:Array<Dynamic> = cast raw;
+		// Unwrap accidental extra nesting: [[[time, data]]] → [[time, data]]
+		if(list.length == 1 && Std.isOfType(list[0], Array))
+		{
+			var first:Array<Dynamic> = cast list[0];
+			if(first.length > 0 && Std.isOfType(first[0], Array))
+			{
+				var inner0:Array<Dynamic> = cast first[0];
+				// if inner0[0] is number → this is already [[time, ...], ...]
+				// if inner0[0] is array → one more wrap
+				if(inner0.length > 0 && Std.isOfType(inner0[0], Array))
+					list = first;
+			}
+		}
+
+		for (ev in list)
+		{
+			if(ev == null) continue;
+
+			if(Std.isOfType(ev, Array))
+			{
+				var arr:Array<Dynamic> = cast ev;
+				if(arr.length < 1) continue;
+
+				// Extra wrap: [[time, payload]] → [time, payload]
+				if(arr.length == 1 && Std.isOfType(arr[0], Array))
+				{
+					var only:Array<Dynamic> = cast arr[0];
+					if(only.length >= 2 && (Std.isOfType(only[0], Float) || Std.isOfType(only[0], Int)))
+						arr = only;
+				}
+
+				var t:Float = Std.parseFloat(Std.string(arr[0]));
+				if(Math.isNaN(t)) t = 0;
+
+				if(arr.length < 2)
+				{
+					out.push([t, []]);
+					continue;
+				}
+
+				var payload:Dynamic = arr[1];
+				var eventList:Array<Dynamic> = [];
+
+				if(Std.isOfType(payload, Array))
+				{
+					var p:Array<Dynamic> = cast payload;
+					if(p.length > 0 && Std.isOfType(p[0], Array))
+					{
+						// Psych: [[name,v1,v2], ...]
+						for (sub in p)
+						{
+							if(sub == null) continue;
+							eventList.push(normalizeEventTriple(sub));
+						}
+					}
+					else
+					{
+						// Flat: [name, v1, v2]  (or ["Event Name", name, v1, v2] with leading label)
+						eventList.push(normalizeEventTriple(p));
+					}
+				}
+				else if(payload != null)
+				{
+					eventList.push([Std.string(payload), '', '']);
+				}
+				out.push([t, eventList]);
+				continue;
+			}
+
+			// Object form
+			var t2:Float = 0;
+			if(Reflect.hasField(ev, 't')) t2 = Std.parseFloat(Std.string(Reflect.field(ev, 't')));
+			else if(Reflect.hasField(ev, 'strumTime')) t2 = Std.parseFloat(Std.string(Reflect.field(ev, 'strumTime')));
+			else if(Reflect.hasField(ev, 'position')) t2 = Std.parseFloat(Std.string(Reflect.field(ev, 'position')));
+			if(Math.isNaN(t2)) t2 = 0;
+			var name:String = '';
+			if(Reflect.hasField(ev, 'event')) name = Std.string(Reflect.field(ev, 'event'));
+			else if(Reflect.hasField(ev, 'name')) name = Std.string(Reflect.field(ev, 'name'));
+			var v1:String = Reflect.hasField(ev, 'value1') ? Std.string(Reflect.field(ev, 'value1')) : '';
+			var v2:String = Reflect.hasField(ev, 'value2') ? Std.string(Reflect.field(ev, 'value2')) : '';
+			out.push([t2, [[name, v1, v2]]]);
+		}
+		return out;
+	}
+
+	/** [name, v1, v2] from various lengths; skips leading "Event Name" label if present */
+	static function normalizeEventTriple(raw:Dynamic):Array<Dynamic>
+	{
+		if(raw == null) return ['', '', ''];
+		if(!Std.isOfType(raw, Array))
+			return [Std.string(raw), '', ''];
+		var a:Array<Dynamic> = cast raw;
+		if(a.length >= 4 && Std.string(a[0]).toLowerCase().trim() == 'event name')
+			return [Std.string(a[1]), Std.string(a[2]), Std.string(a[3])];
+		if(a.length >= 3)
+			return [Std.string(a[0]), Std.string(a[1]), Std.string(a[2])];
+		if(a.length == 2)
+			return [Std.string(a[0]), Std.string(a[1]), ''];
+		if(a.length == 1)
+			return [Std.string(a[0]), '', ''];
+		return ['', '', ''];
+	}
+
+	/**
+	 * Export runtime events → new chartEvents format:
+	 *   [time, [name, value1, value2]]
+	 * One entry per event (multi-events at same time are split).
+	 */
+	public static function eventsToChartFormat(events:Array<Dynamic>):Array<Dynamic>
+	{
+		var out:Array<Dynamic> = [];
+		if(events == null) return out;
+		for (ev in events)
+		{
+			if(ev == null || !Std.isOfType(ev, Array)) continue;
+			var arr:Array<Dynamic> = cast ev;
+			if(arr.length < 1) continue;
+			var t:Float = Std.parseFloat(Std.string(arr[0]));
+			if(Math.isNaN(t)) t = 0;
+			if(arr.length < 2 || arr[1] == null)
+			{
+				out.push([t, ['', '', '']]);
+				continue;
+			}
+			if(Std.isOfType(arr[1], Array))
+			{
+				var payload:Array<Dynamic> = cast arr[1];
+				if(payload.length > 0 && Std.isOfType(payload[0], Array))
+				{
+					for (sub in payload)
+					{
+						var triple = normalizeEventTriple(sub);
+						out.push([t, triple]);
+					}
+				}
+				else
+				{
+					out.push([t, normalizeEventTriple(payload)]);
+				}
+			}
+			else
+			{
+				out.push([t, [Std.string(arr[1]), '', '']]);
+			}
+		}
+		return out;
+	}
+
+	/** assets/songs/<songFolder>/events.json */
+	public static function eventsJsonPath(songFolder:String):String
+	{
+		var folder:String = Paths.formatToSongPath(songFolder != null ? songFolder : '');
+		if(folder.length < 1) folder = 'unknown';
+		return Paths.getPath(folder + '/events.json', TEXT, 'songs', true);
+	}
+
+	/**
+	 * Load external events file into song.events.
+	 * File: assets/songs/<song>/events.json
+	 * Accepts { chartEvents: [...] }, { events: [...] }, or raw array.
+	 * If file has events, they REPLACE chart-embedded events when chart had none,
+	 * or REPLACE always when file exists (external is source of truth).
+	 */
+	public static function loadExternalEvents(song:SwagSong, songFolder:String):Void
+	{
+		if(song == null || songFolder == null) return;
+		var path:String = eventsJsonPath(songFolder);
+		var raw:String = null;
+		#if MODS_ALLOWED
+		try
+		{
+			if(FileSystem.exists(path))
+				raw = File.getContent(path);
+		}
+		catch(e:Dynamic) {}
+		#end
+		if(raw == null)
+		{
+			try
+			{
+				if(Assets.exists(path))
+					raw = Assets.getText(path);
+			}
+			catch(e:Dynamic) {}
+		}
+		if(raw == null || raw.trim().length < 1) return;
+
+		try
+		{
+			var parsed:Dynamic = Json.parse(raw);
+			var list:Dynamic = null;
+			if(Std.isOfType(parsed, Array))
+				list = parsed;
+			else if(parsed != null)
+			{
+				if(Reflect.hasField(parsed, 'chartEvents'))
+					list = Reflect.field(parsed, 'chartEvents');
+				else if(Reflect.hasField(parsed, 'events'))
+					list = Reflect.field(parsed, 'events');
+				else if(Reflect.hasField(parsed, 'chart_events'))
+					list = Reflect.field(parsed, 'chart_events');
+			}
+			var normalized:Array<Dynamic> = normalizeChartEvents(list);
+			if(normalized.length > 0)
+			{
+				song.events = normalized;
+				trace('[Song] Loaded external events from ' + path + ' (' + normalized.length + ')');
+			}
+		}
+		catch(e:Dynamic)
+		{
+			trace('[Song] Failed to parse events.json at ' + path + ': ' + e);
+		}
+	}
+
+	/** JSON string for assets/songs/<song>/events.json (new flat chartEvents format) */
+	public static function eventsToJsonString(events:Array<Dynamic>):String
+	{
+		var formatted:Array<Dynamic> = eventsToChartFormat(events);
+		var obj:Dynamic = { chartEvents: formatted };
+		return Json.stringify(obj, null, '\t');
+	}
+
 
 	static function parseScrollSpeed(value:Dynamic):Float
 	{
@@ -703,28 +943,46 @@ class Song {
 				sections.push(o);
 			}
 		}
-		var eventsOut:Array<Dynamic> = song.events != null ? song.events : [];
+
+		// note_data always; chartEvents live in assets/songs/<song>/events.json (not in chart)
+		// chartNoteTypes only when used
+		var data:Dynamic = { note_data: sections };
+
 		var noteTypes:Array<String> = [];
 		try
 		{
 			var existing:Dynamic = Reflect.field(song, 'chart_notetypes');
+			if(existing == null) existing = Reflect.field(song, 'chartNoteTypes');
 			if(existing != null && Std.isOfType(existing, Array))
 				noteTypes = cast existing;
 		}
 		catch(e:Dynamic) {}
+		if(noteTypes.length < 1 && song.notes != null)
+		{
+			var seen:Map<String, Bool> = new Map();
+			for (sec in song.notes)
+			{
+				if(sec == null || sec.sectionNotes == null) continue;
+				for (n in sec.sectionNotes)
+				{
+					if(n == null || !Std.isOfType(n, Array)) continue;
+					var arr:Array<Dynamic> = cast n;
+					if(arr.length < 4) continue;
+					var nt:String = Std.string(arr[3]).trim();
+					if(nt.length > 0 && !seen.exists(nt))
+					{
+						seen.set(nt, true);
+						noteTypes.push(nt);
+					}
+				}
+			}
+		}
+		if(noteTypes.length > 0)
+			Reflect.setField(data, 'chartNoteTypes', noteTypes);
 
 		return {
-			format: 'pico_engine_chart_v2',
-			formatChart: FORMAT_PICO_ENGINE_V2,
-			generatedBy: defaultGeneratedBy(),
-			songName: song.song,
-			displayName: (song.displayName != null && song.displayName.length > 0) ? song.displayName : song.song,
-			song_Data: {
-				scrollSpeed: song.speed,
-				chart_notes: sections,
-				chart_events: eventsOut,
-				chart_notetypes: noteTypes
-			}
+			chartSong_Data: data,
+			generatedBy: defaultGeneratedBy()
 		};
 	}
 }
