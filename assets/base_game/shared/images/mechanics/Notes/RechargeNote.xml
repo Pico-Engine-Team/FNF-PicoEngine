@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="RECARGA NOTE.png">
+	<!-- Created with Adobe Animate version 21.0.7.42652 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="RECARGA0000" x="5" y="5" width="130" height="148"/>
+	<SubTexture name="RECARGA0001" x="5" y="5" width="130" height="148"/>
+	<SubTexture name="RECARGA0002" x="140" y="5" width="130" height="148"/>
+	<SubTexture name="RECARGA0003" x="140" y="5" width="130" height="148"/>
+</TextureAtlas>
