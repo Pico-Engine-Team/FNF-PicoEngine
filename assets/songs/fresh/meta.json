@@ -1,0 +1,38 @@
+{
+    "player": "bf",
+    "girlfriend": "gf",
+    "opponent": "dad",
+    "stage": "stage",
+    "noteStyle": "funkin",
+
+    "songFileName": "fresh",
+    "displayName": "Fresh",
+
+    "difficulties": [
+        "easy",
+        "normal",
+        "hard"
+    ],
+
+    "pauseSong": "pauseSongMenu/default/breakfast",
+    "freeplayIcon": "dad",
+    "freeplayColor": "#AF66CE",
+
+    "vocalPlayerSuffix": "-bf",
+    "vocalOpponentSuffix": "-dad",
+
+    "needsVoices": true,
+    "useModCharts": false,
+    "opponentMod": false,
+
+    "chart_BPM": {
+		"easy": 120,
+		"normal": 120,
+		"hard": 120
+	},
+	"chart_scrollSpeed": {
+		"easy": 1,
+		"normal": 1.3,
+		"hard": 1.8
+    }
+}

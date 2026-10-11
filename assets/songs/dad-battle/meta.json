@@ -1,0 +1,41 @@
+{
+    "player": "bf",
+    "girlfriend": "gf",
+    "opponent": "dad",
+    "stage": "stage",
+    "noteStyle": "funkin",
+
+    "songFileName": "dad-battle",
+    "displayName": "Dad Battle",
+
+    "chart_Difficulties": [
+        "easy",
+        "normal",
+        "hard"
+    ],
+	"chart_Variations": [
+        "pico"
+    ],
+
+    "pauseSong": "pauseSongMenu/default/breakfast",
+    "freeplayIcon": "dad",
+    "freeplayColor": "#AF66CE",
+
+    "vocalPlayerSuffix": "-bf",
+    "vocalOpponentSuffix": "-dad",
+
+    "needsVoices": false,
+    "useModCharts": false,
+    "opponentMod": false,
+
+    "chart_BPM": {
+		"easy": 180,
+		"normal": 180,
+		"hard": 180
+	},
+	"chart_scrollSpeed": {
+		"easy": 1.3,
+		"normal": 1.5,
+		"hard": 2.3
+	}
+}

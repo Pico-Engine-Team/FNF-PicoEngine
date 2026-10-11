@@ -1,0 +1,36 @@
+{
+    "player": "bf",
+    "girlfriend": "gf",
+    "opponent": "dad",
+    "stage": "stage",
+    "noteStyle": "funkin",
+
+    "songFileName": "bopeebo",
+    "displayName": "Bopeebo",
+
+    "chart_Difficulties": [
+        "easy",
+        "normal",
+        "hard"
+    ],
+    "freeplayIcon": "dad",
+    "freeplayColor": "#AF66CE",
+
+    "vocalPlayerSuffix": "-bf",
+    "vocalOpponentSuffix": "-dad",
+
+    "needsVoices": false,
+    "useModCharts": false,
+    "opponentMod": false,
+
+    "chart_BPM": {
+		"easy": 100,
+		"normal": 100,
+		"hard": 100
+	},
+	"chart_scrollSpeed": {
+		"easy": 1,
+		"normal": 1,
+		"hard": 1.3
+    }
+}

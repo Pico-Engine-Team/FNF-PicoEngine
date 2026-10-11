@@ -1,0 +1,95 @@
+{
+	"events": [
+		[
+			0,
+			[
+				["ZoomCamera", "3", "0"]
+			]
+		],
+		[
+			28812.5,
+			[
+				["ZoomCamera", "17", "0"]
+			]
+		],
+		[
+			37800,
+			[
+				["PlayAnimation", "false", "singLEFTmiss"]
+			]
+		],
+		[
+			38262.5,
+			[
+				["ScrollSpeed", "4", "both"]
+			]
+		],
+		[
+			43212.5,
+			[
+				["ScrollSpeed", "4", "both"]
+			]
+		],
+		[
+			47700,
+			[
+				["PlayAnimation", "false", "singDOWNmiss"]
+			]
+		],
+		[
+			76100,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			76350,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			76650,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			76800,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			77550,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			77700,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			78000,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			78150,
+			[
+				["Subtitles", "1", ""]
+			]
+		],
+		[
+			78450,
+			[
+				["Subtitles", "2", ""]
+			]
+		]
+	],
+	"format": "psych_v1_convert"
+}

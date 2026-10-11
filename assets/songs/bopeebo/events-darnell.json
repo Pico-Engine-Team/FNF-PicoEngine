@@ -1,0 +1,77 @@
+{
+	"events": [
+		[
+			9000,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			13800,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			18600,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			23400,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			28200,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			37800,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			42600,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			55200,
+			[
+				["PlayAnimation", "boyfriend", "true"]
+			]
+		],
+		[
+			66600,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			71400,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			76200,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		],
+		[
+			79200,
+			[
+				["PlayAnimation", "true", "hey"]
+			]
+		]
+	],
+	"format": "psych_v1_convert"
+}

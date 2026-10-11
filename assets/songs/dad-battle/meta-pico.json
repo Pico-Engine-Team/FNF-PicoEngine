@@ -1,0 +1,31 @@
+{
+    "player": "pico-playable",
+    "girlfriend": "nene",
+    "opponent": "dad",
+    "stage": "stage-erect",
+    "noteStyle": "funkin",
+
+    "songFileName": "dad-battle",
+    "displayName": "Dad Battle (Pico Mix)",
+
+    "chart_Difficulties": [
+        "normal"
+    ],
+    "pauseSong": "pauseSongMenu/default/breakfast-pico",
+    "freeplayIcon": "dad",
+    "freeplayColor": "#AF66CE",
+
+    "vocalPlayerSuffix": "-pico-playable-pico",
+    "vocalOpponentSuffix": "-dad-pico",
+
+    "needsVoices": false,
+    "useModCharts": false,
+    "opponentMod": false,
+
+    "chart_BPM": {
+		"normal": 180
+	},
+	"chart_scrollSpeed": {
+		"normal": 2.6
+	}
+}

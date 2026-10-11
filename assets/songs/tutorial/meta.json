@@ -1,0 +1,43 @@
+{
+    "player": "bf",
+    "girlfriend": "gf",
+    "opponent": "none",
+    "stage": "stage",
+    "noteStyle": "funkin",
+
+    "songFileName": "tutorial",
+    "displayName": "Tutorial",
+
+    "chart_Difficulties": [
+        "easy",
+        "normal",
+        "hard"
+    ],
+	"chart_Variations": [
+        "pico",
+        "pico-remix",
+        "darnell"
+    ],
+
+    "pauseSong": "pauseSongMenu/default/breakfast",
+    "freeplayIcon": "gf",
+    "freeplayColor": "#AF66CE",
+
+    "vocalPlayerSuffix": "-bf",
+    "vocalOpponentSuffix": "-gf",
+
+    "needsVoices": true,
+    "useModCharts": false,
+    "opponentMod": false,
+
+    "chart_BPM": {
+		"easy": 100,
+		"normal": 100,
+		"hard": 100
+	},
+	"chart_scrollSpeed": {
+		"easy": 1,
+		"normal": 1,
+		"hard": 1
+    }
+}
