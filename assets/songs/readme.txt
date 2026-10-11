@@ -1,7 +1,8 @@
-Put your songs here, it should look like this:
+Add Your Songs Here
 
-assets/songs/your-song-name-here/
----- ./Inst.ogg
----- ./Voices.ogg
----- ./Voices-Opponent.ogg
----- ./Voices-Player.ogg
+Folder Structure:
+songs/songFileName/charts/chartname-hard.json
+songs/songFileName/song/.ogg
+songs/songFileName/events.json
+songs/songFileName/events-global.json
+songs/songFileName/meta.json
