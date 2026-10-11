@@ -1,0 +1,93 @@
+{
+	"character_animation": [
+		{
+			"name": "idle",
+			"prefix": "BF idle dance",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "BF NOTE LEFT0",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "BF NOTE DOWN0",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singUP",
+			"prefix": "BF NOTE UP0",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "BF NOTE RIGHT0",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singLEFTmiss",
+			"prefix": "BF NOTE LEFT MISS",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singDOWNmiss",
+			"prefix": "BF NOTE DOWN MISS",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singUPmiss",
+			"prefix": "BF NOTE UP MISS",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		},
+		{
+			"name": "singRIGHTmiss",
+			"prefix": "BF NOTE RIGHT MISS",
+			"Framerate": 24,
+			"loopd?": false,
+			"offsets": [0, 0],
+			"Offsets-Playable": [0, 0]
+		}
+	],
+	"assetPath": "characters/bf/Boyfriend",
+	"renderType": "sparrow",
+	"characterPosition": [0, 350],
+	"cameraPosition": [0, 0],
+	"characterNoteStyle": "",
+	"icon": "bf",
+	"color": ["#31B0D1"],
+	"Type": "BF",
+	"flip_x": true,
+	"isPixel": false,
+	"singDuration": 4,
+	"characterScale": 1,
+	"gameOverChar": "bf-dead",
+	"gameOverSound": "",
+	"gameOverLoop": "",
+	"gameOverEnd": "",
+	"vocals_file": ""
+}

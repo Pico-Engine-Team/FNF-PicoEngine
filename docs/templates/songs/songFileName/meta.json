@@ -1,0 +1,34 @@
+{
+    "player": "bf",
+    "girlfriend": "none",
+    "opponent": "bf",
+    "stage": "mainStage",
+    "noteStyle": "funkin",
+
+    "songFileName": "songFileName",
+    "displayName": "displayName",
+
+    "chart_Difficulties": [
+        "easy",
+        "normal",
+        "hard"
+    ],
+    "freeplayIcon": "bf",
+    "freeplayColor": "#30B0D1",
+
+    "pauseSong": "pauseSongMenu/default/",
+    "needsVoices": true,
+    "useModCharts": true,
+    "opponentMod": true,
+
+    "chart_BPM": {
+		"easy": 100,
+		"normal": 100,
+		"hard": 100
+	},
+	"chart_scrollSpeed": {
+		"easy": 1,
+		"normal": 1,
+		"hard": 1
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"dialogue_dataAssets": {
+		"dialogueMusic": "",
+		"dialogueScript": "",
+		"useTranslations": false
+	},
+	"dialogue_Song": [
+		{
+			"speaker": "",
+			"expression": "",
+			"text": [""],
+			"boxState": "",
+			"boxImage": "",
+			"speed": 0.5
+		},
+		{
+			"speaker": "",
+			"expression": "",
+			"text": [""],
+			"boxState": "",
+			"boxImage": "",
+			"speed": 0.5
+		},
+		{
+			"speaker": "",
+			"expression": "",
+			"text": [""],
+			"boxState": "",
+			"boxImage": "",
+			"speed": 0.05
+		}
+	]
+}

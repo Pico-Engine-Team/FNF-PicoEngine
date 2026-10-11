@@ -1,0 +1,81 @@
+{
+	"note_Name": "Template",
+	"author": "",
+	"fallback": null,
+	"assets": {
+		"noteSkin_assets": {
+			"note_sprite": "noteSkins/NOTE_assets",
+			"note_position": [0, 0],
+			"note_scale": 0.7,
+			"note_animations": {
+				"left": { "prefix": "purple0", "fps": 24, "loop": false },
+				"down": { "prefix": "blue0", "fps": 24, "loop": false },
+				"up": { "prefix": "green0", "fps": 24, "loop": false },
+				"right": { "prefix": "red0", "fps": 24, "loop": false }
+			},
+			"holdNote_assets": {
+				"holdNote_sprite": "noteSkins/NOTE_assets",
+				"holdNote_position": [0, 0],
+				"holdNote_animations": {
+					"left": { "prefix": "purple hold piece", "fps": 24, "loop": false },
+					"down": { "prefix": "blue hold piece", "fps": 24, "loop": false },
+					"up": { "prefix": "green hold piece", "fps": 24, "loop": false },
+					"right": { "prefix": "red hold piece", "fps": 24, "loop": false },
+					"left end": { "prefix": "pruple end hold", "fps": 24, "loop": false },
+					"down end": { "prefix": "blue end hold", "fps": 24, "loop": false },
+					"up end": { "prefix": "green end hold", "fps": 24, "loop": false },
+					"right end": { "prefix": "red end hold", "fps": 24, "loop": false }
+				}
+			},
+			"Strumline_assets": {
+				"strum_sprite": "noteSkins/NOTE_assets",
+				"strum_position": [0, 0],
+				"strum_scale": 0.7,
+				"strum_animations": {
+					"leftStatic": { "prefix": "arrowLEFT", "fps": 24, "loop": false },
+					"leftPress": { "prefix": "left press", "fps": 24, "loop": false },
+					"leftConfirm": { "prefix": "left confirm", "fps": 24, "loop": false },
+					"leftConfirmHold": { "prefix": "left confirm", "fps": 24, "loop": false },
+					"downStatic": { "prefix": "arrowDOWN", "fps": 24, "loop": false },
+					"downPress": { "prefix": "down press", "fps": 24, "loop": false },
+					"downConfirm": { "prefix": "down confirm", "fps": 24, "loop": false },
+					"downConfirmHold": { "prefix": "down confirm", "fps": 24, "loop": false },
+					"upStatic": { "prefix": "arrowUP", "fps": 24, "loop": false },
+					"upPress": { "prefix": "up press", "fps": 24, "loop": false },
+					"upConfirm": { "prefix": "up confirm", "fps": 24, "loop": false },
+					"upConfirmHold": { "prefix": "up confirm", "fps": 24, "loop": false },
+					"rightStatic": { "prefix": "arrowRIGHT", "fps": 24, "loop": false },
+					"rightPress": { "prefix": "right press", "fps": 24, "loop": false },
+					"rightConfirm": { "prefix": "right confirm", "fps": 24, "loop": false },
+					"rightConfirmHold": { "prefix": "right confirm", "fps": 24, "loop": false }
+				}
+			}
+		},
+		"Splash_data": {
+			"splash_sprite": "noteSplashes/noteSplashes-vanilla",
+			"splash_offsets": [0, 0],
+			"splash_scale": 1.0,
+			"noteSplash_splashEnabled": true,
+			"splash_animations": {
+				"leftSplashes": [
+					{ "name": "left-1", "prefix": "note splash purple 1" },
+					{ "name": "left-2", "prefix": "note splash purple 2" }
+				],
+				"downSplashes": [
+					{ "name": "down-1", "prefix": "note splash blue 1" },
+					{ "name": "down-2", "prefix": "note splash blue 2" }
+				],
+				"upSplashes": [
+					{ "name": "up-1", "prefix": "note splash green 1" },
+					{ "name": "up-2", "prefix": "note splash green 2" }
+				],
+				"rightSplashes": [
+					{ "name": "right-1", "prefix": "note splash red 1" },
+					{ "name": "right-2", "prefix": "note splash red 2" }
+				]
+			}
+		},
+		"allowRGB": true,
+		"allowPixel": false
+	}
+}
