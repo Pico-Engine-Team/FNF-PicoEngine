@@ -1,0 +1,102 @@
+{
+	"animations": [
+		{
+			"loop": false,
+			"offsets": [0, 0],
+			"anim": "idle",
+			"fps": 24,
+			"name": "Idle",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, 0],
+			"anim": "singLEFT",
+			"fps": 24,
+			"name": "Pose Left",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, -10],
+			"anim": "singDOWN",
+			"fps": 24,
+			"name": "Pose Down",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, 0],
+			"anim": "singUP",
+			"fps": 24,
+			"name": "Pose Up",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [0, 2],
+			"anim": "singRIGHT",
+			"fps": 24,
+			"name": "Pose Right",
+			"indices": []
+		},
+		{
+			"offsets": [-227, 2],
+			"loop": false,
+			"fps": 24,
+			"anim": "singUPmiss",
+			"indices": [],
+			"name": "darnell up miss"
+		},
+		{
+			"offsets": [-175, -88],
+			"loop": false,
+			"fps": 24,
+			"anim": "singDOWNmiss",
+			"indices": [],
+			"name": "darnell down miss"
+		},
+		{
+			"offsets": [-167, -43],
+			"loop": false,
+			"fps": 24,
+			"anim": "singRIGHTmiss",
+			"indices": [],
+			"name": "darnell right miss"
+		},
+		{
+			"offsets": [-206, -67],
+			"loop": false,
+			"fps": 24,
+			"anim": "singLEFTmiss",
+			"indices": [],
+			"name": "darnell left miss"
+		},
+		{
+			"loop": false,
+			"offsets": [-225, -31],
+			"anim": "dodge",
+			"fps": 24,
+			"name": "darnell weave",
+			"indices": []
+		},
+		{
+			"offsets": [-183, -23],
+			"loop": false,
+			"fps": 24,
+			"anim": "hurt",
+			"indices": [],
+			"name": "darnell hit"
+		}
+	],
+	"vocals_file": "",
+	"no_antialiasing": false,
+	"image": "characters/darnell, characters/extraAnims/darnell/darnell-player",
+	"position": [-200, 220],
+	"healthicon": "darnell",
+	"flip_x": false,
+	"healthbar_colors": [115, 94, 176],
+	"camera_position": [10, 20],
+	"sing_duration": 6.1,
+	"scale": 1
+}
