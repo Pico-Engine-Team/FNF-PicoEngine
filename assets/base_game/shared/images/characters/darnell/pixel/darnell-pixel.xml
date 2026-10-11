@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="darnell-pixel.png">
+	<!-- Created using the Spritesheet and XML generator -->
+	<!-- https://uncertainprod.github.io/FNF-Spritesheet-XML-generator-Web -->
+	<SubTexture name="darnell Idle0000" x="259" y="475" width="65" height="72" frameX="-16" frameY="-17" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0001" x="259" y="475" width="65" height="72" frameX="-16" frameY="-17" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0002" x="63" y="475" width="66" height="74" frameX="-16" frameY="-15" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0003" x="63" y="475" width="66" height="74" frameX="-16" frameY="-15" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0004" x="0" y="559" width="64" height="75" frameX="-17" frameY="-14" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0005" x="0" y="559" width="64" height="75" frameX="-17" frameY="-14" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0006" x="653" y="0" width="62" height="76" frameX="-20" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0007" x="653" y="0" width="62" height="76" frameX="-20" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Idle0008" x="653" y="76" width="61" height="77" frameX="-21" frameY="-12" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Left0000" x="0" y="397" width="70" height="78" frameX="-8" frameY="-11" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Left0001" x="0" y="397" width="70" height="78" frameX="-8" frameY="-11" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Left0002" x="138" y="397" width="67" height="77" frameX="-9" frameY="-12" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Down0000" x="324" y="475" width="65" height="71" frameX="-16" frameY="-18" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Down0001" x="324" y="475" width="65" height="71" frameX="-16" frameY="-18" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Down0002" x="129" y="475" width="65" height="74" frameX="-15" frameY="-15" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Up0000" x="0" y="475" width="63" height="84" frameX="-23" frameY="-5" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Up0001" x="0" y="475" width="63" height="84" frameX="-23" frameY="-5" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Up0002" x="592" y="0" width="61" height="80" frameX="-22" frameY="-9" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Right0000" x="466" y="397" width="65" height="76" frameX="-21" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Right0001" x="466" y="397" width="65" height="76" frameX="-21" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="darnell Right0002" x="336" y="397" width="65" height="76" frameX="-20" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Left0000" x="70" y="397" width="68" height="78" frameX="-8" frameY="-11" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Left0001" x="70" y="397" width="68" height="78" frameX="-8" frameY="-11" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Left0002" x="205" y="397" width="66" height="77" frameX="-9" frameY="-12" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Down0000" x="389" y="475" width="64" height="71" frameX="-16" frameY="-18" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Down0001" x="389" y="475" width="64" height="71" frameX="-16" frameY="-18" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Down0002" x="194" y="475" width="65" height="74" frameX="-15" frameY="-15" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Up0000" x="592" y="80" width="58" height="84" frameX="-23" frameY="-5" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Up0001" x="592" y="80" width="58" height="84" frameX="-23" frameY="-5" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Up0002" x="592" y="164" width="59" height="80" frameX="-22" frameY="-9" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Right0000" x="271" y="397" width="65" height="76" frameX="-21" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Right0001" x="271" y="397" width="65" height="76" frameX="-21" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="miss Right0002" x="401" y="397" width="65" height="76" frameX="-20" frameY="-13" frameWidth="100" frameHeight="100"/>
+	<SubTexture name="SYMBOL0000" x="444" y="148" width="148" height="52" frameX="0" frameY="-57" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0001" x="444" y="83" width="148" height="65" frameX="0" frameY="-44" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0002" x="444" y="0" width="148" height="83" frameX="0" frameY="-26" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0003" x="0" y="300" width="148" height="97" frameX="0" frameY="-12" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0004" x="148" y="101" width="148" height="100" frameX="0" frameY="-9" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0005" x="296" y="100" width="148" height="99" frameX="0" frameY="-10" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0006" x="148" y="0" width="148" height="101" frameX="0" frameY="-8" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0007" x="0" y="0" width="148" height="101" frameX="0" frameY="-8" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0008" x="0" y="101" width="148" height="100" frameX="0" frameY="-9" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0009" x="296" y="0" width="148" height="100" frameX="0" frameY="-9" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0010" x="296" y="300" width="148" height="95" frameX="0" frameY="-14" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0011" x="148" y="300" width="148" height="97" frameX="0" frameY="-12" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0012" x="148" y="201" width="148" height="98" frameX="0" frameY="-11" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0013" x="296" y="201" width="148" height="98" frameX="0" frameY="-11" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0014" x="0" y="201" width="148" height="99" frameX="0" frameY="-10" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0015" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0016" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0017" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0018" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0019" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0020" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="SYMBOL0021" x="444" y="200" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="GAMEOV END0000" x="444" y="244" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="GAMEOV END0001" x="444" y="244" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+	<SubTexture name="GAMEOV END0002" x="444" y="288" width="148" height="44" frameX="0" frameY="-65" frameWidth="150" frameHeight="112"/>
+</TextureAtlas>
