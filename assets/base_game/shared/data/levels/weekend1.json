@@ -1,0 +1,18 @@
+{
+	"week_Songs": [
+		["darnell"],
+		["lit-up"],
+		["2hot"],
+		["blazin"]
+	],
+	"Background": "phillystreets",
+	"props": ["darnell", "pico-player", "nene"],
+
+	"weekStoryMode_Name": "Due Debts",
+	"weekBefore": "week7",
+	"week_title_Path": "storyMode/weekTitles/weekend1",
+
+	"weekStartUnlocked": true,
+	"weekHideTo_storyMode": false,
+	"weekhideTo_freeplayMenu": false
+}

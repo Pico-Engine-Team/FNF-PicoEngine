@@ -1,0 +1,29 @@
+{
+	"stage_directory": "week1",
+	"default_cameraZoom": 1.0,
+	"camera_ScrollSpeed": 1,
+	"ratingsOffsets":["100", "100"],
+
+	"characters": {
+   	 "bf": {
+      	"positionOffsets": [770, 100],
+      	"cameraPosition": [0, 0]
+	 },
+	 "gf": {
+      "positionOffsets": [400, 130],
+      "cameraPosition": [0, 0],
+	  "Girlfriend_Hide": false
+    },
+     "dad": {
+      	"positionOffsets": [100, 100],
+      	"cameraPosition": [0, 0]
+	 },
+	 
+	"preload": {
+		"images/stageback": 3,
+		"images/stagefront": 3,
+		"images/stagecurtains": 2,
+		"images/stage_light": 2
+	 }
+   }
+}

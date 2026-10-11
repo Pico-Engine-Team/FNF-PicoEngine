@@ -1,0 +1,20 @@
+{
+	"songs": [
+		["Pico", "pico", [183, 216, 85]],
+		["Philly Nice", "pico", [183, 216, 85]],
+		["Blammed", "pico", [183, 216, 85]]
+	],
+
+	"weekCharacters": ["pico", "bf", "gf"],
+	"weekBackground": "philly",
+
+	"storyDifficulties": "Boyfriend",
+	"freeplayDifficulties": "Pico, Girlfriend, Nene, Agoti, Sonic, Remix",
+	"storyName": "PICO",
+	"weekBefore": "week2",
+	"weekName": "Week 3",
+
+	"startUnlocked": true,
+	"hideStoryMode": false,
+	"hideFreeplay": false
+}
