@@ -1,0 +1,325 @@
+{
+	"note_Name": "Pixel",
+	"author": "Moawling",
+	"fallback": "funkin",
+	"assets": {
+		"noteSkin_assets": {
+			"note_sprite": "noteSkins/pixel/Note-Pixel",
+			"note_position": [0, 0],
+			"note_animations": {
+				"left": {
+					"prefix": "noteLeft",
+					"fps": 24,
+					"loop": false
+				},
+				"down": {
+					"prefix": "noteDown",
+					"fps": 24,
+					"loop": false
+				},
+				"up": {
+					"prefix": "noteUp",
+					"fps": 24,
+					"loop": false
+				},
+				"right": {
+					"prefix": "noteRight",
+					"fps": 24,
+					"loop": false
+				}
+			},
+			"holdNote_assets": {
+				"holdNote_sprite": "noteSkins/pixel/Note-HoldEnds",
+				"holdNote_position": [2, 1],
+				"holdNote_animations": {
+					"left": {
+						"prefix": "noteLeft",
+						"fps": 24,
+						"loop": true
+					},
+					"down": {
+						"prefix": "noteDown",
+						"fps": 24,
+						"loop": true
+					},
+					"up": {
+						"prefix": "noteUp",
+						"fps": 24,
+						"loop": true
+					},
+					"right": {
+						"prefix": "noteRight",
+						"fps": 24,
+						"loop": true
+					},
+					"left end": {
+						"prefix": "noteLeft",
+						"fps": 24,
+						"loop": false
+					},
+					"down end": {
+						"prefix": "noteDown",
+						"fps": 24,
+						"loop": false
+					},
+					"up end": {
+						"prefix": "noteUp",
+						"fps": 24,
+						"loop": false
+					},
+					"right end": {
+						"prefix": "noteRight",
+						"fps": 24,
+						"loop": false
+					}
+				}
+			},
+			"Strumline_assets": {
+				"strum_sprite": "noteSkins/pixel/Note-Pixel",
+				"strum_position": [28, 32],
+				"strum_scale": 6.0,
+				"strum_animations": {
+					"leftStatic": {
+						"prefix": "staticLeft0",
+						"fps": 24,
+						"loop": false
+					},
+					"leftPress": {
+						"prefix": "pressedLeft0",
+						"fps": 24,
+						"loop": false
+					},
+					"leftConfirm": {
+						"prefix": "confirmLeft0",
+						"fps": 24,
+						"loop": false
+					},
+					"leftConfirmHold": {
+						"prefix": "confirmLeft0",
+						"fps": 24,
+						"loop": false
+					},
+					"downStatic": {
+						"prefix": "staticDown0",
+						"fps": 24,
+						"loop": false
+					},
+					"downPress": {
+						"prefix": "pressedDown0",
+						"fps": 24,
+						"loop": false
+					},
+					"downConfirm": {
+						"prefix": "confirmDown0",
+						"fps": 24,
+						"loop": false
+					},
+					"downConfirmHold": {
+						"prefix": "confirmDown0",
+						"fps": 24,
+						"loop": false
+					},
+					"upStatic": {
+						"prefix": "staticUp0",
+						"fps": 24,
+						"loop": false
+					},
+					"upPress": {
+						"prefix": "pressedUp0",
+						"fps": 24,
+						"loop": false
+					},
+					"upConfirm": {
+						"prefix": "confirmUp0",
+						"fps": 24,
+						"loop": false
+					},
+					"upConfirmHold": {
+						"prefix": "confirmUp0",
+						"fps": 24,
+						"loop": false
+					},
+					"rightStatic": {
+						"prefix": "staticRight0",
+						"fps": 24,
+						"loop": false
+					},
+					"rightPress": {
+						"prefix": "pressedRight0",
+						"fps": 24,
+						"loop": false
+					},
+					"rightConfirm": {
+						"prefix": "confirmRight0",
+						"fps": 24,
+						"loop": false
+					},
+					"rightConfirmHold": {
+						"prefix": "confirmRight0",
+						"fps": 24,
+						"loop": false
+					}
+				}
+			}
+		},
+		"Splash_data": {
+			"splash_sprite": "noteSplashes/noteSplashes-pixel",
+			"splash_offsets": [27.5,18.5],
+			"splash_scale": 4.0,
+			"splash_animations": {
+				"leftSplashes": [
+					{
+						"prefix": "purple1"
+					},
+					{
+						"prefix": "purple2"
+					},
+					{
+						"prefix": "purple3"
+					}
+				],
+				"downSplashes": [
+					{
+						"prefix": "blue1"
+					},
+					{
+						"prefix": "blue2"
+					},
+					{
+						"prefix": "blue3"
+					}
+				],
+				"upSplashes": [
+					{
+						"prefix": "green1"
+					},
+					{
+						"prefix": "green2"
+					},
+					{
+						"prefix": "green3"
+					}
+				],
+				"rightSplashes": [
+					{
+						"prefix": "orange1"
+					},
+					{
+						"prefix": "orange2"
+					},
+					{
+						"prefix": "orange3"
+					}
+				]
+			}
+		},
+		"countdownThree": {
+			"countdown_sprite": null,
+			"countdown_sound": "gameplay/countdown/pixel/introTHREE"
+		},
+		"countdownTwo": {
+			"countdown_sprite": "ui/countdown/pixel/ready",
+			"countdown_sound": "gameplay/countdown/pixel/introTWO",
+			"scale": 6.0,
+			"isPixel": true
+		},
+		"countdownOne": {
+			"countdown_sprite": "ui/countdown/pixel/set",
+			"countdown_sound": "gameplay/countdown/pixel/introONE",
+			"scale": 6.0,
+			"isPixel": true
+		},
+		"countdownGo": {
+			"countdown_sprite": "ui/countdown/pixel/date",
+			"countdown_sound": "gameplay/countdown/pixel/introGO",
+			"scale": 6.0,
+			"isPixel": true
+		},
+		"rating_marvelous": {
+			"rating_sprite": "ui/popup/pixel/marvelous",
+			"rating_scale": 4.2
+		},
+		"rating_sick": {
+			"rating_sprite": "ui/popup/pixel/sick",
+			"rating_scale": 4.2,
+			"isPixel": true
+		},
+		"rating_good": {
+			"rating_sprite": "ui/popup/pixel/good",
+			"rating_scale": 4.2,
+			"isPixel": true
+		},
+		"rating_bad": {
+			"rating_sprite": "ui/popup/pixel/bad",
+			"rating_scale": 4.2,
+			"isPixel": true
+		},
+		"rating_shit": {
+			"rating_sprite": "ui/popup/pixel/shit",
+			"rating_scale": 4.2,
+			"isPixel": true
+		},
+		"number0": {
+			"combo_sprite": "ui/popup/pixel/num0",
+			"combo_scale": 4.2,
+			"combo_hidden": true,
+			"isPixel": true
+		},
+		"number1": {
+			"combo_sprite": "ui/popup/pixel/num1",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number2": {
+			"combo_sprite": "ui/popup/pixel/num2",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number3": {
+			"combo_sprite": "ui/popup/pixel/num3",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number4": {
+			"combo_sprite": "ui/popup/pixel/num4",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number5": {
+			"combo_sprite": "ui/popup/pixel/num5",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number6": {
+			"combo_sprite": "ui/popup/pixel/num6",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number7": {
+			"combo_sprite": "ui/popup/pixel/num7",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number8": {
+			"combo_sprite": "ui/popup/pixel/num8",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"number9": {
+			"combo_sprite": "ui/popup/pixel/num9",
+			"combo_scale": 4.2,
+			"combo_hidden": false,
+			"isPixel": true
+		},
+		"allowRGB": true,
+		"allowPixel": true
+	}
+}

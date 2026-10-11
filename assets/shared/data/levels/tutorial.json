@@ -1,0 +1,18 @@
+{
+	"songs": [
+		["Tutorial", "gf", [165, 0, 77]]
+	],
+
+	"weekCharacters": ["", "bf","gf"],
+	"weekBackground": "",
+
+	"storyDifficulties": "Easy, Normal, Hard",
+	"freeplayDifficulties": "Pico, Pico Remix , Darnell",
+	"storyName": "TEACHING TIME",
+	"weekBefore": "",
+	"weekName": "Tutorial",
+
+	"startUnlocked": true,
+	"hideStoryMode": false,
+	"hideFreeplay": false
+}

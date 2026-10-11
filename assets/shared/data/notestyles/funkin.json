@@ -1,0 +1,181 @@
+{
+	"noteStyle_Name": "Funkin'",
+	"author": "PhantomArcade",
+	"fallback": null,
+	"data_Assets": {
+		"noteStyle_data": {
+			"noteStyle_notePath": "noteSkins/default-note",
+			"noteStyle_noteScale": 0.7,
+			"noteStyle_noteOffsets": [0, 0],
+			"noteStyle_noteAnimations_Data": {
+				"up": {"prefix": "green0"},
+				"down": {"prefix": "blue0"},
+				"left": {"prefix": "purple0"},
+				"right": {"prefix": "red0"}
+			},
+			"holdNote_data": {
+				"holdNote_holdNotePath": "noteSkins/default-note",
+				"holdNote_holdNoteOffsets": [0, 0],
+				"holdNote_holdNoteAnimations": {
+					"up": {"prefix": "green hold piece"},
+					"up end": {"prefix": "green end hold"},
+					"down": {"prefix": "blue hold piece"},
+					"down end": {"prefix": "blue end hold"},
+					"left": {"prefix": "purple hold piece"},
+					"left end": {"prefix": "purple end hold"},
+					"right": {"prefix": "red hold piece"},
+					"right end": {"prefix": "red end hold"}
+				}
+			},
+			"noteStrumline_data": {
+				"noteStrum_strumPath": "noteSkins/default-note",
+				"noteStrum_strumOffsets": [0, 0],
+				"noteStrum_strumScale": 0.7,
+				"noteStrum_strumAnimations": {
+					"noteUpStatic": {"prefix": "arrowUP"},
+					"noteUpPress": {"prefix": "up press"},
+					"noteUpConfirm": {"prefix": "up confirm"},
+					"noteUpConfirmHold": {"prefix": "up confirm"},
+					"noteDownStatic": {"prefix": "arrowDOWN"},
+					"noteDownPress": {"prefix": "down press"},
+					"noteDownConfirm": {"prefix": "down confirm"},
+					"noteDownConfirmHold": {"prefix": "down confirm"},
+					"noteLeftStatic": {"prefix": "arrowLEFT"},
+					"noteLeftPress": {"prefix": "left press"},
+					"noteLeftConfirm": {"prefix": "left confirm"},
+					"noteLeftConfirmHold": {"prefix": "left confirm"},
+					"noteRightStatic": {"prefix": "arrowRIGHT"},
+					"noteRightPress": {"prefix": "right press"},
+					"noteRightConfirm": {"prefix": "right confirm"},
+					"noteRightConfirmHold": {"prefix": "right confirm"}
+				}
+			}
+		},
+		"noteSplash_data": {
+			"noteSplash_splashPath": "noteSplashes/noteSplashes-vanilla",
+			"noteSplash_splashOffsets": [0, 0],
+			"noteSplash_splashScale": 1.0,
+			"noteSplash_splashEnabled": true,
+			"noteSplash_splashAnimations": {
+				"noteSplash_Up": [
+					{"name": "greenSplash"},
+					{"prefix": "vanilla splash green 1"},
+					{"prefix": "vanilla splash green 2"}
+				],
+				"noteSplash_Down": [
+					{"name": "blueSplash"},
+					{"prefix": "vanilla splash blue 1"},
+					{"prefix": "vanilla splash blue 2"}
+				],
+				"noteSplash_Left": [
+					{"name": "purpleSplash"},
+					{"prefix": "vanilla splash purple 1"},
+					{"prefix": "vanilla splash purple 2"}
+				],
+				"noteSplash_Right": [
+					{"name": "redSplash"},
+					{"prefix": "vanilla splash red 1"},
+					{"prefix": "vanilla splash red 2"}
+				]
+			}
+		}
+	},
+	"UI_Assets": {
+		"countdownThree": {
+			"countdown_sprite": null,
+			"countdown_sound": "gameplay/countdown/funkin/introTHREE"
+		},
+		"countdownTwo": {
+			"countdown_sprite": "ui/countdown/funkin/ready",
+			"countdown_sound": "gameplay/countdown/funkin/introTWO",
+			"countdownScale": 1.0
+		},
+		"countdownOne": {
+			"countdown_sprite": "ui/countdown/funkin/set",
+			"countdown_sound": "gameplay/countdown/funkin/introONE",
+			"countdownScale": 1.0
+		},
+		"countdownGo": {
+			"countdown_sprite": "ui/countdown/funkin/go",
+			"countdown_sound": "gameplay/countdown/funkin/introGO",
+			"countdownScale": 1.0
+		},
+		"judgementMarvelous": {
+			"judgement_sprite": "ui/popup/funkin/marvelous",
+			"judgementScale": 0.65
+		},
+		"judgementSick": {
+			"judgement_sprite": "ui/popup/funkin/sick",
+			"judgementScale": 0.65
+		},
+		"judgementGood": {
+			"judgement_sprite": "ui/popup/funkin/good",
+			"judgementScale": 0.65
+		},
+		"judgementBad": {
+			"judgement_sprite": "ui/popup/funkin/bad",
+			"judgementScale": 0.65
+		},
+		"judgementShit": {
+			"judgement_sprite": "ui/popup/funkin/shit",
+			"judgementScale": 0.65
+		},
+		"combo": {
+			"combo_sprite": "ui/popup/funkin/combo",
+			"comboScale": 0.45,
+			"comboHidden": true
+		},
+		"comboNumber0": {
+			"combo_sprite": "ui/popup/funkin/num0",
+			"comboScale": 0.45,
+			"comboHidden": true
+		},
+		"comboNumber1": {
+			"combo_sprite": "ui/popup/funkin/num1",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber2": {
+			"combo_sprite": "ui/popup/funkin/num2",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber3": {
+			"combo_sprite": "ui/popup/funkin/num3",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber4": {
+			"combo_sprite": "ui/popup/funkin/num4",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber5": {
+			"combo_sprite": "ui/popup/funkin/num5",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber6": {
+			"combo_sprite": "ui/popup/funkin/num6",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber7": {
+			"combo_sprite": "ui/popup/funkin/num7",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber8": {
+			"combo_sprite": "ui/popup/funkin/num8",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"comboNumber9": {
+			"combo_sprite": "ui/popup/funkin/num9",
+			"comboScale": 0.45,
+			"comboHidden": false
+		},
+		"allowRGB": true,
+		"allowPixel": false
+	}
+}
