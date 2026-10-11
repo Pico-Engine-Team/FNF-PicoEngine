@@ -1,0 +1,44 @@
+{
+	"dialogue_animations": [
+		{
+			"offsets": [-1, -12],
+			"name": "talk",
+			"prefix": "BF0",
+			"fps": 24,
+			"loop": true
+		},
+        {
+			"offsets": [4, -8],
+			"name": "excited",
+			"prefix": "BF EXCITED0",
+			"fps": 24,
+			"loop": true
+		},
+		{
+            "offsets": [0, 0],
+            "name": "pissed",
+			"prefix": "BF PISSED0",
+			"fps": 24,
+			"loop": true
+		},
+		{
+            "offsets": [-6, -11],
+            "name": "shocked",
+			"prefix": "BF SHOCK0",
+			"fps": 24,
+			"loop": true
+		},
+		{
+            "offsets": [-3, 0],
+            "name": "confused",
+			"prefix": "BF CONFUSED LOOP",
+			"fps": 24,
+			"loop": true
+		}
+	],
+	"assetPath": "dialogue/characters/bf_dialogue",
+	"dialogueOffsets": [0, 50],
+	"flip_x": true,
+	"dialogueType": "right",
+	"scale": 1.25
+}

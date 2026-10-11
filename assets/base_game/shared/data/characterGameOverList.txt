@@ -1,0 +1,6 @@
+bf-dead
+bf-pixel-dead
+bf-holding-gf-dead
+pico-dead
+pico-explosion-dead
+pico-playable-majin-dead
