@@ -1,0 +1,137 @@
+{
+	"character_animations_data": [
+		{
+			"offsets": [-5, 0],
+			"Offsets-Playable": [-5, 0],
+			"name": "idle",
+			"prefix": "BF idle dance",
+			"Framerate": 24,
+			"loopd?": false
+		},
+		{
+			"offsets": [5, -6],
+			"Offsets-Playable": [5, -6],
+			"name": "singLEFT",
+			"prefix": "BF NOTE LEFT0",
+			"Framerate": 24,
+			"loopd?": false
+		},
+		{
+			"prefix": "BF NOTE DOWN0",
+			"offsets": [-20, -51],
+			"fps": 24,
+			"loop": false,
+			"name": "singDOWN",
+			"playerOffsets": [-20, -51]
+		},
+		{
+			"prefix": "BF NOTE UP0",
+			"offsets": [-46, 27],
+			"fps": 24,
+			"loop": false,
+			"name": "singUP",
+			"playerOffsets": [-46, 27]
+		},
+		{
+			"prefix": "BF NOTE RIGHT0",
+			"offsets": [-48, -7],
+			"fps": 24,
+			"loop": false,
+			"name": "singRIGHT",
+			"playerOffsets": [-48, -7]
+		},
+		{
+			"prefix": "BF NOTE LEFT MISS",
+			"offsets": [7, 19],
+			"fps": 24,
+			"loop": false,
+			"name": "singLEFTmiss",
+			"playerOffsets": [7, 19]
+		},
+		{
+			"prefix": "BF NOTE DOWN MISS",
+			"offsets": [-15, -19],
+			"fps": 24,
+			"loop": false,
+			"name": "singDOWNmiss",
+			"playerOffsets": [-15, -19]
+		},
+		{
+			"prefix": "BF NOTE UP MISS",
+			"offsets": [-46, 27],
+			"fps": 24,
+			"loop": false,
+			"name": "singUPmiss",
+			"playerOffsets": [-46, 27]
+		},
+		{
+			"prefix": "BF NOTE RIGHT MISS",
+			"offsets": [-44, 22],
+			"fps": 24,
+			"loop": false,
+			"name": "singRIGHTmiss",
+			"playerOffsets": [-44, 22]
+		},
+		{
+			"prefix": "BF HEY",
+			"offsets": [-3, 5],
+			"fps": 24,
+			"loop": false,
+			"name": "hey",
+			"playerOffsets": [-3, 5]
+		},
+		{
+			"prefix": "BF hit",
+			"offsets": [14, 18],
+			"fps": 24,
+			"loop": false,
+			"name": "hurt",
+			"playerOffsets": [14, 18]
+		},
+		{
+			"prefix": "BF idle shaking",
+			"offsets": [-4, 0],
+			"fps": 24,
+			"loop": true,
+			"name": "scared",
+			"playerOffsets": [-4, 0]
+		},
+		{
+			"prefix": "boyfriend dodge",
+			"offsets": [-10, -16],
+			"fps": 24,
+			"loop": false,
+			"name": "dodge",
+			"playerOffsets": [-10, -16]
+		},
+		{
+			"prefix": "boyfriend attack",
+			"offsets": [294, 267],
+			"fps": 24,
+			"loop": false,
+			"name": "attack",
+			"playerOffsets": [294, 267]
+		},
+		{
+			"prefix": "bf pre attack",
+			"offsets": [-40, -40],
+			"fps": 24,
+			"loop": false,
+			"name": "pre-attack",
+			"playerOffsets": [-40, -40]
+		}
+	],
+	"assetPath": "characters/bf//Boyfriend",
+	"characterNoteStyle": "bf",
+	"characterPositionOffsets": [0, 350],
+	"cameraPosition": [0, 0],
+	"renderType": "sparrow",
+	"gameOverChar": "bf-dead",
+	"characterIcon": "bf",
+	"flip_x": true,
+	"characterHealthBarColor": [49, 176, 209],
+	"Type": "BF",
+	"isPixel": false,
+	"characterSingDuration": 4,
+	"characterScale": 1
+}
