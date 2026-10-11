@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Created with Funkin Packer v0.1.3 https://neeeoo.github.io/funkin-packer/
+-->
+<TextureAtlas imagePath="tankmanCheer.png" width="977" height="1111">
+	<SubTexture name="Tankman CHEER0000" x="1" y="561" width="471" height="549" frameX="-81" frameY="-29" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0001" x="1" y="1" width="491" height="557" frameX="-72" frameY="-21" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0002" x="1" y="1" width="491" height="557" frameX="-72" frameY="-21" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0003" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0004" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0005" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0006" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0008" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0009" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0010" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0011" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0012" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0013" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0014" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+	<SubTexture name="Tankman CHEER0015" x="495" y="1" width="481" height="551" frameX="-76" frameY="-27" frameWidth="600" frameHeight="600"/>
+</TextureAtlas>
