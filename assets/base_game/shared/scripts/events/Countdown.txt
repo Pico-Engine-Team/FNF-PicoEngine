@@ -1,0 +1,4 @@
+Displays a 3, Ready, Set, Go countdown during the song.
+
+Value 1: Countdown style. Use "funkin" or "pixel".
+Value 2: Interval between each step in seconds. Leave blank to use one song beat.

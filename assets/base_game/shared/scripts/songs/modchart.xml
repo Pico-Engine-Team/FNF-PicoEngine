@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modchart>
+	<!--
+		Loaded from:
+		assets/shared/scripts/songs/modchart.xml
+		mods/<your-mod>/scripts/songs/modchart.xml
+		mods/<your-mod>/scripts/songs/<song-id>/modchart.xml
+		mods/<your-mod>/scripts/stages/<stage-id>/modchart.xml
+
+		Use name="*" for every event, or a specific event name.
+		path="$value1" and path="$value2" read the event values.
+	-->
+
+	<onModChartPushed name="Play Sound">
+		<precacheSound path="$value1" />
+	</onModChartPushed>
+</modchart>

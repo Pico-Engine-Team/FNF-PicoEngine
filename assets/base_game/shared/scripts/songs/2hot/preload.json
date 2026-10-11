@@ -1,0 +1,22 @@
+{
+	"video_cutscene": {
+		"video": "videos/weekend1/2hotCutscene"
+	},
+	"characters_preload": [
+		"pico",
+		"darnell",
+		"nene"
+	],
+	"notetypes_preload": [
+		"weekend-1-lightcan",
+		"weekend-1-kickcan",
+		"weekend-1-kneecan",
+		"weekend-1-cockgun",
+		"weekend-1-firegun"
+	],
+	"objects_preload": [
+		"images/spraycanAtlas/",
+		"images/PicoBullet",
+		"images/spraypaintExplosionEZ"
+	]
+}

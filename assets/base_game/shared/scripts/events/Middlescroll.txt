@@ -1,0 +1,8 @@
+Value 1 Player, Opponent or Default
+Value 2 Transition speed (Default 1.0)
+
+Changes the note layout to center the specified character's notes.
+- Use Default to return notes to their original positions.
+- Use Player to center BF's notes.
+- Use Opponent to center the Enemy's notes.
+- Value 2 controls the time in seconds (0.5, 1.0, 2.0, etc).

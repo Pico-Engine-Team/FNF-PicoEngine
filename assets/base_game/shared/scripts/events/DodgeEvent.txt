@@ -1,0 +1,2 @@
+Value1 is how much time you have to dodge.
+Value2 is optional. Leave empty to use the ControlsSubState dodge_ui bind, or type another bind/key name.
