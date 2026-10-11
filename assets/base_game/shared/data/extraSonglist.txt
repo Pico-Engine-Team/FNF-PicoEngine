@@ -1,8 +1,0 @@
-stay-funky:bf:1C22DB:Hard
-lo-fight:extra/whitty:1D1E35:Pico
-endless:extra/exe/majin-encore:0000D7:Pico
-sky:face:132CBB:Pico
-all-hail-the-king:extra/bowser:C28933:Pico
-ruckus:extra/matt:E1E27E:Pico
-thunderstorm:extra/shaggy:B80000:Pico
-kmfdm:face:B80000:Pico, Boyfriend
