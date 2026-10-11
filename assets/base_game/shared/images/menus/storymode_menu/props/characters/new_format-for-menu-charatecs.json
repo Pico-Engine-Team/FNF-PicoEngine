@@ -1,0 +1,19 @@
+{
+	"animations": [
+		{
+			"offsets": [0, 0],
+			"name": "idle_anim",
+			"prefix": ""
+		},
+		{
+			"offsets": [0, 0],
+			"name": "confirm_anim",
+			"prefix": ""
+		}
+	],
+	"propScale": 1,
+	"propPosition": [0, 350],
+	"propPath": "storymenu/props/",
+	"prop_disabled_Antialiasing": false,
+	"useAlternative": false
+}
