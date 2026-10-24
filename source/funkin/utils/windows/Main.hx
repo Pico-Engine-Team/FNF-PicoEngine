@@ -1,12 +1,19 @@
 package funkin.utils.windows;
 
-import funkin.play.Highscore;
-import funkin.states.TitleMenuState;
 import funkin.utils.Native;
 import funkin.utils.windows.DebugDisplay as FPSCounter;
+import funkin.utils.CoolUtil;
+import funkin.utils.Controls;
+import funkin.data.Preferences;
+import funkin.play.Highscore;
+import funkin.states.TitleMenuState;
 
 #if desktop
 import funkin.utils.windows.ALSoftConfig;
+#end
+
+#if MODS_ALLOWED
+import funkin.modding.Mods;
 #end
 
 #if android
@@ -16,6 +23,8 @@ import android.content.Context;
 import flixel.graphics.FlxGraphic;
 import flixel.FlxGame;
 import flixel.FlxState;
+import flixel.FlxG;
+import flixel.util.FlxColor;
 import haxe.io.Path;
 
 import openfl.Assets;
@@ -28,6 +37,7 @@ import lime.app.Application;
 #if HSCRIPT_ALLOWED
 import funkin.modding.scripting.FunkinHSProgramming.HScriptInfos;
 import crowplexus.iris.Iris;
+import funkin.states.PlayState;
 #end
 
 #if (linux || mac)
@@ -35,10 +45,20 @@ import lime.graphics.Image;
 #end
 
 #if CRASH_HANDLER
-// Crash Handler Stuff
 import openfl.events.UncaughtErrorEvent;
 import haxe.CallStack;
-import haxe.io.Path;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+#end
+
+#if DISCORD_ALLOWED
+import funkin.utils.api.DiscordAPI as DiscordClient;
+#end
+
+#if ACHIEVEMENTS_ALLOWED
+import funkin.play.Achievements;
 #end
 
 // NATIVE API STUFF, YOU CAN IGNORE THIS AND SCROLL //
@@ -68,7 +88,7 @@ class Main extends Sprite
 	{
 		super();
 		#if (cpp && windows)
-		Native.fixScaling();
+		try Native.fixScaling() catch (e:Dynamic) {}
 		#end
 
 		// Credits to MAJigsaw77 (he's the og author for this code)
@@ -77,26 +97,37 @@ class Main extends Sprite
 		#elseif ios
 		Sys.setCwd(lime.system.System.applicationStorageDirectory);
 		#end
+
 		#if VIDEOS_ALLOWED
-		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
+		try hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0") ['--no-lua'] #end) catch (e:Dynamic) {}
 		#end
 
+		#if MODS_ALLOWED
 		#if LUA_ALLOWED
 		Mods.pushGlobalMods();
 		#end
 		Mods.loadTopMod();
+		#end
 		// AntiPiracy checks run on MainMenu / PlayState (mod license + GameBanana/GameJolt).
-		// Set AntiPiracy.disabled = true in debug if needed.
 
-		FlxG.save.bind('funkin', CoolUtil.getSavePath());
-		Highscore.load();
+		try
+		{
+			FlxG.save.bind('funkin', CoolUtil.getSavePath());
+		}
+		catch (e:Dynamic)
+		{
+			FlxG.save.bind('funkin');
+		}
+
+		try Preferences.loadPrefs() catch (e:Dynamic) {}
+		try Highscore.load() catch (e:Dynamic) {}
 
 		#if HSCRIPT_ALLOWED
 		Iris.warn = function(x, ?pos:haxe.PosInfos) {
 			Iris.logLevel(WARN, x, pos);
 			var newPos:HScriptInfos = cast pos;
 			if (newPos.showLine == null) newPos.showLine = true;
-			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '')  + '${newPos.fileName}:';
+			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '') + '${newPos.fileName}:';
 			#if LUA_ALLOWED
 			if (newPos.isLua == true) {
 				msgInfo += 'HScript:';
@@ -114,7 +145,7 @@ class Main extends Sprite
 			Iris.logLevel(ERROR, x, pos);
 			var newPos:HScriptInfos = cast pos;
 			if (newPos.showLine == null) newPos.showLine = true;
-			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '')  + '${newPos.fileName}:';
+			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '') + '${newPos.fileName}:';
 			#if LUA_ALLOWED
 			if (newPos.isLua == true) {
 				msgInfo += 'HScript:';
@@ -132,7 +163,7 @@ class Main extends Sprite
 			Iris.logLevel(FATAL, x, pos);
 			var newPos:HScriptInfos = cast pos;
 			if (newPos.showLine == null) newPos.showLine = true;
-			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '')  + '${newPos.fileName}:';
+			var msgInfo:String = (newPos.funcName != null ? '(${newPos.funcName}) - ' : '') + '${newPos.fileName}:';
 			#if LUA_ALLOWED
 			if (newPos.isLua == true) {
 				msgInfo += 'HScript:';
@@ -148,10 +179,16 @@ class Main extends Sprite
 		}
 		#end
 
-		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(funkin.modding.scripting.psychlua.CallbackHandler.call)); #end
+		#if LUA_ALLOWED
+		try Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(funkin.modding.scripting.psychlua.CallbackHandler.call)) catch (e:Dynamic) {}
+		#end
+
 		Controls.instance = new Controls();
-		Preferences.loadDefaultKeys();
-		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
+		try Preferences.loadDefaultKeys() catch (e:Dynamic) {}
+		#if ACHIEVEMENTS_ALLOWED
+		try Achievements.load() catch (e:Dynamic) {}
+		#end
+
 		addChild(new FlxGame(game.width, game.height, game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
 		#if !mobile
@@ -159,15 +196,22 @@ class Main extends Sprite
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";
 		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
-		if(fpsVar != null) {
+		if (fpsVar != null && Preferences.data != null)
+		{
 			fpsVar.visible = (Preferences.data.fpsDisplay != 'Disabled');
 			fpsVar.updateBackgroundAlpha(Preferences.data.debugDisplayBG);
+			fpsVar.updateDebugType(Preferences.data.fpsDisplay);
 		}
 		#end
 
 		#if (linux || mac)
-		var icon = Image.fromFile("icon.png");
-		Lib.current.stage.window.setIcon(icon);
+		try
+		{
+			var icon = Image.fromFile("icon.png");
+			if (icon != null)
+				Lib.current.stage.window.setIcon(icon);
+		}
+		catch (e:Dynamic) {}
 		#end
 
 		#if html5
@@ -178,32 +222,36 @@ class Main extends Sprite
 		FlxG.fixedTimestep = false;
 		FlxG.game.focusLostFramerate = 60;
 		FlxG.keys.preventDefaultKeys = [TAB];
-		
+
 		#if CRASH_HANDLER
 		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onCrash);
 		#end
 
 		#if DISCORD_ALLOWED
-		DiscordClient.prepare();
+		try DiscordClient.prepare() catch (e:Dynamic) {}
 		#end
 
 		// shader coords fix
-		FlxG.signals.gameResized.add(function (w, h) {
-		     if (FlxG.cameras != null) {
-			   for (cam in FlxG.cameras.list) {
-				if (cam != null && cam.filters != null)
-					resetSpriteCache(cam.flashSprite);
-			   }
+		FlxG.signals.gameResized.add(function(w, h) {
+			if (FlxG.cameras != null)
+			{
+				for (cam in FlxG.cameras.list)
+				{
+					if (cam != null && cam.filters != null)
+						resetSpriteCache(cam.flashSprite);
+				}
 			}
 
 			if (FlxG.game != null)
-			resetSpriteCache(FlxG.game);
+				resetSpriteCache(FlxG.game);
 		});
 	}
 
-	static function resetSpriteCache(sprite:Sprite):Void {
+	static function resetSpriteCache(sprite:Sprite):Void
+	{
+		if (sprite == null) return;
 		@:privateAccess {
-		        sprite.__cacheBitmap = null;
+			sprite.__cacheBitmap = null;
 			sprite.__cacheBitmapData = null;
 		}
 	}
@@ -225,14 +273,16 @@ class Main extends Sprite
 				case FilePos(s, file, line, column):
 					errMsg += file + " (line " + line + ")\n";
 				default:
-					Sys.println(stackItem);
+					Sys.println(Std.string(stackItem));
 			}
 		}
 
-		errMsg += "\nUncaught Error: " + e.error;
+		errMsg += "\nUncaught Error: " + Std.string(e.error);
 		#if PICO_ALLOWED
 		errMsg += "\nPlease report this error to the GitHub Page: https://github.com/Pico-Engine-Team/FNF-Pico-Engine/issues";
 		#end
+
+		#if sys
 		try
 		{
 			if (!FileSystem.exists("./content/"))
@@ -246,20 +296,23 @@ class Main extends Sprite
 		{
 			Sys.println('Failed to save crash dump at ${Path.normalize(path)}: $saveError');
 		}
+		#end
 
 		Sys.println(errMsg);
 		Sys.println("Crash Save " + Path.normalize(path));
 
 		if (Application.current != null && Application.current.window != null)
 			Application.current.window.alert(errMsg, "Error!");
+
 		#if DISCORD_ALLOWED
-		DiscordClient.shutdown();
+		try DiscordClient.shutdown() catch (e:Dynamic) {}
 		#end
 		Sys.exit(1);
 	}
 
 	static function sanitizeCrashFileName(value:String):String
 	{
+		if (value == null) return "unknown";
 		var invalidChars:EReg = ~/[:*?"<>|\\\/]/g;
 		return invalidChars.replace(value.replace(" ", "_"), "-");
 	}
