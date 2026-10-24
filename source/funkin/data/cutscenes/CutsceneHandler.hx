@@ -20,7 +20,8 @@ class CutsceneHandler extends FlxBasic
 
 	var musicObj:FlxSound = null;
 	var pauseJustClosed:Bool = false;
-	var pausedSounds:Array<FlxSound> = new Array<FlxSound>();
+	var pausedSounds:Array<FlxSound> = [];
+	var disposed:Bool = false;
 
 	final _timeToSkip:Float = 1;
 	var _canSkip:Bool = false;
@@ -33,127 +34,245 @@ class CutsceneHandler extends FlxBasic
 
 		timer(0, function()
 		{
-			if(music != null)
+			if (disposed) return;
+			if (music != null && music.length > 0)
 			{
-				FlxG.sound.playMusic(Paths.music(music), 0, false);
-				musicObj = FlxG.sound.music;
-				FlxG.sound.music.fadeIn();
+				try
+				{
+					FlxG.sound.playMusic(Paths.music(music), 0, false);
+					musicObj = FlxG.sound.music;
+					if (FlxG.sound.music != null)
+						FlxG.sound.music.fadeIn();
+				}
+				catch (e:Dynamic)
+				{
+					trace('[CutsceneHandler] Failed to play music "$music": ' + e);
+				}
 			}
-			if(onStart != null) onStart();
+			if (onStart != null) onStart();
 		});
-		FlxG.state.add(this);
+
+		if (FlxG.state != null)
+			FlxG.state.add(this);
 
 		this._canSkip = canSkip;
 	}
 
 	private var cutsceneTime:Float = 0;
 	private var firstFrame:Bool = false;
-	override function update(elapsed)
+
+	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
-		if(FlxG.state != PlayState.instance || !firstFrame)
+		if (disposed) return;
+
+		// Skip first frame / leave if no longer on PlayState
+		if (PlayState.instance == null || FlxG.state != PlayState.instance || !firstFrame)
 		{
 			firstFrame = true;
 			return;
 		}
 
 		cutsceneTime += elapsed;
-		while(timedEvents.length > 0 && timedEvents[0].time <= cutsceneTime)
+
+		// Fire timed events in order
+		while (timedEvents != null && timedEvents.length > 0 && timedEvents[0] != null && timedEvents[0].time <= cutsceneTime)
 		{
-			timedEvents[0].func();
-			timedEvents.shift();
+			var ev = timedEvents.shift();
+			if (ev != null && ev.func != null)
+			{
+				try ev.func() catch (e:Dynamic) trace('[CutsceneHandler] timedEvent error: ' + e);
+			}
 		}
-		
-		if(_canSkip && cutsceneTime > 0.1)
+
+		// Pause → open PauseMenuState (CUTSCENE)
+		// Parentheses required so (pause || BACK) is evaluated before && !pauseJustClosed
+		if (_canSkip && cutsceneTime > 0.1 && !pauseJustClosed)
 		{
-			if (Controls.instance.pressed('pause') #if android || FlxG.android.justReleased.BACK #end && !pauseJustClosed)
+			var pressedPause:Bool = false;
+			try
+			{
+				if (Controls.instance != null)
+					pressedPause = Controls.instance.pressed('pause');
+			}
+			catch (e:Dynamic) {}
+			#if android
+			try
+			{
+				if (FlxG.android != null && FlxG.android.justReleased.BACK)
+					pressedPause = true;
+			}
+			catch (e:Dynamic) {}
+			#end
+
+			if (pressedPause)
+			{
+				var game = PlayState.instance;
+				if (game == null) return;
+
+				FlxG.camera.followLerp = 0;
+				FlxG.state.persistentUpdate = false;
+				FlxG.state.persistentDraw = true;
+
+				// Pause music once (not inside the sound list loop)
+				if (musicObj != null)
 				{
-					var game = PlayState.instance;
-					FlxG.camera.followLerp = 0;
-					FlxG.state.persistentUpdate = false;
-					FlxG.state.persistentDraw = true;
-					FlxG.sound.list.forEach( s -> {
-						musicObj?.pause();
-						if(s.playing){
-							s.pause();
-							pausedSounds.push(s);
-						}
-						FlxTween.globalManager.forEach(s -> s.active = false);
-					});
-					//game.paused = true;
-					var pauseState = new PauseMenuState(true, CUTSCENE);
-					pauseState.cutsceneAllowSkipping = _canSkip;
-					game.openSubState(pauseState);
-
-					game.subStateClosed.addOnce(s ->{ //TODO
-						pauseJustClosed = true;
-						new FlxTimer().start(0.1, _ -> pauseJustClosed = false);
-						switch (pauseState.specialAction){
-							case SKIP:{
-								trace('skipped cutscene');
-								if(skipCallback != null)
-									skipCallback();
-								disposeCutscene();
-							}
-							case RESUME:{
-								for (text in pausedSounds) {
-									text.resume();
-								}
-								musicObj?.resume();
-								pausedSounds = new Array<FlxSound>();
-								FlxTween.globalManager.forEach(s -> s.active = true);
-							}
-							case NOTHING:{}
-							case RESTART:{}
-						}
-						
-					});
-
-					#if DISCORD_ALLOWED
-					@:privateAccess
-					if(game.autoUpdateRPC) DiscordClient.changePresence("Cutscene paused", PlayState.SONG.song + " (" + game.storyDifficultyText + ")", game.iconP2.getCharacter());
-					#end
+					try musicObj.pause() catch (e:Dynamic) {}
 				}
-			// 	holdingTime = Math.max(0, Math.min(_timeToSkip, holdingTime + elapsed));
-			// else if (holdingTime > 0)
-			// 	holdingTime = Math.max(0, FlxMath.lerp(holdingTime, -0.1, FlxMath.bound(elapsed * 3, 0, 1)));
 
-			// updateSkipAlpha();
+				pausedSounds = [];
+				if (FlxG.sound != null && FlxG.sound.list != null)
+				{
+					FlxG.sound.list.forEach(function(s:FlxSound)
+					{
+						if (s != null && s.playing)
+						{
+							try
+							{
+								s.pause();
+								pausedSounds.push(s);
+							}
+							catch (e:Dynamic) {}
+						}
+					});
+				}
+
+				if (FlxTween.globalManager != null)
+					FlxTween.globalManager.forEach(function(t) if (t != null) t.active = false);
+
+				var pauseState = new PauseMenuState(true, CUTSCENE);
+				pauseState.cutsceneAllowSkipping = _canSkip;
+				game.openSubState(pauseState);
+
+				game.subStateClosed.addOnce(function(_)
+				{
+					pauseJustClosed = true;
+					new FlxTimer().start(0.1, function(__) pauseJustClosed = false);
+
+					switch (pauseState.specialAction)
+					{
+						case SKIP:
+							trace('[CutsceneHandler] skipped cutscene');
+							if (skipCallback != null)
+							{
+								try skipCallback() catch (e:Dynamic) {}
+							}
+							disposeCutscene();
+						case RESUME:
+							for (s in pausedSounds)
+							{
+								if (s != null)
+								{
+									try s.resume() catch (e:Dynamic) {}
+								}
+							}
+							if (musicObj != null)
+							{
+								try musicObj.resume() catch (e:Dynamic) {}
+							}
+							pausedSounds = [];
+							if (FlxTween.globalManager != null)
+								FlxTween.globalManager.forEach(function(t) if (t != null) t.active = true);
+						case NOTHING:
+						case RESTART:
+					}
+				});
+
+				#if DISCORD_ALLOWED
+				try
+				{
+					@:privateAccess
+					if (game.autoUpdateRPC)
+					{
+						var songLabel:String = (PlayState.SONG != null && PlayState.SONG.song != null) ? PlayState.SONG.song : 'Cutscene';
+						var diffLabel:String = (game.storyDifficultyText != null) ? game.storyDifficultyText : '';
+						var iconName:String = '';
+						try
+						{
+							if (game.iconP2 != null)
+								iconName = game.iconP2.getCharacter();
+						}
+						catch (e:Dynamic) {}
+						DiscordClient.changePresence('Cutscene paused', songLabel + (diffLabel.length > 0 ? ' (' + diffLabel + ')' : ''), iconName);
+					}
+				}
+				catch (e:Dynamic) {}
+				#end
+			}
 		}
 
-		if(endTime <= cutsceneTime)
+		// End of cutscene
+		if (endTime > 0 && endTime <= cutsceneTime)
 		{
-			finishCallback();
+			if (finishCallback != null)
+			{
+				try finishCallback() catch (e:Dynamic) trace('[CutsceneHandler] finishCallback error: ' + e);
+			}
 			disposeCutscene();
 		}
 	}
 
-	function disposeCutscene() {
-		for (spr in objects)
+	function disposeCutscene()
+	{
+		if (disposed) return;
+		disposed = true;
+
+		if (objects != null)
+		{
+			for (spr in objects)
 			{
-				spr.kill();
-				PlayState.instance.remove(spr);
-				spr.destroy();
+				if (spr == null) continue;
+				try
+				{
+					spr.kill();
+					if (PlayState.instance != null)
+						PlayState.instance.remove(spr);
+					spr.destroy();
+				}
+				catch (e:Dynamic) {}
 			}
-			
-			destroy();
-			PlayState.instance.remove(this);
+			objects = [];
+		}
+
+		timedEvents = [];
+		pausedSounds = [];
+		finishCallback = null;
+		skipCallback = null;
+		onStart = null;
+
+		try destroy() catch (e:Dynamic) {}
+
+		if (PlayState.instance != null)
+		{
+			try PlayState.instance.remove(this) catch (e:Dynamic) {}
+		}
+		else if (FlxG.state != null)
+		{
+			try FlxG.state.remove(this) catch (e:Dynamic) {}
+		}
 	}
 
 	public function push(spr:FlxSprite)
 	{
+		if (spr == null) return;
+		if (objects == null) objects = [];
 		objects.push(spr);
 	}
 
 	public function timer(time:Float, func:Void->Void)
 	{
+		if (func == null) return;
+		if (timedEvents == null) timedEvents = [];
 		timedEvents.push({time: time, func: func});
 		timedEvents.sort(sortByTime);
 	}
 
 	function sortByTime(Obj1:CutsceneEvent, Obj2:CutsceneEvent):Int
 	{
+		if (Obj1 == null && Obj2 == null) return 0;
+		if (Obj1 == null) return 1;
+		if (Obj2 == null) return -1;
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.time, Obj2.time);
 	}
 }
