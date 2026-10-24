@@ -2,6 +2,11 @@ package funkin.data.objects.story;
 
 import haxe.Json;
 import openfl.utils.Assets;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 typedef MenuCharacterAnim =
 {
@@ -59,24 +64,31 @@ class MenuCharacter extends FlxSprite
 
 	public function changeCharacter(?character:String = 'bf')
 	{
-		if(character == null) character = '';
-		if(character == this.character) return;
+		if (character == null) character = '';
+		if (character == this.character) return;
 
 		this.character = character;
-		antialiasing = Preferences.data.antialiasing;
+
+		try
+		{
+			if (Preferences.data != null)
+				antialiasing = Preferences.data.antialiasing;
+		}
+		catch (e:Dynamic) {}
+
 		useAlternative = false;
 		hasConfirmAnimation = false;
 		danceLeft = false;
 
 		visible = (character != '' && character != 'none' && character != 'null');
-		if(!visible)
+		if (!visible)
 		{
 			characterFile = null;
 			return;
 		}
 
 		characterFile = loadCharacterFile(character);
-		if(characterFile == null)
+		if (characterFile == null)
 		{
 			visible = false;
 			return;
@@ -88,9 +100,9 @@ class MenuCharacter extends FlxSprite
 	/** Load + migrate JSON from props path. */
 	public static function loadCharacterFile(character:String):MenuCharacterFile
 	{
-		if(character == null || character.length < 1) return null;
+		if (character == null || character.length < 1) return null;
 		var name:String = character.trim();
-		if(name.length < 1) return null;
+		if (name.length < 1) return null;
 
 		var candidates:Array<String> = [
 			'storymenu/props/characters/' + name,
@@ -102,27 +114,30 @@ class MenuCharacter extends FlxSprite
 		var raw:String = null;
 		for (base in candidates)
 		{
-			var path:String = Paths.getPath(base + '.json', TEXT, null, true);
-			#if MODS_ALLOWED
-			if(path != null && FileSystem.exists(path))
+			var path:String = null;
+			try path = Paths.getPath(base + '.json', TEXT, null, true) catch (e:Dynamic) {}
+
+			#if (MODS_ALLOWED && sys)
+			if (path != null && FileSystem.exists(path))
 			{
-				try { raw = File.getContent(path); } catch(e:Dynamic) {}
+				try { raw = File.getContent(path); } catch (e:Dynamic) {}
 			}
 			#end
-			if(raw == null)
+
+			if (raw == null)
 			{
 				try
 				{
 					var assetPath:String = Paths.getPath(base + '.json', TEXT);
-					if(Assets.exists(assetPath))
+					if (Assets.exists(assetPath))
 						raw = Assets.getText(assetPath);
 				}
-				catch(e:Dynamic) {}
+				catch (e:Dynamic) {}
 			}
-			if(raw != null && raw.length > 0) break;
+			if (raw != null && raw.length > 0) break;
 		}
 
-		if(raw == null || raw.length < 1)
+		if (raw == null || raw.length < 1)
 			return null;
 
 		try
@@ -130,7 +145,7 @@ class MenuCharacter extends FlxSprite
 			var parsed:Dynamic = Json.parse(raw);
 			return normalizeCharacterFile(parsed, name);
 		}
-		catch(e:Dynamic)
+		catch (e:Dynamic)
 		{
 			trace('[MenuCharacter] Failed to parse JSON for ' + name + ': ' + e);
 			return null;
@@ -140,7 +155,7 @@ class MenuCharacter extends FlxSprite
 	/** Convert legacy or partial JSON into the new MenuCharacterFile shape. */
 	public static function normalizeCharacterFile(data:Dynamic, ?fallbackImage:String = ''):MenuCharacterFile
 	{
-		if(data == null) data = {};
+		if (data == null) data = {};
 
 		var file:MenuCharacterFile =
 		{
@@ -156,54 +171,54 @@ class MenuCharacter extends FlxSprite
 		};
 
 		// Paths / image
-		if(Reflect.hasField(data, 'propPath') && data.propPath != null)
+		if (Reflect.hasField(data, 'propPath') && data.propPath != null)
 			file.propPath = Std.string(data.propPath);
-		if(Reflect.hasField(data, 'propImage') && data.propImage != null && Std.string(data.propImage).length > 0)
+		if (Reflect.hasField(data, 'propImage') && data.propImage != null && Std.string(data.propImage).length > 0)
 			file.propImage = Std.string(data.propImage);
-		else if(Reflect.hasField(data, 'image') && data.image != null && Std.string(data.image).length > 0)
+		else if (Reflect.hasField(data, 'image') && data.image != null && Std.string(data.image).length > 0)
 			file.propImage = Std.string(data.image);
 		file.image = file.propImage;
 
 		// Scale
-		if(Reflect.hasField(data, 'propScale') && data.propScale != null)
+		if (Reflect.hasField(data, 'propScale') && data.propScale != null)
 			file.propScale = Std.parseFloat(Std.string(data.propScale));
-		else if(Reflect.hasField(data, 'scale') && data.scale != null)
+		else if (Reflect.hasField(data, 'scale') && data.scale != null)
 			file.propScale = Std.parseFloat(Std.string(data.scale));
-		if(Math.isNaN(file.propScale) || file.propScale <= 0)
+		if (Math.isNaN(file.propScale) || file.propScale <= 0)
 			file.propScale = 1;
 
 		// Position
-		if(Reflect.hasField(data, 'propPosition') && Std.isOfType(data.propPosition, Array))
+		if (Reflect.hasField(data, 'propPosition') && Std.isOfType(data.propPosition, Array))
 			file.propPosition = parseFloatArray(data.propPosition);
-		else if(Reflect.hasField(data, 'position') && Std.isOfType(data.position, Array))
+		else if (Reflect.hasField(data, 'position') && Std.isOfType(data.position, Array))
 			file.propPosition = parseFloatArray(data.position);
-		if(file.propPosition == null || file.propPosition.length < 2)
+		if (file.propPosition == null || file.propPosition.length < 2)
 			file.propPosition = [0.0, 0.0];
 
 		// Antialiasing (inverted flag in new format)
-		if(Reflect.hasField(data, 'prop_disabled_Antialiasing'))
+		if (Reflect.hasField(data, 'prop_disabled_Antialiasing'))
 			file.prop_disabled_Antialiasing = data.prop_disabled_Antialiasing == true;
-		else if(Reflect.hasField(data, 'no_antialiasing'))
+		else if (Reflect.hasField(data, 'no_antialiasing'))
 			file.prop_disabled_Antialiasing = data.no_antialiasing == true;
-		else if(Reflect.hasField(data, 'antialiasing'))
+		else if (Reflect.hasField(data, 'antialiasing'))
 			file.prop_disabled_Antialiasing = data.antialiasing == false;
 
 		// useAlternative / legacy use_alternatives
-		if(Reflect.hasField(data, 'useAlternative'))
+		if (Reflect.hasField(data, 'useAlternative'))
 			file.useAlternative = data.useAlternative == true;
-		else if(Reflect.hasField(data, 'use_alternatives'))
+		else if (Reflect.hasField(data, 'use_alternatives'))
 			file.useAlternative = data.use_alternatives == true;
 
-		if(Reflect.hasField(data, 'flipX'))
+		if (Reflect.hasField(data, 'flipX'))
 			file.flipX = data.flipX == true;
 
 		// Animations array (new) or legacy idle_anim / confirm_anim
-		if(Reflect.hasField(data, 'animations') && Std.isOfType(data.animations, Array))
+		if (Reflect.hasField(data, 'animations') && Std.isOfType(data.animations, Array))
 		{
 			var arr:Array<Dynamic> = cast data.animations;
 			for (a in arr)
 			{
-				if(a == null) continue;
+				if (a == null) continue;
 				var anim:MenuCharacterAnim = {
 					name: Reflect.hasField(a, 'name') ? Std.string(a.name) : 'idle_anim',
 					prefix: Reflect.hasField(a, 'prefix') ? Std.string(a.prefix) : '',
@@ -218,7 +233,7 @@ class MenuCharacter extends FlxSprite
 		ensureAnim(file, 'confirm_anim', Reflect.hasField(data, 'confirm_anim') ? Std.string(data.confirm_anim) : '');
 
 		// Optional alternative dances
-		if(file.useAlternative)
+		if (file.useAlternative)
 		{
 			ensureAnim(file, 'danceLeft', Reflect.hasField(data, 'danceLeft') ? Std.string(data.danceLeft) : getAnimPrefix(file, 'idle_anim'));
 			ensureAnim(file, 'danceRight', Reflect.hasField(data, 'danceRight') ? Std.string(data.danceRight) : getAnimPrefix(file, 'idle_anim'));
@@ -230,15 +245,15 @@ class MenuCharacter extends FlxSprite
 	static function parseFloatArray(value:Dynamic):Array<Float>
 	{
 		var out:Array<Float> = [0.0, 0.0];
-		if(value == null || !Std.isOfType(value, Array))
+		if (value == null || !Std.isOfType(value, Array))
 			return out;
 		var arr:Array<Dynamic> = cast value;
-		if(arr.length > 0)
+		if (arr.length > 0)
 		{
 			var x:Float = Std.parseFloat(Std.string(arr[0]));
 			out[0] = Math.isNaN(x) ? 0.0 : x;
 		}
-		if(arr.length > 1)
+		if (arr.length > 1)
 		{
 			var y:Float = Std.parseFloat(Std.string(arr[1]));
 			out[1] = Math.isNaN(y) ? 0.0 : y;
@@ -248,11 +263,13 @@ class MenuCharacter extends FlxSprite
 
 	static function ensureAnim(file:MenuCharacterFile, name:String, prefix:String):Void
 	{
+		if (file == null) return;
+		if (file.animations == null) file.animations = [];
 		for (a in file.animations)
 		{
-			if(a != null && a.name == name)
+			if (a != null && a.name == name)
 			{
-				if((a.prefix == null || a.prefix.length < 1) && prefix != null && prefix.length > 0)
+				if ((a.prefix == null || a.prefix.length < 1) && prefix != null && prefix.length > 0)
 					a.prefix = prefix;
 				return;
 			}
@@ -262,28 +279,29 @@ class MenuCharacter extends FlxSprite
 
 	public static function getAnimPrefix(file:MenuCharacterFile, name:String):String
 	{
-		if(file == null || file.animations == null) return '';
+		if (file == null || file.animations == null) return '';
 		for (a in file.animations)
-			if(a != null && a.name == name)
+			if (a != null && a.name == name)
 				return a.prefix != null ? a.prefix : '';
 		return '';
 	}
 
 	public static function getAnimOffsets(file:MenuCharacterFile, name:String):Array<Float>
 	{
-		if(file == null || file.animations == null) return [0.0, 0.0];
+		if (file == null || file.animations == null) return [0.0, 0.0];
 		for (a in file.animations)
-			if(a != null && a.name == name && a.offsets != null && a.offsets.length >= 2)
+			if (a != null && a.name == name && a.offsets != null && a.offsets.length >= 2)
 				return a.offsets;
 		return file.propPosition != null ? file.propPosition : [0.0, 0.0];
 	}
 
 	public static function setAnimPrefix(file:MenuCharacterFile, name:String, prefix:String):Void
 	{
-		if(file == null) return;
+		if (file == null) return;
+		if (file.animations == null) file.animations = [];
 		for (a in file.animations)
 		{
-			if(a != null && a.name == name)
+			if (a != null && a.name == name)
 			{
 				a.prefix = prefix != null ? prefix : '';
 				return;
@@ -295,13 +313,13 @@ class MenuCharacter extends FlxSprite
 	/** Build a clean new-format object for saving (no legacy fields). */
 	public static function toNewFormat(file:MenuCharacterFile):Dynamic
 	{
-		if(file == null) return {};
+		if (file == null) return {};
 		var anims:Array<Dynamic> = [];
-		if(file.animations != null)
+		if (file.animations != null)
 		{
 			for (a in file.animations)
 			{
-				if(a == null) continue;
+				if (a == null) continue;
 				anims.push({
 					name: a.name,
 					prefix: a.prefix != null ? a.prefix : '',
@@ -323,70 +341,92 @@ class MenuCharacter extends FlxSprite
 
 	function applyCharacterFile(file:MenuCharacterFile):Void
 	{
+		if (file == null)
+		{
+			visible = false;
+			return;
+		}
+
 		useAlternative = file.useAlternative == true;
 
 		var path:String = file.propPath != null ? file.propPath : 'storymenu/props/characters/';
-		if(!path.endsWith('/') && !path.endsWith('\\')) path += '/';
+		if (!path.endsWith('/') && !path.endsWith('\\')) path += '/';
 		var img:String = file.propImage != null && file.propImage.length > 0 ? file.propImage : (file.image != null ? file.image : character);
 		var atlasPath:String = path + img;
 
-		try
+		var atlas = null;
+		try atlas = Paths.getSparrowAtlas(atlasPath) catch (e:Dynamic) {}
+		if (atlas == null)
 		{
-			frames = Paths.getSparrowAtlas(atlasPath);
+			try atlas = Paths.getSparrowAtlas('storymenu/props/characters/' + img) catch (e:Dynamic) {}
 		}
-		catch(e:Dynamic)
+		if (atlas == null)
 		{
-			try { frames = Paths.getSparrowAtlas('storymenu/props/characters/' + img); }
-			catch(e2:Dynamic)
-			{
-				try { frames = Paths.getSparrowAtlas('menucharacters/' + character); }
-				catch(e3:Dynamic)
-				{
-					visible = false;
-					return;
-				}
-			}
+			try atlas = Paths.getSparrowAtlas('menucharacters/' + character) catch (e:Dynamic) {}
 		}
+		if (atlas == null)
+		{
+			visible = false;
+			return;
+		}
+		frames = atlas;
 
-		animation.destroyAnimations();
+		if (animation != null)
+			animation.destroyAnimations();
 
 		var idlePrefix:String = getAnimPrefix(file, 'idle_anim');
 		var confirmPrefix:String = getAnimPrefix(file, 'confirm_anim');
 		var danceL:String = getAnimPrefix(file, 'danceLeft');
 		var danceR:String = getAnimPrefix(file, 'danceRight');
 
-		if(useAlternative)
+		if (useAlternative)
 		{
-			if(danceL.length > 0) animation.addByPrefix('danceLeft', danceL, 24, false);
-			if(danceR.length > 0) animation.addByPrefix('danceRight', danceR, 24, false);
+			if (danceL.length > 0)
+			{
+				try animation.addByPrefix('danceLeft', danceL, 24, false) catch (e:Dynamic) {}
+			}
+			if (danceR.length > 0)
+			{
+				try animation.addByPrefix('danceRight', danceR, 24, false) catch (e:Dynamic) {}
+			}
 			// fallback idle if dances missing
-			if(!animation.exists('danceLeft') && idlePrefix.length > 0)
-				animation.addByPrefix('idle', idlePrefix, 24);
+			if (!animation.exists('danceLeft') && idlePrefix.length > 0)
+			{
+				try animation.addByPrefix('idle', idlePrefix, 24) catch (e:Dynamic) {}
+			}
 		}
-		else if(idlePrefix.length > 0)
+		else if (idlePrefix.length > 0)
 		{
-			animation.addByPrefix('idle', idlePrefix, 24);
+			try animation.addByPrefix('idle', idlePrefix, 24) catch (e:Dynamic) {}
 		}
 
 		hasConfirmAnimation = false;
-		if(confirmPrefix != null && confirmPrefix.length > 0)
+		if (confirmPrefix != null && confirmPrefix.length > 0)
 		{
-			animation.addByPrefix('confirm', confirmPrefix, 24, false);
+			try animation.addByPrefix('confirm', confirmPrefix, 24, false) catch (e:Dynamic) {}
 			hasConfirmAnimation = animation.exists('confirm');
 		}
 
 		flipX = file.flipX == true;
-		if(file.prop_disabled_Antialiasing)
+		if (file.prop_disabled_Antialiasing)
 			antialiasing = false;
 		else
-			antialiasing = Preferences.data.antialiasing;
+		{
+			try
+			{
+				if (Preferences.data != null)
+					antialiasing = Preferences.data.antialiasing;
+			}
+			catch (e:Dynamic) {}
+		}
 
 		var sc:Float = file.propScale;
-		if(Math.isNaN(sc) || sc <= 0) sc = 1;
+		if (Math.isNaN(sc) || sc <= 0) sc = 1;
 		scale.set(sc, sc);
 		updateHitbox();
 
 		var pos:Array<Float> = file.propPosition != null ? file.propPosition : [0.0, 0.0];
+		if (pos.length < 2) pos = [0.0, 0.0];
 		offset.set(pos[0], pos[1]);
 
 		playIdle();
@@ -394,17 +434,19 @@ class MenuCharacter extends FlxSprite
 
 	public function playIdle():Void
 	{
-		if(useAlternative)
+		if (animation == null) return;
+
+		if (useAlternative)
 		{
 			danceLeft = !danceLeft;
-			if(danceLeft && animation.exists('danceLeft'))
+			if (danceLeft && animation.exists('danceLeft'))
 				animation.play('danceLeft', true);
-			else if(animation.exists('danceRight'))
+			else if (animation.exists('danceRight'))
 				animation.play('danceRight', true);
-			else if(animation.exists('idle'))
+			else if (animation.exists('idle'))
 				animation.play('idle', true);
 		}
-		else if(animation.exists('idle'))
+		else if (animation.exists('idle'))
 		{
 			animation.play('idle', true);
 		}
@@ -412,7 +454,8 @@ class MenuCharacter extends FlxSprite
 
 	public function playConfirm():Void
 	{
-		if(hasConfirmAnimation && animation.exists('confirm'))
+		if (animation == null) return;
+		if (hasConfirmAnimation && animation.exists('confirm'))
 			animation.play('confirm', true);
 	}
 }
