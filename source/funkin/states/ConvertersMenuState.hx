@@ -26,6 +26,8 @@ class ConvertersMenuState extends MusicBeatState
 	static inline var SOURCE_FOREVER:String = 'forever';
 	static inline var STAGE_FILTER_ALL:Int = 3;
 
+	public static var ConvertersVersion:String = '0.1.0';
+
 	var bg:FlxSprite;
 	var title:FlxText;
 	var description:FlxText;
@@ -37,7 +39,6 @@ class ConvertersMenuState extends MusicBeatState
 	var page:String = PAGE_MAIN;
 	var curSelected:Int = 0;
 	var fileDialog:FileDialogHandler = new FileDialogHandler();
-
 	override function create()
 	{
 		super.create();
@@ -62,14 +63,17 @@ class ConvertersMenuState extends MusicBeatState
 		statusText.scrollFactor.set();
 		add(statusText);
 
-		versionText = new FlxText(12, FlxG.height - 28, FlxG.width - 24, 'Converters Menu v1.0.0  |  F1 Help  |  BACK to go back', 16);
-		versionText.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, LEFT);
-		versionText.scrollFactor.set();
-		versionText.alpha = 0.7;
-		add(versionText);
+		var psychVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, 'Converter Menu v${ConvertersVersion}', 12);
+		psychVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		psychVer.scrollFactor.set();
+		add(psychVer);
 
 		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
+
+		#if DISCORD_ALLOWED
+		DiscordClient.changePresence("In Converter Menu", null);
+		#end
 
 		selectorLeft = new Alphabet(0, 0, '>', true);
 		selectorLeft.scrollFactor.set();
@@ -80,6 +84,7 @@ class ConvertersMenuState extends MusicBeatState
 	var helpVisible:Bool = false;
 	var helpBg:FlxSprite;
 	var helpText:FlxText;
+	var fullTipText:FlxText;
 
 	override function update(elapsed:Float)
 	{
@@ -87,7 +92,7 @@ class ConvertersMenuState extends MusicBeatState
 
 		// Help overlay
 		if(FlxG.keys.justPressed.F1)
-			toggleHelp();
+			toggleHelp(!helpVisible);
 
 		if(helpVisible)
 		{
@@ -116,30 +121,19 @@ class ConvertersMenuState extends MusicBeatState
 		}
 	}
 
-	function toggleHelp(?force:Null<Bool> = null)
+	function toggleHelp(show:Bool = true):Void
 	{
-		helpVisible = force != null ? force : !helpVisible;
-		if(helpBg == null)
+		helpVisible = show;
+		if(fullTipText == null)
 		{
-			helpBg = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
-			helpBg.scale.set(FlxG.width, FlxG.height);
-			helpBg.updateHitbox();
-			helpBg.scrollFactor.set();
-			helpBg.alpha = 0.82;
-			add(helpBg);
-
-			helpText = new FlxText(40, 40, FlxG.width - 80, '', 18);
-			helpText.setFormat(Paths.font('vcr.ttf'), 18, FlxColor.WHITE, LEFT);
-			helpText.scrollFactor.set();
-			add(helpText);
-		}
-		helpBg.visible = helpVisible;
-		helpText.visible = helpVisible;
-		if(helpVisible)
-		{
-			helpText.text = [
+			fullTipText = new FlxText(0, 0, FlxG.width - 200, '', 24);
+			fullTipText.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.WHITE, CENTER);
+			fullTipText.cameras = [FlxG.camera];
+			fullTipText.scrollFactor.set();
+			fullTipText.screenCenter();
+			fullTipText.y -= 60;
+			fullTipText.text = [
 				'CONVERTERS MENU — HELP',
-				'',
 				'How to use:',
 				'1. Choose an engine (Psych, NightmareVision, Codename, V-Slice).',
 				'2. Pick Chart / Character / Stage Converter.',
@@ -160,8 +154,10 @@ class ConvertersMenuState extends MusicBeatState
 				'',
 				'Press BACK or F1 to close help.'
 			].join('\n');
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			add(fullTipText);
 		}
+		fullTipText.visible = fullTipText.active = show;
+		if(show) FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 	}
 
 	function setPage(newPage:String, playSound:Bool = true)

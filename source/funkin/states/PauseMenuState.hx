@@ -7,13 +7,14 @@ import funkin.data.WeekData;
 import funkin.states.options.OptionsMenuState;
 import funkin.states.editors.data.ChartingState;
 
+import funkin.states.menus.StoryModeMenuState;
 import funkin.states.menus.freeplay.FreeplayMenuState;
 import funkin.utils.engines.pico.LocaleUtils;
 import flixel.util.FlxStringUtil;
 
 class PauseMenuState extends MusicBeatSubstate
 {
-	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit to menu'];
+	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit To Menu'];
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
 	var menuItems:Array<String> = [];
 
@@ -64,8 +65,8 @@ class PauseMenuState extends MusicBeatSubstate
 				case DIALOGUE: Language.getPhrase('pause_branding_dialogue', 'Dialogue');
 				default: Language.getPhrase('pause_branding_cutscene', 'Cutscene');
 			};
-			cutsceneResetTxt = Language.getPhrase('pause_branding_restart', 'Restart {1}', [cutsceneBranding]);
 			cutsceneSkipTxt = Language.getPhrase('pause_branding_skip', 'Skip {1}', [cutsceneBranding]);
+			cutsceneResetTxt = Language.getPhrase('pause_branding_restart', 'Restart {1}', [cutsceneBranding]);
 		}
 	}
 
@@ -89,11 +90,7 @@ class PauseMenuState extends MusicBeatSubstate
 	{
 		menuItems = buildPauseMenuItems();
 
-		for (i in 0...Difficulty.list.length) {
-			var diff:String = Difficulty.getString(i);
-			difficultyChoices.push(diff);
-		}
-		difficultyChoices.push('BACK');
+		difficultyChoices = buildMetaDifficultyChoices();
 
 		pauseMusic = new FlxSound();
 		try
@@ -104,7 +101,6 @@ class PauseMenuState extends MusicBeatSubstate
 		catch(e:Dynamic) {}
 		pauseMusic.volume = 0;
 		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
-
 		FlxG.sound.list.add(pauseMusic);
 
 		var bg:FlxSprite = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
@@ -114,7 +110,8 @@ class PauseMenuState extends MusicBeatSubstate
 		bg.scrollFactor.set();
 		add(bg);
 
-		var displayNameSong:FlxText = new FlxText(20, 15, 0, Language.getPhrase("playteste_song", "SONG: {1}", [PlayState.SONG.song]), 32);
+		var songLabel:String = resolvePauseDisplayName();
+		var displayNameSong:FlxText = new FlxText(20, 15, 0, Language.getPhrase("playteste_song", "SONG: {1}", [songLabel]), 32);
 		displayNameSong.scrollFactor.set();
 		displayNameSong.setFormat(Paths.font("vcr.ttf"), 32);
 		displayNameSong.updateHitbox();
@@ -216,23 +213,96 @@ class PauseMenuState extends MusicBeatSubstate
 			return items;
 		}
 
-		var items:Array<String> = menuItemsOG.copy();
-		if(Difficulty.list.length < 2) items.remove('Change Difficulty'); //No need to change difficulty if there is only one!
+		// Chart Editor playtest: dedicated menu so you always return to ChartingState
 		if(PlayState.chartingMode)
 		{
-			items.remove('Change Difficulty');
-			items.remove('Change Gameplay Settings');
-			items.remove('Options');
-			// Keep Exit to menu so you can leave without only returning to the chart editor
-			if(!items.contains('Return to Chart Editor'))
-				items.push('Return to Chart Editor');
+			var chartItems:Array<String> = [
+				'Resume',
+				'Restart Song',
+				'Return to Chart Editor',
+				'Exit to menu'
+			];
+			if(PlayState.instance != null && PlayState.instance.practiceMode && !PlayState.instance.startingSong)
+				chartItems.insert(2, 'Skip Time');
+			return chartItems;
 		}
-		else if(PlayState.instance != null && PlayState.instance.practiceMode && !PlayState.instance.startingSong)
+
+		var items:Array<String> = menuItemsOG.copy();
+		// Only show Change Difficulty when the active meta has 2+ difficulties
+		// (normal meta.json and variation metas like meta-pico.json each own their list)
+		if(getMetaDifficulties().length < 2)
+			items.remove('Change Difficulty');
+		if(PlayState.instance != null && PlayState.instance.practiceMode && !PlayState.instance.startingSong)
 			items.insert(3, 'Skip Time');
 
 		return items;
 	}
 	
+
+	/** UI song name: meta.displayName → SONG.displayName → Song.getDisplayName → song id */
+	function resolvePauseDisplayName():String
+	{
+		if(PlayState.SONG != null)
+		{
+			if(PlayState.SONG.meta != null)
+			{
+				var md:String = PlayState.SONG.meta.displayName;
+				if(md != null && md.trim().length > 0)
+					return md.trim();
+			}
+			if(PlayState.SONG.displayName != null && PlayState.SONG.displayName.trim().length > 0)
+				return PlayState.SONG.displayName.trim();
+			try
+			{
+				var fromSong:String = Song.getDisplayName(PlayState.SONG, null);
+				if(fromSong != null && fromSong.trim().length > 0)
+					return fromSong.trim();
+			}
+			catch(e:Dynamic) {}
+			if(PlayState.SONG.song != null)
+				return Std.string(PlayState.SONG.song);
+		}
+		return '';
+	}
+
+	/**
+	 * Difficulties from the active meta.json (or meta-<variation>.json).
+	 * Falls back to Difficulty.list when meta has none.
+	 */
+	function getMetaDifficulties():Array<String>
+	{
+		if(PlayState.SONG != null && PlayState.SONG.meta != null)
+		{
+			var diffs:Array<String> = PlayState.SONG.meta.difficulties;
+			if(diffs != null && diffs.length > 0)
+			{
+				var out:Array<String> = [];
+				for (d in diffs)
+				{
+					if(d == null) continue;
+					var s:String = Std.string(d).trim();
+					if(s.length > 0 && !out.contains(s))
+						out.push(s);
+				}
+				if(out.length > 0)
+					return out;
+			}
+		}
+		if(Difficulty.list != null && Difficulty.list.length > 0)
+			return Difficulty.list.copy();
+		return ['Normal'];
+	}
+
+	/** Menu entries for Change Difficulty: meta diffs + BACK */
+	function buildMetaDifficultyChoices():Array<String>
+	{
+		var choices:Array<String> = [];
+		for (diff in getMetaDifficulties())
+			choices.push(diff);
+		choices.push('BACK');
+		return choices;
+	}
+
 	function getPauseSong()
 	{
 		var songPauseMusic:String = (PlayState.SONG != null ? PlayState.SONG.pauseSong : null);
@@ -283,6 +353,15 @@ class PauseMenuState extends MusicBeatSubstate
 
 		if(controls.BACK)
 		{
+			// Inside difficulty list → return to main pause items instead of unpausing
+			if(menuItems == difficultyChoices)
+			{
+				menuItems = buildPauseMenuItems();
+				deleteSkipTimeText();
+				regenMenu();
+				FlxG.sound.play(Paths.sound('cancelMenu'), 0.4);
+				return;
+			}
 			specialAction = RESUME;
 			close();
 			return;
@@ -342,13 +421,19 @@ class PauseMenuState extends MusicBeatSubstate
 			if (menuItems == difficultyChoices)
 			{
 				var songLowercase:String = Paths.formatToSongPath(PlayState.SONG.song);
-				var poop:String = Highscore.formatSong(songLowercase, curSelected, PlayState.getSongVariationName(PlayState.SONG), WeekData.getCurrentWeek(), !PlayState.isStoryMode);
 				try
 				{
+					// Last item is always BACK
 					if(menuItems.length - 1 != curSelected && difficultyChoices.contains(daSelected))
 					{
+						var metaDiffs:Array<String> = getMetaDifficulties();
+						Difficulty.copyFrom(metaDiffs);
+						var diffIndex:Int = metaDiffs.indexOf(daSelected);
+						if(diffIndex < 0) diffIndex = curSelected;
+						var variation:String = PlayState.getSongVariationName(PlayState.SONG);
+						var poop:String = Highscore.formatSong(songLowercase, diffIndex, variation, WeekData.getCurrentWeek(), !PlayState.isStoryMode);
 						Song.loadFromJson(poop, songLowercase);
-						PlayState.storyDifficulty = curSelected;
+						PlayState.storyDifficulty = diffIndex;
 						MusicBeatState.resetState();
 						FlxG.sound.music.volume = 0;
 						PlayState.changedDifficulty = true;
@@ -385,6 +470,7 @@ class PauseMenuState extends MusicBeatSubstate
 					specialAction = RESUME;
 					close();
 				case 'Change Difficulty':
+					difficultyChoices = buildMetaDifficultyChoices();
 					menuItems = difficultyChoices;
 					deleteSkipTimeText();
 					regenMenu();
@@ -425,7 +511,13 @@ class PauseMenuState extends MusicBeatSubstate
 						FlxG.sound.music.time = pauseMusic.time;
 					}
 					OptionsMenuState.onPlayState = true;
-				case "Exit to menu":
+				case "Exit to menu" | "Exit To Menu":
+					// From chart playtest, Exit always returns to the Chart Editor
+					if(PlayState.chartingMode)
+					{
+						returnToChartEditor();
+						return;
+					}
 					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
 					PlayState.deathCounter = 0;
 					PlayState.seenCutscene = false;
@@ -488,26 +580,42 @@ class PauseMenuState extends MusicBeatSubstate
 		MusicBeatState.resetState();
 	}
 
+	/**
+	 * Leave playtest and open the Chart Editor again.
+	 * Uses ChartingState(false) so song data / scroll position can be preserved
+	 * instead of a full editor reset.
+	 */
 	function returnToChartEditor():Void
 	{
-		PlayState.instance.paused = true;
-		PlayState.instance.canResync = false;
+		if(PlayState.instance != null)
+		{
+			PlayState.instance.paused = true;
+			PlayState.instance.canResync = false;
+			if(PlayState.instance.vocals != null)
+				PlayState.instance.vocals.pause();
+			if(PlayState.instance.opponentVocals != null)
+				PlayState.instance.opponentVocals.pause();
+		}
+
+		// Keep flag true until ChartingState Exit clears it
 		PlayState.chartingMode = true;
+		PlayState.changedDifficulty = false;
 		FlxG.camera.followLerp = 0;
+		FlxG.mouse.visible = true;
 
 		if(FlxG.sound.music != null)
+		{
 			FlxG.sound.music.stop();
-		if(PlayState.instance.vocals != null)
-			PlayState.instance.vocals.pause();
-		if(PlayState.instance.opponentVocals != null)
-			PlayState.instance.opponentVocals.pause();
+			FlxG.sound.music.volume = 0;
+		}
 
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("Chart Editor", null, null, true);
 		DiscordClient.resetClientID();
 		#end
 
-		MusicBeatState.switchState(new ChartingState());
+		// false = do not fully reset editor (keeps loaded chart when possible)
+		MusicBeatState.switchState(new ChartingState(false));
 	}
 
 	override function destroy()

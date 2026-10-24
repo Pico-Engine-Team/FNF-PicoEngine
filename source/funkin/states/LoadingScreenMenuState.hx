@@ -3,9 +3,10 @@ package funkin.states;
 import funkin.play.Song;
 import funkin.play.SongMeta;
 import funkin.stages.StageData;
-import funkin.data.objects.game.characters.Character;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.data.NoteSplash;
+
+import funkin.data.objects.CharactersData as Character;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.data.NoteSplash;
 
 import haxe.Json;
 import openfl.display.BitmapData;
@@ -223,7 +224,7 @@ class LoadingScreenMenuState extends MusicBeatState
 			loadingText.borderSize = 2;
 			addBehindBar(loadingText);
 		
-			logoKey = new FlxSprite(0, 0).loadGraphic(Paths.image('loading/icon'));
+			logoKey = new FlxSprite(0, 0).loadGraphic(Paths.image('menus/loadingScreen_menu/loadingScreen-icon'));
 			logoKey.antialiasing = Preferences.data.antialiasing;
 			logoKey.scale.set(0.75, 0.75);
 			logoKey.updateHitbox();
@@ -336,7 +337,7 @@ class LoadingScreenMenuState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('secret'));
 
 				pessy = new FlxSprite(700, 140);
-				pessy.frames = Paths.getSparrowAtlas('loading/pessy');
+				pessy.frames = Paths.getSparrowAtlas('menus/loadingScreen_menu/pessy');
 				pessy.animation.addByPrefix('run', 'run', 24, true);
 				pessy.animation.addByPrefix('spin', 'spin', 24, true);
 				pessy.antialiasing = Preferences.data.antialiasing;
@@ -344,19 +345,18 @@ class LoadingScreenMenuState extends MusicBeatState
 				pessy.visible = false;
 
 				new FlxTimer().start(0.01, function(tmr:FlxTimer) {
-					pessy.x = FlxG.width + 200;
-					pessy.velocity.x = -1100;
-					if(pessy.flipX)
-					{
-						pessy.x = -pessy.width - 200;
-						pessy.velocity.x *= -1;
-					}
+				pessy.x = FlxG.width + 200;
+				pessy.velocity.x = -1100;
+				if(pessy.flipX)
+				{
+					pessy.x = -pessy.width - 200;
+					pessy.velocity.x *= -1;
+				}
 		
-					pessy.visible = true;
-					pessy.animation.play('run', true);
-					#if ACHIEVEMENTS_ALLOWED Achievements.unlock('pessy_easter_egg'); #end
-					
-					insert(members.indexOf(loadingText), pessy);
+				pessy.visible = true;
+				pessy.animation.play('run', true);
+				#if ACHIEVEMENTS_ALLOWED Achievements.unlock('pessy_easter_egg'); #end
+				insert(members.indexOf(loadingText), pessy);
 				});
 			}
 		}
@@ -853,8 +853,12 @@ class LoadingScreenMenuState extends MusicBeatState
 		var i:Int = 0;
 		while(i < arr.length)
 		{
-
 			var member:String = arr[i];
+			if(member == null)
+			{
+				arr.remove(member);
+				continue;
+			}
 			var myKey = '$prefix/$member$ext';
 			if(parentFolder == 'songs') myKey = '$member$ext';
 
@@ -954,7 +958,9 @@ class LoadingScreenMenuState extends MusicBeatState
 
 			var isAnimateAtlas:Bool = false;
 			var img:String = character.image;
-			img = img.trim();
+			if(img == null || Std.string(img).trim().length < 1)
+				return;
+			img = Std.string(img).trim();
 			#if flxanimate
 			var animToFind:String = Paths.getPath('images/$img/Animation.json', TEXT);
 			if (#if MODS_ALLOWED FileSystem.exists(animToFind) || #end Assets.exists(animToFind))

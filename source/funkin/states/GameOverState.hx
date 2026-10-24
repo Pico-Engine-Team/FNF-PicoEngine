@@ -1,9 +1,10 @@
 package funkin.states;
 
 import funkin.data.WeekData;
+import funkin.data.objects.CharactersData as Character;
+
 import funkin.states.menus.StoryModeMenuState;
 import funkin.states.menus.freeplay.FreeplayMenuState;
-import funkin.data.objects.game.characters.Character;
 
 import flixel.FlxObject;
 import flixel.FlxSubState;
@@ -13,8 +14,8 @@ class GameOverState extends MusicBeatSubstate
 {
 	var camFollow:FlxObject;
 	var stagePostfix:String = "";
-	public var boyfriend:Character;
 
+	public var boyfriend:Character;
 	public static var characterName:String = 'bf-dead';
 	public static var deathSoundName:String = 'fnf_loss_sfx';
 	public static var loopSoundName:String = 'gameOver';
@@ -47,7 +48,6 @@ class GameOverState extends MusicBeatSubstate
 			if(playerCharacter.gameOverLoop != null && playerCharacter.gameOverLoop.trim().length > 0) loopSoundName = playerCharacter.gameOverLoop;
 			if(playerCharacter.gameOverEnd != null && playerCharacter.gameOverEnd.trim().length > 0) endSoundName = playerCharacter.gameOverEnd;
 		}
-
 	}
 
 	var charX:Float = 0;
@@ -63,28 +63,82 @@ class GameOverState extends MusicBeatSubstate
 
 		if(boyfriend == null)
 		{
-			boyfriend = new Character(PlayState.instance.boyfriend.getScreenPosition().x, PlayState.instance.boyfriend.getScreenPosition().y, characterName, true);
-			boyfriend.x += boyfriend.positionArray[0] - PlayState.instance.boyfriend.positionArray[0];
-			boyfriend.y += boyfriend.positionArray[1] - PlayState.instance.boyfriend.positionArray[1];
+			var px:Float = 0;
+			var py:Float = 0;
+			var ox:Float = 0;
+			var oy:Float = 0;
+			if(PlayState.instance != null && PlayState.instance.boyfriend != null)
+			{
+				var bf = PlayState.instance.boyfriend;
+				try
+				{
+					var sp = bf.getScreenPosition();
+					px = sp.x;
+					py = sp.y;
+				}
+				catch(e:Dynamic)
+				{
+					px = bf.x;
+					py = bf.y;
+				}
+				if(bf.positionArray != null && bf.positionArray.length >= 2)
+				{
+					ox = bf.positionArray[0];
+					oy = bf.positionArray[1];
+				}
+			}
+			boyfriend = new Character(px, py, characterName, true);
+			if(boyfriend.positionArray != null && boyfriend.positionArray.length >= 2)
+			{
+				boyfriend.x += boyfriend.positionArray[0] - ox;
+				boyfriend.y += boyfriend.positionArray[1] - oy;
+			}
 		}
 		boyfriend.skipDance = true;
 		add(boyfriend);
 
-		FlxG.sound.play(Paths.sound(deathSoundName));
+		try FlxG.sound.play(Paths.sound(deathSoundName)) catch(e:Dynamic) {}
 		FlxG.camera.scroll.set();
 		FlxG.camera.target = null;
 
-		boyfriend.playAnim('firstDeath');
+		try boyfriend.playAnim('firstDeath') catch(e:Dynamic) {}
 
 		camFollow = new FlxObject(0, 0, 1, 1);
-		camFollow.setPosition(boyfriend.getGraphicMidpoint().x + boyfriend.cameraPosition[0], boyfriend.getGraphicMidpoint().y + boyfriend.cameraPosition[1]);
+		var camX:Float = boyfriend.getGraphicMidpoint().x;
+		var camY:Float = boyfriend.getGraphicMidpoint().y;
+		if(boyfriend.cameraPosition != null && boyfriend.cameraPosition.length >= 2)
+		{
+			camX += boyfriend.cameraPosition[0];
+			camY += boyfriend.cameraPosition[1];
+		}
+		camFollow.setPosition(camX, camY);
 		FlxG.camera.focusOn(new FlxPoint(FlxG.camera.scroll.x + (FlxG.camera.width / 2), FlxG.camera.scroll.y + (FlxG.camera.height / 2)));
 		FlxG.camera.follow(camFollow, LOCKON, 0.01);
 		add(camFollow);
-		
-		PlayState.instance.setOnScripts('inGameOver', true);
-		PlayState.instance.callOnScripts('onGameOverStart', []);
-		FlxG.sound.music.loadEmbedded(Paths.music(loopSoundName), true);
+
+		if(PlayState.instance != null)
+		{
+			try PlayState.instance.setOnScripts('inGameOver', true) catch(e:Dynamic) {}
+			try PlayState.instance.callOnScripts('onGameOverStart', []) catch(e:Dynamic) {}
+		}
+		// loadEmbedded requires an existing FlxSound.music — create/play safely
+		try
+		{
+			var loopMusic = Paths.music(loopSoundName);
+			if(loopMusic != null)
+			{
+				if(FlxG.sound.music != null)
+					FlxG.sound.music.loadEmbedded(loopMusic, true);
+				else
+					FlxG.sound.playMusic(loopMusic, 1, true);
+				if(FlxG.sound.music != null)
+					FlxG.sound.music.pause();
+			}
+		}
+		catch(e:Dynamic)
+		{
+			trace('[GameOver] loop music load failed: ' + e);
+		}
 
 		if(characterName == 'pico-dead')
 		{
@@ -136,7 +190,8 @@ class GameOverState extends MusicBeatSubstate
 	{
 		super.update(elapsed);
 
-		PlayState.instance.callOnScripts('onUpdate', [elapsed]);
+		if(PlayState.instance != null)
+			PlayState.instance.callOnScripts('onUpdate', [elapsed]);
 
 		var justPlayedLoop:Bool = false;
 		if (!boyfriend.isAnimationNull() && boyfriend.getAnimationName() == 'firstDeath' && boyfriend.isAnimationFinished())
@@ -160,7 +215,7 @@ class GameOverState extends MusicBeatSubstate
 			{
 				#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
 				FlxG.camera.visible = false;
-				FlxG.sound.music.stop();
+				if(FlxG.sound.music != null) FlxG.sound.music.stop();
 				PlayState.deathCounter = 0;
 				PlayState.seenCutscene = false;
 				PlayState.chartingMode = false;
@@ -172,7 +227,7 @@ class GameOverState extends MusicBeatSubstate
 					MusicBeatState.switchState(new FreeplayMenuState());
 	
 				FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
-				PlayState.instance.callOnScripts('onGameOverConfirm', [false]);
+				if(PlayState.instance != null) PlayState.instance.callOnScripts('onGameOverConfirm', [false]);
 			}
 			else if (justPlayedLoop)
 			{
@@ -196,17 +251,19 @@ class GameOverState extends MusicBeatSubstate
 				}
 			}
 			
-			if (FlxG.sound.music.playing)
+			if (FlxG.sound.music != null && FlxG.sound.music.playing)
 			{
 				Conductor.songPosition = FlxG.sound.music.time;
 			}
 		}
-		PlayState.instance.callOnScripts('onUpdatePost', [elapsed]);
+		if(PlayState.instance != null)
+			PlayState.instance.callOnScripts('onUpdatePost', [elapsed]);
 	}
 
 	var isEnding:Bool = false;
 	function coolStartDeath(?volume:Float = 1):Void
 	{
+		if(FlxG.sound.music == null) return;
 		FlxG.sound.music.play(true);
 		FlxG.sound.music.volume = volume;
 	}
@@ -236,7 +293,7 @@ class GameOverState extends MusicBeatSubstate
 					MusicBeatState.resetState();
 				});
 			});
-			PlayState.instance.callOnScripts('onGameOverConfirm', [true]);
+			if(PlayState.instance != null) PlayState.instance.callOnScripts('onGameOverConfirm', [true]);
 		}
 	}
 

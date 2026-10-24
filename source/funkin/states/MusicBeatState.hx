@@ -1,6 +1,7 @@
 package funkin.states;
 
 import funkin.utils.engines.psych.PsychCamera;
+import funkin.stages.BaseStage;
 import flixel.FlxState;
 
 class MusicBeatState extends FlxState
@@ -110,13 +111,14 @@ class MusicBeatState extends FlxState
 		var lastSection:Int = curSection;
 		curSection = 0;
 		stepsToDo = 0;
+		if(PlayState.SONG.notes == null) return;
 		for (i in 0...PlayState.SONG.notes.length)
 		{
 			if (PlayState.SONG.notes[i] != null)
 			{
 				stepsToDo += Math.round(getBeatsOnSection() * 4);
 				if(stepsToDo > curStep) break;
-				
+
 				curSection++;
 			}
 		}
@@ -218,6 +220,7 @@ class MusicBeatState extends FlxState
 
 	function stagesFunc(func:BaseStage->Void)
 	{
+		if(stages == null || func == null) return;
 		for (stage in stages)
 			if(stage != null && stage.exists && stage.active)
 				func(stage);

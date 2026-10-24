@@ -13,15 +13,14 @@ import funkin.data.objects.HealthIcon;
 import funkin.data.dialogue.DialogueBoxPsych;
 import funkin.data.cutscenes.VideoSprite;
 import funkin.data.shaders.ErrorHandledShader;
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData as Character;
 
-import funkin.data.objects.game.notes.NoteData;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.data.NoteSplash;
-import funkin.data.objects.game.notes.data.HoldNoteCover;
-import funkin.data.objects.game.notes.data.Note.EventNote;
-import funkin.data.objects.game.notes.config.StrumNote;
-import funkin.data.objects.game.notes.config.NoteTypesConfig;
+import funkin.data.objects.game.note.NoteState as NoteData;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.data.NoteSplash;
+import funkin.data.objects.game.note.data.Note.EventNote;
+import funkin.data.objects.game.note.config.StrumNote;
+import funkin.data.objects.game.note.config.NoteTypesConfig;
 
 import funkin.states.PauseMenuState;
 import funkin.states.GameOverState;
@@ -85,8 +84,10 @@ class PlayState extends MusicBeatState
 
 	public var BF_X:Float = 770;
 	public var BF_Y:Float = 100;
+
 	public var DAD_X:Float = 100;
 	public var DAD_Y:Float = 100;
+
 	public var GF_X:Float = 400;
 	public var GF_Y:Float = 130;
 
@@ -247,7 +248,12 @@ class PlayState extends MusicBeatState
 	public static function getSongVariationName(?song:SwagSong = null):String
 	{
 		if(song == null) song = SONG;
-		return song != null ? Difficulty.getChartSuffixName(song.songVariation) : '';
+		if(song == null) return '';
+		// Use getSuffixName — do NOT use getChartSuffixName (strips character-named variations like "pico")
+		var v:String = song.songVariation;
+		if(v == null || Std.string(v).trim().length < 1)
+			v = song.variation;
+		return Difficulty.getSuffixName(v);
 	}
 
 	public static function getSongVariationFilePath(?song:SwagSong = null):String
@@ -281,11 +287,20 @@ class PlayState extends MusicBeatState
 		var rawDiffName:String = Difficulty.getString(difficulty, false);
 		var rawDiffSuffix:String = Paths.formatToSongPath(rawDiffName) == Paths.formatToSongPath(Difficulty.getDefault()) ? '' : Difficulty.getSuffixFilePath(rawDiffName);
 		var effectiveVariation:String = getEffectiveSongVariationName(song, difficulty);
-		var effectiveSuffix:String = Difficulty.getVariationAndDifficultyFilePath(effectiveVariation, difficulty);
-		var songVariationSuffix:String = useCurrentSongVariation ? getSongVariationFilePath(song) : '';
+		var songVariationName:String = useCurrentSongVariation ? getSongVariationName(song) : '';
+		if(songVariationName.length < 1 && useCurrentSongVariation)
+			songVariationName = effectiveVariation;
 
-		addUniqueCandidate(candidates, effectiveSuffix);
-		addUniqueCandidate(candidates, songVariationSuffix);
+		// 1) variation + difficulty  →  -pico-normal / -pico-hard
+		addUniqueCandidate(candidates, Difficulty.getVariationAndDifficultyFilePath(effectiveVariation, difficulty));
+		if(songVariationName.length > 0 && songVariationName != effectiveVariation)
+			addUniqueCandidate(candidates, Difficulty.getVariationAndDifficultyFilePath(songVariationName, difficulty));
+
+		// 2) variation only  →  -pico  (fallback if -pico-hard chart missing)
+		addUniqueCandidate(candidates, Difficulty.getVariationFilePath(effectiveVariation));
+		addUniqueCandidate(candidates, Difficulty.getVariationFilePath(songVariationName));
+
+		// 3) difficulty only (default / no variation)
 		addUniqueCandidate(candidates, difficultySuffix);
 		addUniqueCandidate(candidates, rawDiffSuffix);
 		return candidates;
@@ -414,12 +429,25 @@ class PlayState extends MusicBeatState
 	public static function loadSongWithVariationFallback(songId:String, ?song:SwagSong = null, ?difficulty:Null<Int>, ?useCurrentSongVariation:Bool = true):SwagSong
 	{
 		var baseId:String = Paths.formatToSongPath(songId);
+		if(baseId == null || baseId.length < 1)
+			throw 'Invalid song id';
+
 		var lastError:Dynamic = null;
-		for (candidate in getSongLoadCandidates(baseId, song, difficulty, useCurrentSongVariation))
+		var candidates:Array<String> = getSongLoadCandidates(baseId, song, difficulty, useCurrentSongVariation);
+		if(candidates == null || candidates.length < 1)
+			candidates = [baseId];
+
+		for (candidate in candidates)
 		{
+			if(candidate == null || candidate.length < 1) continue;
 			try
 			{
-				return Song.loadFromJson(candidate, baseId);
+				var loaded:SwagSong = Song.loadFromJson(candidate, baseId);
+				if(loaded != null)
+				{
+					SONG = loaded;
+					return loaded;
+				}
 			}
 			catch(e:Dynamic)
 			{
@@ -427,7 +455,12 @@ class PlayState extends MusicBeatState
 			}
 		}
 
-		throw lastError;
+		var msg:String = 'Could not load chart for "' + baseId + '"';
+		if(lastError != null)
+		{
+			try msg += ': ' + Std.string(lastError) catch(e:Dynamic) {}
+		}
+		throw msg;
 		return null;
 	}
 
@@ -456,7 +489,6 @@ class PlayState extends MusicBeatState
 	public var strumLineNotes:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var opponentStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var playerStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
-	public var grpHoldNoteCovers:FlxTypedGroup<HoldNoteCover> = new FlxTypedGroup<HoldNoteCover>();
 	public var grpNoteSplashes:FlxTypedGroup<NoteSplash> = new FlxTypedGroup<NoteSplash>();
 
 	public var camZooming:Bool = false;
@@ -919,7 +951,6 @@ class PlayState extends MusicBeatState
 		}
 		generateSong();
 
-		noteGroup.add(grpHoldNoteCovers);
 		noteGroup.add(grpNoteSplashes);
 
 		camFollow = new FlxObject();
@@ -1663,6 +1694,40 @@ class PlayState extends MusicBeatState
 
 	var dialogueCount:Int = 0;
 	public var psychDialogue:DialogueBoxPsych;
+
+	/**
+	 * Load songs/<songFileName>/dialogue/dialogueSong.json (Pico format) or Psych dialogue.json.
+	 * Returns true if dialogue was started (countdown must wait).
+	 */
+	public function tryStartSongDialogue():Bool
+	{
+		if(psychDialogue != null) return true;
+		if(seenCutscene) return false;
+
+		var folder:String = getCurrentSongBaseId();
+		if(folder == null || folder.length < 1)
+		{
+			if(SONG != null && SONG.song != null)
+				folder = Paths.formatToSongPath(SONG.song);
+		}
+		if(folder == null || folder.length < 1) return false;
+
+		var raw:Dynamic = DialogueBoxPsych.loadRawForSong(folder);
+		var file:DialogueFile = DialogueBoxPsych.loadForSong(folder);
+		if(file == null || file.dialogue == null || file.dialogue.length < 1)
+			return false;
+
+		var music:String = null;
+		if(raw != null)
+			music = DialogueBoxPsych.getDialogueMusicFromRaw(raw);
+		// Default soft BGM if none specified
+		if(music == null || music.length < 1)
+			music = 'breakfast';
+
+		startDialogue(file, music);
+		return psychDialogue != null;
+	}
+
 	public function startDialogue(dialogueFile:DialogueFile, ?song:String = null):Void
 	{
 		// TO DO: Make this more flexible, maybe?
@@ -1742,7 +1807,11 @@ class PlayState extends MusicBeatState
 
 	inline function noteStyleUiPixelFallback():Bool
 	{
-		return Note.noteStyleUsesPixel();
+		try {
+			if(Note.noteStyleUsesPixel()) return true;
+			if(NoteData.noteStyle != null && NoteData.noteStyle.allowPixel()) return true;
+		} catch(e:Dynamic) {}
+		return false;
 	}
 
 	public function startCountdown()
@@ -1751,6 +1820,10 @@ class PlayState extends MusicBeatState
 			callOnScripts('onStartCountdown');
 			return false;
 		}
+
+		// Auto-load Pico dialogue: songs/<songFileName>/dialogue/dialogueSong.json
+		if(!seenCutscene && psychDialogue == null && tryStartSongDialogue())
+			return false;
 
 		seenCutscene = true;
 		inCutscene = false;
@@ -1843,26 +1916,29 @@ class PlayState extends MusicBeatState
 	inline private function createCountdownSprite(image:String, antialias:Bool, scale:Float = 1):FlxSprite
 	{
 		var path:String = (image != null && image.trim().length > 0) ? image.trim() : 'ready';
-		var graphic = Paths.image(path);
-		// If noteStyle path is missing, fall back to classic shared sprites
-		if(graphic == null || (graphic.width <= 16 && graphic.height <= 16 && path != 'ready' && path != 'set' && path != 'go'))
+		var graphic = safeUiGraphic(path, resolveCountdownFallbackName(path));
+		var spr:FlxSprite = new FlxSprite();
+		if(graphic != null)
+			spr.loadGraphic(graphic);
+		else
 		{
-			var fb = path.toLowerCase().contains('set') ? 'set' : (path.toLowerCase().contains('go') || path.toLowerCase().contains('date') ? 'go' : 'ready');
-			var g2 = Paths.image(fb);
-			if(g2 != null) { graphic = g2; path = fb; }
+			// Last resort: invisible placeholder (never HaxeFlixel logo)
+			spr.makeGraphic(1, 1, 0x00000000);
+			spr.visible = false;
 		}
-		var spr:FlxSprite = new FlxSprite().loadGraphic(graphic);
 		spr.cameras = [camHUD];
 		spr.scrollFactor.set();
 		spr.updateHitbox();
 
-		if (scale != 1)
+		if (scale != 1 && graphic != null)
 			spr.setGraphicSize(Std.int(spr.width * scale));
 
 		spr.screenCenter();
 		spr.antialiasing = antialias;
-		insert(members.indexOf(noteGroup), spr);
-		FlxTween.tween(spr, {/*y: spr.y + 100,*/ alpha: 0}, Conductor.crochet / 1000, {
+		var insertAt:Int = members.indexOf(noteGroup);
+		if(insertAt < 0) insertAt = members.length;
+		insert(insertAt, spr);
+		FlxTween.tween(spr, {alpha: 0}, Conductor.crochet / 1000, {
 			ease: FlxEase.cubeInOut,
 			onComplete: function(twn:FlxTween)
 			{
@@ -1871,6 +1947,60 @@ class PlayState extends MusicBeatState
 			}
 		});
 		return spr;
+	}
+
+	/** Classic / pixel countdown fallbacks when noteStyle asset is missing. */
+	function resolveCountdownFallbackName(path:String):String
+	{
+		var p:String = path != null ? path.toLowerCase() : '';
+		var isSet:Bool = p.indexOf('set') >= 0;
+		var isGo:Bool = p.indexOf('go') >= 0 || p.indexOf('date') >= 0;
+		var pixel:Bool = noteStyleUiPixelFallback();
+		if(pixel)
+		{
+			if(isSet) return 'ui/countdown/pixel/set-pixel';
+			if(isGo) return 'ui/countdown/pixel/date-pixel';
+			return 'ui/countdown/pixel/ready-pixel';
+		}
+		if(isSet) return 'set';
+		if(isGo) return 'go';
+		return 'ready';
+	}
+
+	/**
+	 * Load UI graphic with fallbacks. Avoids null/tiny graphics that become the HaxeFlixel logo.
+	 */
+	function safeUiGraphic(primary:String, ?fallback:String):flixel.graphics.FlxGraphic
+	{
+		function tryPath(p:String):flixel.graphics.FlxGraphic
+		{
+			if(p == null || p.trim().length < 1) return null;
+			var g = Paths.image(p.trim());
+			if(g == null) return null;
+			// Reject tiny placeholder / missing bitmap stubs
+			try {
+				if(g.width <= 2 && g.height <= 2) return null;
+			} catch(e:Dynamic) { return null; }
+			return g;
+		}
+		var g = tryPath(primary);
+		if(g != null) return g;
+		if(fallback != null && fallback != primary)
+		{
+			g = tryPath(fallback);
+			if(g != null) return g;
+		}
+		// Extra classic names
+		for (extra in ['ready', 'set', 'go', 'combo', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9',
+			'sick', 'good', 'bad', 'shit', 'ui/countdown/pixel/ready-pixel', 'ui/countdown/pixel/set-pixel', 'ui/countdown/pixel/date-pixel'])
+		{
+			if(primary != null && primary.toLowerCase().indexOf(extra.split('/').pop().split('-')[0]) >= 0)
+			{
+				g = tryPath(extra);
+				if(g != null) return g;
+			}
+		}
+		return null;
 	}
 
 	public function addBehindGF(obj:FlxBasic)
@@ -2174,7 +2304,7 @@ class PlayState extends MusicBeatState
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence (with Time Left)
-		if(autoUpdateRPC) DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter(), true, songLength);
+		if(autoUpdateRPC) DiscordClient.changePresence(detailsText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter(), true, songLength);
 		#end
 		setOnScripts('songLength', songLength);
 		callOnScripts('onSongStart');
@@ -2323,7 +2453,7 @@ class PlayState extends MusicBeatState
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
-				swagNote.animSuffix = isAlt ? "-alt" : "";
+				swagNote.animSuffix = isAlt ? "-Alt" : "";
 				swagNote.mustPress = gottaHitNote;
 				swagNote.sustainLength = holdLength;
 				swagNote.reloadNote(Note.songArrowSkinForMustPress(swagNote.mustPress));
@@ -2599,7 +2729,7 @@ class PlayState extends MusicBeatState
 		super.onFocusLost();
 		if (!paused && health > 0 && autoUpdateRPC)
 		{
-			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter());
+			DiscordClient.changePresence(detailsPausedText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter());
 		}
 	}
 	#end
@@ -2612,9 +2742,9 @@ class PlayState extends MusicBeatState
 		if(!autoUpdateRPC) return;
 
 		if (showTime)
-			DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter(), true, songLength - Conductor.songPosition - Preferences.data.noteOffset);
+			DiscordClient.changePresence(detailsText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter(), true, songLength - Conductor.songPosition - Preferences.data.noteOffset);
 		else
-			DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter());
+			DiscordClient.changePresence(detailsText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter());
 		#end
 	}
 
@@ -2951,7 +3081,7 @@ class PlayState extends MusicBeatState
 		openSubState(new PauseMenuState());
 
 		#if DISCORD_ALLOWED
-		if(autoUpdateRPC) DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter());
+		if(autoUpdateRPC) DiscordClient.changePresence(detailsPausedText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter());
 		#end
 	}
 
@@ -3052,6 +3182,7 @@ class PlayState extends MusicBeatState
 		persistentUpdate = false;
 		chartingMode = true;
 		paused = true;
+		FlxG.mouse.visible = true;
 
 		if(FlxG.sound.music != null)
 			FlxG.sound.music.stop();
@@ -3065,7 +3196,8 @@ class PlayState extends MusicBeatState
 		DiscordClient.resetClientID();
 		#end
 
-		MusicBeatState.switchState(new ChartingState());
+		// Preserve editor session (loaded chart) after playtest
+		MusicBeatState.switchState(new ChartingState(false));
 	}
 
 	function openCharacterEditor()
@@ -3161,7 +3293,7 @@ class PlayState extends MusicBeatState
 
 				#if DISCORD_ALLOWED
 				// Game Over doesn't get his its variable because it's only used here
-				if(autoUpdateRPC) DiscordClient.changePresence("Game Over - " + detailsText, SONG.song + " (" + storyDifficultyText + ")", iconP2.getCharacter());
+				if(autoUpdateRPC) DiscordClient.changePresence("Game Over - " + detailsText, Song.getDisplayName(SONG, SONG.song) + " (" + storyDifficultyText + ")", iconP2.getCharacter());
 				#end
 				isDead = true;
 				return true;
@@ -3985,7 +4117,9 @@ class PlayState extends MusicBeatState
 		catch(e:Dynamic) {}
 
 		var ratingUiAsset:String = ratingToNoteStyleUiKey(daRating.image);
-		rating.loadGraphic(Paths.image(resolvePopUpRatingAsset(daRating.image)));
+		var ratingGraphic = safeUiGraphic(resolvePopUpRatingAsset(daRating.image), popUpRatingFallback(daRating.image));
+		if(ratingGraphic != null) rating.loadGraphic(ratingGraphic);
+		else { rating.makeGraphic(1, 1, 0x00000000); rating.visible = false; }
 		rating.screenCenter();
 		rating.x = placement - 40;
 		rating.y -= 60;
@@ -4002,7 +4136,10 @@ class PlayState extends MusicBeatState
 			rating.y = GF_Y + 330;
 		}
 
-		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(Note.resolveNoteStyleUiAsset('combo', popUpComboFallback())));
+		var comboGraphic = safeUiGraphic(Note.resolveNoteStyleUiAsset('combo', popUpComboFallback()), popUpComboFallback());
+		var comboSpr:FlxSprite = new FlxSprite();
+		if(comboGraphic != null) comboSpr.loadGraphic(comboGraphic);
+		else { comboSpr.makeGraphic(1, 1, 0x00000000); comboSpr.visible = false; }
 		comboSpr.screenCenter();
 		comboSpr.x = placement;
 		comboSpr.acceleration.y = FlxG.random.int(200, 300) * playbackRate * playbackRate;
@@ -4043,10 +4180,10 @@ class PlayState extends MusicBeatState
 				continue;
 
 			var numPath:String = Note.resolveNoteStyleUiAsset(numberUiAsset, popUpNumberFallback(digit));
-			var numGraphic = Paths.image(numPath);
-			if(numGraphic == null || (numGraphic.width <= 16 && numGraphic.height <= 16))
-				numGraphic = Paths.image(popUpNumberFallback(digit));
-			var numScore:FlxSprite = new FlxSprite().loadGraphic(numGraphic);
+			var numGraphic = safeUiGraphic(numPath, popUpNumberFallback(digit));
+			var numScore:FlxSprite = new FlxSprite();
+			if(numGraphic != null) numScore.loadGraphic(numGraphic);
+			else { numScore.makeGraphic(1, 1, 0x00000000); numScore.visible = false; }
 			numScore.screenCenter();
 			numScore.x = placement + (43 * daLoop) - 90 + Preferences.data.comboOffset[2];
 			numScore.y += 80 - Preferences.data.comboOffset[3];
@@ -4372,7 +4509,7 @@ class PlayState extends MusicBeatState
 			var postfix:String = '';
 			if(note != null) postfix = note.animSuffix;
 
-			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, direction)))] + 'miss' + postfix;
+			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, direction)))] + '-Miss' + postfix;
 			char.playAnim(animToPlay, true);
 
 			if(char != gf && lastCombo > 5 && gf != null && gf.hasAnimation('sad'))
@@ -4424,8 +4561,6 @@ class PlayState extends MusicBeatState
 
 		getOpponentVocals().volume = 1;
 		strumPlayAnim(!note.mustPress, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
-		if(note.isSustainNote)
-			spawnHoldNoteCoverOnNote(note);
 		note.hitByOpponent = true;
 		
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
@@ -4499,8 +4634,6 @@ class PlayState extends MusicBeatState
 				if(spr != null) spr.playAnim('confirm', true);
 			}
 			else strumPlayAnim(!note.mustPress, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
-			if(note.isSustainNote)
-				spawnHoldNoteCoverOnNote(note);
 			getPlayerVocals().volume = 1;
 
 			if (!note.isSustainNote)
@@ -4552,37 +4685,6 @@ class PlayState extends MusicBeatState
 			if(strum != null)
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
 		}
-	}
-
-	public function spawnHoldNoteCoverOnNote(note:Note) {
-		if(note == null || !note.isSustainNote) return;
-
-		var strumGroup:FlxTypedGroup<StrumNote> = isPlayerNote(note) ? getPlayerStrums() : getOpponentStrums();
-		var strum:StrumNote = strumGroup.members[note.noteData];
-		if(strum == null) return;
-
-		var phase:String = 'hold';
-		if(note.parent != null && note.parent.tail != null)
-		{
-			var index:Int = note.parent.tail.indexOf(note);
-			if(index <= 0) phase = 'start';
-			else if(index >= note.parent.tail.length - 1) phase = 'end';
-		}
-
-		var cover:HoldNoteCover = null;
-		for(member in grpHoldNoteCovers.members)
-		{
-			if(member != null && member.exists && member.babyArrow == strum)
-			{
-				cover = member;
-				break;
-			}
-		}
-		if(cover == null)
-			cover = grpHoldNoteCovers.recycle(HoldNoteCover);
-		cover.spawnCover(strum, note, phase, Conductor.stepCrochet * 0.001 / playbackRate);
-		if(cover.exists && !grpHoldNoteCovers.members.contains(cover))
-			grpHoldNoteCovers.add(cover);
 	}
 
 	public function spawnNoteSplash(x:Float = 0, y:Float = 0, ?data:Int = 0, ?note:Note, ?strum:StrumNote) {
@@ -4689,12 +4791,25 @@ class PlayState extends MusicBeatState
 
 	public function characterBopper(beat:Int):Void
 	{
-		if (gf != null && beat % Math.round(gfSpeed * gf.danceEveryNumBeats) == 0 && !gf.getAnimationName().startsWith('sing') && !gf.stunned)
-			gf.dance();
-		if (boyfriend != null && beat % boyfriend.danceEveryNumBeats == 0 && !boyfriend.getAnimationName().startsWith('sing') && !boyfriend.stunned)
-			boyfriend.dance();
-		if (dad != null && beat % dad.danceEveryNumBeats == 0 && !dad.getAnimationName().startsWith('sing') && !dad.stunned)
-			dad.dance();
+		// Guard danceEveryNumBeats <= 0 (avoids % 0 and "hair flying" every frame)
+		if (gf != null && !gf.getAnimationName().startsWith('sing') && !gf.stunned)
+		{
+			var gfEvery:Int = Std.int(Math.max(1, Math.round(gfSpeed * Math.max(1, gf.danceEveryNumBeats))));
+			if (beat % gfEvery == 0)
+				gf.dance();
+		}
+		if (boyfriend != null && !boyfriend.getAnimationName().startsWith('sing') && !boyfriend.stunned)
+		{
+			var bfEvery:Int = Std.int(Math.max(1, boyfriend.danceEveryNumBeats));
+			if (beat % bfEvery == 0)
+				boyfriend.dance();
+		}
+		if (dad != null && !dad.getAnimationName().startsWith('sing') && !dad.stunned)
+		{
+			var dadEvery:Int = Std.int(Math.max(1, dad.danceEveryNumBeats));
+			if (beat % dadEvery == 0)
+				dad.dance();
+		}
 	}
 
 	public function playerDance():Void

@@ -63,7 +63,13 @@ class FlashingState extends MusicBeatState
 				Preferences.data.flashing = !isYes;
 				Preferences.saveSettings();
 				FlxG.sound.play(Paths.sound('confirmMenu'));
-				final button = texts.members[isYes ? 1 : 2];
+				final button = (texts != null && texts.members != null && texts.members.length > 2)
+					? texts.members[isYes ? 1 : 2] : null;
+				if(button == null)
+				{
+					MusicBeatState.switchState(new funkin.states.TitleMenuState());
+					return;
+				}
 				FlxFlicker.flicker(button, 1, 0.1, false, true, function(flk:FlxFlicker) {
 					new FlxTimer().start(0.5, function (tmr:FlxTimer) {
 						FlxTween.tween(texts, {alpha: 0}, 0.2, {
@@ -83,7 +89,8 @@ class FlashingState extends MusicBeatState
 
 	function updateItems()
 	{
-		texts.members[1].alpha = isYes ? 1.0 : 0.6;
-		texts.members[2].alpha = isYes ? 0.6 : 1.0;
+		if(texts == null || texts.members == null || texts.members.length < 3) return;
+		if(texts.members[1] != null) texts.members[1].alpha = isYes ? 1.0 : 0.6;
+		if(texts.members[2] != null) texts.members[2].alpha = isYes ? 0.6 : 1.0;
 	}
 }

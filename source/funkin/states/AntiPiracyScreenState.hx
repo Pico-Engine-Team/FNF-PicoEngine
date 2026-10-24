@@ -12,6 +12,7 @@ import flixel.util.FlxTimer;
 import flixel.sound.FlxSound;
 
 import funkin.data.dialogue.DialogueBoxPsych;
+import funkin.data.dialogue.DialogueBoxPsych.DialogueFile;
 import funkin.data.objects.Alphabet;
 import funkin.states.menus.MainMenuState;
 import funkin.utils.engines.pico.AntiPiracy;
@@ -213,7 +214,7 @@ class AntiPiracyScreenState extends MusicBeatState
 			desatBg.makeGraphic(FlxG.width, FlxG.height, 0xFF050505);
 			trace('[AntiPiracy] menuDesat load failed: ' + e);
 		}
-			desatBg.scrollFactor.set();
+		desatBg.scrollFactor.set();
 		add(desatBg);
 
 		blackOverlay = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
