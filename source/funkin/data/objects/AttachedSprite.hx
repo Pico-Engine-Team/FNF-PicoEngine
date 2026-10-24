@@ -15,14 +15,37 @@ class AttachedSprite extends FlxSprite
 	public function new(?file:String = null, ?anim:String = null, ?parentFolder:String = null, ?loop:Bool = false)
 	{
 		super();
-		if(anim != null) {
-			frames = Paths.getSparrowAtlas(file, parentFolder);
-			animation.addByPrefix('idle', anim, 24, loop);
-			animation.play('idle');
-		} else if(file != null) {
-			loadGraphic(Paths.image(file, parentFolder));
+		if (anim != null)
+		{
+			var atlas = null;
+			try atlas = Paths.getSparrowAtlas(file, parentFolder) catch (e:Dynamic) {}
+			if (atlas != null)
+			{
+				frames = atlas;
+				animation.addByPrefix('idle', anim, 24, loop);
+				animation.play('idle');
+			}
+			else
+			{
+				makeGraphic(1, 1, 0x00000000);
+			}
 		}
-		antialiasing = Preferences.data.antialiasing;
+		else if (file != null)
+		{
+			var graphic = null;
+			try graphic = Paths.image(file, parentFolder) catch (e:Dynamic) {}
+			if (graphic != null)
+				loadGraphic(graphic);
+			else
+				makeGraphic(1, 1, 0x00000000);
+		}
+
+		try
+		{
+			if (Preferences.data != null)
+				antialiasing = Preferences.data.antialiasing;
+		}
+		catch (e:Dynamic) {}
 		scrollFactor.set();
 	}
 
@@ -30,17 +53,18 @@ class AttachedSprite extends FlxSprite
 	{
 		super.update(elapsed);
 
-		if (sprTracker != null) {
+		if (sprTracker != null)
+		{
 			setPosition(sprTracker.x + xAdd, sprTracker.y + yAdd);
 			scrollFactor.set(sprTracker.scrollFactor.x, sprTracker.scrollFactor.y);
 
-			if(copyAngle)
+			if (copyAngle)
 				angle = sprTracker.angle + angleAdd;
 
-			if(copyAlpha)
+			if (copyAlpha)
 				alpha = sprTracker.alpha * alphaMult;
 
-			if(copyVisible) 
+			if (copyVisible)
 				visible = sprTracker.visible;
 		}
 	}

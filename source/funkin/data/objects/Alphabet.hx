@@ -81,6 +81,7 @@ class Alphabet extends FlxSpriteGroup
 
 	private function set_text(newText:String)
 	{
+		if (newText == null) newText = '';
 		newText = newText.replace('\\n', '\n');
 		clearLetters();
 		createLetters(newText);
@@ -202,7 +203,7 @@ class Alphabet extends FlxSpriteGroup
 				if (spaceChar) consecutiveSpaces++;
 
 				var isAlphabet:Bool = AlphaCharacter.isTypeAlphabet(character.toLowerCase());
-				if (AlphaCharacter.allLetters.exists(character.toLowerCase()) && (!bold || !spaceChar))
+				if (AlphaCharacter.allLetters != null && AlphaCharacter.allLetters.exists(character.toLowerCase()) && (!bold || !spaceChar))
 				{
 					if (consecutiveSpaces > 0)
 					{
@@ -280,7 +281,7 @@ class AlphaCharacter extends FlxSprite
 	public static function loadAlphabetData(request:String = 'images/alphabet')
 	{
 		var path:String = Paths.getPath('data/$request.json');
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		if(!FileSystem.exists(path))
 		#else
 		if(!Assets.exists(path, TEXT))
@@ -290,7 +291,7 @@ class AlphaCharacter extends FlxSprite
 		allLetters = new Map<String, Null<Letter>>();
 		try
 		{
-			#if MODS_ALLOWED
+			#if (MODS_ALLOWED && sys)
 			var data:Dynamic = Json.parse(File.getContent(path));
 			#else
 			var data:Dynamic = Json.parse(Assets.getText(path));
@@ -340,7 +341,12 @@ class AlphaCharacter extends FlxSprite
 	{
 		super(x, y);
 		image = 'alphabet';
-		antialiasing = Preferences.data.antialiasing;
+		try
+		{
+			if (Preferences.data != null)
+				antialiasing = Preferences.data.antialiasing;
+		}
+		catch (e:Dynamic) {}
 	}
 	
 	public var curLetter:Letter = null;
@@ -362,8 +368,9 @@ class AlphaCharacter extends FlxSprite
 			this.character = character;
 			curLetter = null;
 			var lowercase:String = this.character.toLowerCase();
-			if(allLetters.exists(lowercase)) curLetter = allLetters.get(lowercase);
-			else curLetter = allLetters.get('?');
+			if(allLetters != null && allLetters.exists(lowercase)) curLetter = allLetters.get(lowercase);
+			else if(allLetters != null) curLetter = allLetters.get('?');
+			else curLetter = null;
 
 			var postfix:String = '';
 			if(!bold)
@@ -383,14 +390,25 @@ class AlphaCharacter extends FlxSprite
 			if(curLetter != null && curLetter.anim != null) alphaAnim = curLetter.anim;
 
 			var anim:String = alphaAnim + postfix;
-			animation.addByPrefix(anim, anim, 24);
-			animation.play(anim, true);
-			if(animation.curAnim == null)
+			if (frames != null && animation != null)
 			{
-				if(postfix != ' bold') postfix = ' normal';
-				anim = 'question' + postfix;
-				animation.addByPrefix(anim, anim, 24);
-				animation.play(anim, true);
+				try
+				{
+					animation.addByPrefix(anim, anim, 24);
+					animation.play(anim, true);
+				}
+				catch (e:Dynamic) {}
+				if(animation.curAnim == null)
+				{
+					if(postfix != ' bold') postfix = ' normal';
+					anim = 'question' + postfix;
+					try
+					{
+						animation.addByPrefix(anim, anim, 24);
+						animation.play(anim, true);
+					}
+					catch (e:Dynamic) {}
+				}
 			}
 		}
 		updateHitbox();
@@ -411,7 +429,10 @@ class AlphaCharacter extends FlxSprite
 		if(frames == null) //first setup
 		{
 			image = name;
-			frames = Paths.getSparrowAtlas(name);
+			var atlas0 = null;
+			try atlas0 = Paths.getSparrowAtlas(name) catch (e:Dynamic) {}
+			if (atlas0 != null)
+				frames = atlas0;
 			return name;
 		}
 
@@ -421,9 +442,15 @@ class AlphaCharacter extends FlxSprite
 			lastAnim = animation.name;
 		}
 		image = name;
-		frames = Paths.getSparrowAtlas(name);
-		this.scale.x = parent.scaleX;
-		this.scale.y = parent.scaleY;
+		var atlas = null;
+		try atlas = Paths.getSparrowAtlas(name) catch (e:Dynamic) {}
+		if (atlas != null)
+			frames = atlas;
+		if (parent != null)
+		{
+			this.scale.x = parent.scaleX;
+			this.scale.y = parent.scaleY;
+		}
 		alignOffset = 0;
 		
 		if (lastAnim != null)

@@ -79,17 +79,29 @@ class MusicPlayer extends FlxGroup
 		super.update(elapsed);
 
 		if (!playingMusic)
-		{
 			return;
-		}
 
-		var songName:String = instance.songs[FreeplayMenuState.curSelected].songName;
+		if (instance == null || controls == null)
+			return;
+		if (FlxG.sound.music == null)
+			return;
+
+		var songName:String = '';
+		try
+		{
+			if (instance.songs != null && FreeplayMenuState.curSelected >= 0
+				&& FreeplayMenuState.curSelected < instance.songs.length
+				&& instance.songs[FreeplayMenuState.curSelected] != null)
+			{
+				songName = Std.string(instance.songs[FreeplayMenuState.curSelected].songName);
+			}
+		}
+		catch (e:Dynamic) {}
+
 		if (playing && !wasPlaying)
 			songTxt.text = Language.getPhrase('musicplayer_playing', 'PLAYING: {1}', [songName]);
 		else
 			songTxt.text = Language.getPhrase('musicplayer_paused', 'PLAYING: {1} (PAUSED)', [songName]);
-
-		//if(FlxG.keys.justPressed.K) trace('Time: ${FreeplayState.vocals.time}, Playing: ${FreeplayState.vocals.playing}');
 
 		if (controls.UI_LEFT_P)
 		{
@@ -213,9 +225,11 @@ class MusicPlayer extends FlxGroup
 
 	public function pauseOrResume(resume:Bool = false) 
 	{
+		if (FlxG.sound.music == null) return;
+
 		if (resume)
 		{
-			if(!FlxG.sound.music.playing)
+			if (!FlxG.sound.music.playing)
 				FlxG.sound.music.resume();
 
 			if (FreeplayMenuState.vocals != null && FreeplayMenuState.vocals.length > FlxG.sound.music.time && !FreeplayMenuState.vocals.playing)
@@ -236,29 +250,49 @@ class MusicPlayer extends FlxGroup
 
 	public function switchPlayMusic()
 	{
-		FlxG.autoPause = (!playingMusic && Preferences.data.autoPause);
+		var autoPause:Bool = true;
+		try
+		{
+			if (Preferences.data != null)
+				autoPause = Preferences.data.autoPause;
+		}
+		catch (e:Dynamic) {}
+		FlxG.autoPause = (!playingMusic && autoPause);
 		active = visible = playingMusic;
 
-		instance.scoreBG.visible = instance.diffText.visible = instance.scoreText.visible = !playingMusic; //Hide Freeplay texts and boxes if playingMusic is true
-		songTxt.visible = timeTxt.visible = songBG.visible = playbackTxt.visible = playbackBG.visible = progressBar.visible = playingMusic; //Show Music Player texts and boxes if playingMusic is true
+		if (instance != null)
+		{
+			try
+			{
+				if (instance.scoreBG != null) instance.scoreBG.visible = !playingMusic;
+				if (instance.diffText != null) instance.diffText.visible = !playingMusic;
+				if (instance.scoreText != null) instance.scoreText.visible = !playingMusic;
+			}
+			catch (e:Dynamic) {}
+		}
+
+		songTxt.visible = timeTxt.visible = songBG.visible = playbackTxt.visible = playbackBG.visible = progressBar.visible = playingMusic;
 
 		for (i in playbackSymbols)
 			i.visible = playingMusic;
 		
 		holdPitchTime = 0;
-		instance.holdTime = 0;
+		if (instance != null) instance.holdTime = 0;
 		playbackRate = 1;
 		updatePlaybackTxt();
 
 		if (playingMusic)
 		{
-			instance.bottomText.text = Language.getPhrase('musicplayer_tip', 'Press SPACE to Pause / Press ESCAPE to Exit / Press R to Reset the Song');
+			if (instance != null && instance.bottomText != null)
+				instance.bottomText.text = Language.getPhrase('musicplayer_tip', 'Press SPACE to Pause / Press ESCAPE to Exit / Press R to Reset the Song');
 			positionSong();
 			
-			progressBar.setRange(0, FlxG.sound.music.length);
-			progressBar.setParent(FlxG.sound.music, "time");
-			progressBar.numDivisions = 1600;
-
+			if (FlxG.sound.music != null)
+			{
+				progressBar.setRange(0, FlxG.sound.music.length);
+				progressBar.setParent(FlxG.sound.music, "time");
+				progressBar.numDivisions = 1600;
+			}
 			updateTimeTxt();
 		}
 		else
@@ -267,8 +301,12 @@ class MusicPlayer extends FlxGroup
 			progressBar.setParent(null, "");
 			progressBar.numDivisions = 0;
 
-			instance.bottomText.text = instance.bottomString;
-			instance.positionHighscore();
+			if (instance != null)
+			{
+				if (instance.bottomText != null)
+					instance.bottomText.text = instance.bottomString;
+				try instance.positionHighscore() catch (e:Dynamic) {}
+			}
 		}
 		progressBar.updateBar();
 	}
@@ -276,22 +314,26 @@ class MusicPlayer extends FlxGroup
 	function updatePlaybackTxt()
 	{
 		var text = "";
-		if (playbackRate is Int)
-			text = playbackRate + '.00';
+		var rounded:Float = FlxMath.roundDecimal(playbackRate, 2);
+		if (rounded == Std.int(rounded))
+			text = Std.int(rounded) + '.00';
 		else
 		{
-			var playbackRate = Std.string(playbackRate);
-			if (playbackRate.split('.')[1].length < 2) // Playback rates for like 1.1, 1.2 etc
-				playbackRate += '0';
-
-			text = playbackRate;
+			var rateStr:String = Std.string(rounded);
+			var parts = rateStr.split('.');
+			if (parts.length < 2 || parts[1].length < 2)
+				rateStr += '0';
+			text = rateStr;
 		}
 		playbackTxt.text = text + 'x';
 	}
 
 	function positionSong() 
 	{
-		var length:Int = instance.songs[FreeplayMenuState.curSelected].songName.length;
+		if (instance == null || instance.songs == null) return;
+		var sel:Int = FreeplayMenuState.curSelected;
+		if (sel < 0 || sel >= instance.songs.length || instance.songs[sel] == null) return;
+		var length:Int = Std.string(instance.songs[sel].songName).length;
 		var shortName:Bool = length < 5; // Fix for song names like Ugh, Guns
 		songTxt.x = FlxG.width - songTxt.width - 6;
 		if (shortName)
@@ -336,13 +378,19 @@ class MusicPlayer extends FlxGroup
 
 	function updateTimeTxt()
 	{
+		if (FlxG.sound.music == null)
+		{
+			timeTxt.text = '< 0:00 / 0:00 >';
+			return;
+		}
 		var text = FlxStringUtil.formatTime(FlxG.sound.music.time / 1000, false) + ' / ' + FlxStringUtil.formatTime(FlxG.sound.music.length / 1000, false);
 		timeTxt.text = '< ' + text + ' >';
 	}
 
 	function setPlaybackRate() 
 	{
-		FlxG.sound.music.pitch = playbackRate;
+		if (FlxG.sound.music != null)
+			FlxG.sound.music.pitch = playbackRate;
 		if (FreeplayMenuState.vocals != null)
 			FreeplayMenuState.vocals.pitch = playbackRate;
 		if (FreeplayMenuState.opponentVocals != null)
@@ -351,7 +399,7 @@ class MusicPlayer extends FlxGroup
 
 	function get_playing():Bool 
 	{
-		return FlxG.sound.music.playing;
+		return FlxG.sound.music != null && FlxG.sound.music.playing;
 	}
 
 	function set_playbackRate(value:Float):Float 

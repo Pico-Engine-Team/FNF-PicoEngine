@@ -1,10 +1,12 @@
 package funkin.data.objects;
 
+using StringTools;
+
 class HealthIcon extends FlxSprite
 {
-	private var char:String = '';
 	public var sprTracker:FlxSprite;
 	private var isPlayer:Bool = false;
+	private var char:String = '';
 
 	public function new(char:String = 'face', isPlayer:Bool = false, ?allowGPU:Bool = true)
 	{
@@ -25,74 +27,86 @@ class HealthIcon extends FlxSprite
 	private var iconOffsets:Array<Float> = [0, 0];
 	public function changeIcon(char:String, ?allowGPU:Bool = true)
 	{
-		var icon:String = char != null ? char.trim() : '';
-		if(icon.length < 1) icon = 'face';
+		if (char == null || char.length < 1)
+			char = 'face';
 
-		if(this.char != icon)
+		if (this.char == char)
+			return;
+
+		var name:String = 'icons/base-game/' + char;
+		if (!Paths.fileExists('images/' + name + '.png', IMAGE))
+			name = 'icons/base-game/icon-' + char; // Older Versions of pico engine support
+		if (!Paths.fileExists('images/' + name + '.png', IMAGE))
+			name = 'icons/icon-' + char;
+		if (!Paths.fileExists('images/' + name + '.png', IMAGE))
+			name = 'icons/icon-face'; // Prevents crash from missing icon
+
+		var graphic = null;
+		try graphic = Paths.image(name, allowGPU) catch (e:Dynamic) {}
+		if (graphic == null)
 		{
-			var name:String = getIconPath(icon);
-			var graphic = Paths.image(name, null, allowGPU);
-			if(graphic == null && name != 'icons/icon-face')
-				graphic = Paths.image('icons/icon-face', null, allowGPU);
-			if(graphic == null) return;
-
-			var iSize:Float = Math.max(1, Math.round(graphic.width / graphic.height));
-			loadGraphic(graphic, true, Math.floor(graphic.width / iSize), Math.floor(graphic.height));
-			iconOffsets[0] = (width - 150) / iSize;
-			iconOffsets[1] = (height - 150) / iSize;
-			updateHitbox();
-
-			animation.add(icon, [for(i in 0...frames.frames.length) i], 0, false, isPlayer);
-			animation.play(icon);
-			this.char = icon;
-
-			if(icon.endsWith('-pixel'))
-				antialiasing = false;
-			else
-				antialiasing = Preferences.data.antialiasing;
+			try graphic = Paths.image('icons/icon-face', allowGPU) catch (e:Dynamic) {}
 		}
-	}
+		if (graphic == null)
+		{
+			// Last resort placeholder so callers never crash
+			makeGraphic(150, 150, 0xFF333333);
+			this.char = char;
+			return;
+		}
 
-	function getIconPath(icon:String):String
-	{
-		var paths:Array<String> = [
-			'icons/$icon',
-			'icons/baseGame/$icon',
-			'icons/baseGame/icon-$icon',
-			'icons/freeplay/extra/$icon',
-			'icons/freeplay/extra/icon-$icon',
-			'icons/icon-$icon',
-			'icons/icon-face'
-		];
+		var iSize:Float = 1;
+		if (graphic.height > 0)
+			iSize = Math.max(1, Math.round(graphic.width / graphic.height));
 
-		for(path in paths)
-			if(Paths.fileExists('images/$path.png', IMAGE))
-				return path;
+		loadGraphic(graphic, true, Math.floor(graphic.width / iSize), Math.floor(graphic.height));
+		iconOffsets[0] = (width - 150) / iSize;
+		iconOffsets[1] = (height - 150) / iSize;
+		updateHitbox();
 
-		return 'icons/icon-face';
-	}
+		var frameCount:Int = (frames != null && frames.frames != null) ? frames.frames.length : 1;
+		if (frameCount < 1) frameCount = 1;
+		animation.add(char, [for (i in 0...frameCount) i], 0, false, isPlayer);
+		animation.play(char);
+		this.char = char;
 
-	public function updateHealthState(healthPercent:Float, opponent:Bool = false):Void
-	{
-		if(animation == null || animation.curAnim == null) return;
-
-		var frame:Int = (opponent ? healthPercent > 80 : healthPercent < 20) ? 1 : 0;
-		if(animation.curAnim.frames != null && animation.curAnim.frames.length > frame)
-			animation.curAnim.curFrame = frame;
+		if (char.endsWith('-pixel'))
+			antialiasing = false;
+		else
+		{
+			try
+			{
+				if (Preferences.data != null)
+					antialiasing = Preferences.data.antialiasing;
+			}
+			catch (e:Dynamic) {}
+		}
 	}
 
 	public var autoAdjustOffset:Bool = true;
 	override function updateHitbox()
 	{
 		super.updateHitbox();
-		if(autoAdjustOffset)
+		if (autoAdjustOffset)
 		{
 			offset.x = iconOffsets[0];
 			offset.y = iconOffsets[1];
 		}
 	}
 
-	public function getCharacter():String {
+	public function getCharacter():String
+	{
 		return char;
+	}
+
+	public function updateHealthState(healthPercent:Float, isOpponent:Bool = false):Void
+	{
+		// Preserved for compatibility with older gameplay code.
+		// Typically: frame 0 = healthy, frame 1 = dying when healthPercent is low.
+		if (animation == null || animation.curAnim == null) return;
+		if (animation.curAnim.numFrames < 2) return;
+
+		var dying:Bool = isOpponent ? (healthPercent > 80) : (healthPercent < 20);
+		animation.curAnim.curFrame = dying ? 1 : 0;
 	}
 }
