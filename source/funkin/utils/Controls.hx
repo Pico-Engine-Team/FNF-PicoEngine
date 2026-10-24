@@ -1,9 +1,7 @@
 package funkin.utils;
 
 import flixel.input.keyboard.FlxKey;
-import flixel.input.gamepad.FlxGamepadButton;
 import flixel.input.gamepad.FlxGamepadInputID;
-import flixel.input.gamepad.mappings.FlxGamepadMapping;
 
 class Controls
 {
@@ -13,9 +11,6 @@ class Controls
 	//You do NOT have to create these variables/getters for adding new keys,
 	//but you will instead have to use:
 	//   controls.justPressed("ui_up")   instead of   controls.UI_UP
-
-	//Dumb but easily usable code, or Smart but complicated? Your choice.
-	//Also idk how to use macros they're weird as fuck lol
 
 	// Pressed buttons (directions)
 	public var UI_UP_P(get, never):Bool;
@@ -94,34 +89,42 @@ class Controls
 	//Gamepad & Keyboard stuff
 	public var keyboardBinds:Map<String, Array<FlxKey>>;
 	public var gamepadBinds:Map<String, Array<FlxGamepadInputID>>;
-	public function justPressed(key:String)
-	{
-		var result:Bool = (FlxG.keys.anyJustPressed(keyboardBinds[key]) == true);
-		if(result) controllerMode = false;
 
-		return result || _myGamepadJustPressed(gamepadBinds[key]) == true;
+	public function justPressed(key:String):Bool
+	{
+		if (key == null) return false;
+		var keys:Array<FlxKey> = keyboardBinds != null ? keyboardBinds.get(key) : null;
+		var result:Bool = (keys != null && keys.length > 0 && FlxG.keys.anyJustPressed(keys) == true);
+		if (result) controllerMode = false;
+
+		return result || _myGamepadJustPressed(gamepadBinds != null ? gamepadBinds.get(key) : null);
 	}
 
-	public function pressed(key:String)
+	public function pressed(key:String):Bool
 	{
-		var result:Bool = (FlxG.keys.anyPressed(keyboardBinds[key]) == true);
-		if(result) controllerMode = false;
+		if (key == null) return false;
+		var keys:Array<FlxKey> = keyboardBinds != null ? keyboardBinds.get(key) : null;
+		var result:Bool = (keys != null && keys.length > 0 && FlxG.keys.anyPressed(keys) == true);
+		if (result) controllerMode = false;
 
-		return result || _myGamepadPressed(gamepadBinds[key]) == true;
+		return result || _myGamepadPressed(gamepadBinds != null ? gamepadBinds.get(key) : null);
 	}
 
-	public function justReleased(key:String)
+	public function justReleased(key:String):Bool
 	{
-		var result:Bool = (FlxG.keys.anyJustReleased(keyboardBinds[key]) == true);
-		if(result) controllerMode = false;
+		if (key == null) return false;
+		var keys:Array<FlxKey> = keyboardBinds != null ? keyboardBinds.get(key) : null;
+		var result:Bool = (keys != null && keys.length > 0 && FlxG.keys.anyJustReleased(keys) == true);
+		if (result) controllerMode = false;
 
-		return result || _myGamepadJustReleased(gamepadBinds[key]) == true;
+		return result || _myGamepadJustReleased(gamepadBinds != null ? gamepadBinds.get(key) : null);
 	}
 
 	public var controllerMode:Bool = false;
+
 	private function _myGamepadJustPressed(keys:Array<FlxGamepadInputID>):Bool
 	{
-		if(keys != null)
+		if (keys != null)
 		{
 			for (key in keys)
 			{
@@ -137,7 +140,7 @@ class Controls
 
 	private function _myGamepadPressed(keys:Array<FlxGamepadInputID>):Bool
 	{
-		if(keys != null)
+		if (keys != null)
 		{
 			for (key in keys)
 			{
@@ -153,7 +156,7 @@ class Controls
 
 	private function _myGamepadJustReleased(keys:Array<FlxGamepadInputID>):Bool
 	{
-		if(keys != null)
+		if (keys != null)
 		{
 			for (key in keys)
 			{
@@ -171,7 +174,7 @@ class Controls
 	public static var instance:Controls;
 	public function new()
 	{
-		keyboardBinds = Preferences.keyBinds;
-		gamepadBinds = Preferences.gamepadBinds;
+		keyboardBinds = Preferences.keyBinds != null ? Preferences.keyBinds : new Map<String, Array<FlxKey>>();
+		gamepadBinds = Preferences.gamepadBinds != null ? Preferences.gamepadBinds : new Map<String, Array<FlxGamepadInputID>>();
 	}
 }

@@ -11,16 +11,25 @@ class CustomFadeTransition extends MusicBeatSubstate {
 	var duration:Float;
 	public function new(duration:Float, isTransIn:Bool)
 	{
-		this.duration = duration;
+		this.duration = duration > 0 ? duration : 0.001;
 		this.isTransIn = isTransIn;
 		super();
 	}
 
 	override function create()
 	{
-		cameras = [FlxG.cameras.list[FlxG.cameras.list.length-1]];
-		var width:Int = Std.int(FlxG.width / Math.max(camera.zoom, 0.001));
-		var height:Int = Std.int(FlxG.height / Math.max(camera.zoom, 0.001));
+		if (FlxG.cameras.list.length < 1)
+		{
+			super.create();
+			close();
+			return;
+		}
+
+		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		var zoom:Float = Math.max(camera != null ? camera.zoom : 1, 0.001);
+		var width:Int = Std.int(FlxG.width / zoom);
+		var height:Int = Std.int(FlxG.height / zoom);
+
 		transGradient = FlxGradient.createGradientFlxSprite(1, height, (isTransIn ? [0x0, FlxColor.BLACK] : [FlxColor.BLACK, 0x0]));
 		transGradient.scale.x = width;
 		transGradient.updateHitbox();
@@ -35,7 +44,7 @@ class CustomFadeTransition extends MusicBeatSubstate {
 		transBlack.screenCenter(X);
 		add(transBlack);
 
-		if(isTransIn)
+		if (isTransIn)
 			transGradient.y = transBlack.y - transBlack.height;
 		else
 			transGradient.y = -transGradient.height;
@@ -46,19 +55,23 @@ class CustomFadeTransition extends MusicBeatSubstate {
 	override function update(elapsed:Float) {
 		super.update(elapsed);
 
-		final height:Float = FlxG.height * Math.max(camera.zoom, 0.001);
-		final targetPos:Float = transGradient.height + 50 * Math.max(camera.zoom, 0.001);
-		if(duration > 0)
+		if (transGradient == null || transBlack == null) return;
+
+		final zoom:Float = Math.max(camera != null ? camera.zoom : 1, 0.001);
+		final height:Float = FlxG.height * zoom;
+		final targetPos:Float = transGradient.height + 50 * zoom;
+
+		if (duration > 0)
 			transGradient.y += (height + targetPos) * elapsed / duration;
 		else
-			transGradient.y = (targetPos) * elapsed;
+			transGradient.y = targetPos;
 
-		if(isTransIn)
+		if (isTransIn)
 			transBlack.y = transGradient.y + transGradient.height;
 		else
 			transBlack.y = transGradient.y - transBlack.height;
 
-		if(transGradient.y >= targetPos)
+		if (transGradient.y >= targetPos)
 		{
 			close();
 		}
@@ -69,10 +82,11 @@ class CustomFadeTransition extends MusicBeatSubstate {
 	{
 		super.close();
 
-		if(finishCallback != null)
+		if (finishCallback != null)
 		{
-			finishCallback();
+			var cb = finishCallback;
 			finishCallback = null;
+			cb();
 		}
 	}
 }

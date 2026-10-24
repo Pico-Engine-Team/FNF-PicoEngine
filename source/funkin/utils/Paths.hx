@@ -3,6 +3,11 @@ package funkin.utils;
 #if MODS_ALLOWED
 import funkin.modding.Mods;
 #end
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 import flixel.graphics.frames.FlxFrame.FlxFrameAngle;
 import flixel.graphics.frames.FlxAtlasFrames;
@@ -136,12 +141,15 @@ class Paths
 			//catch(haxe.Exception) {}
 		}
 
-		for (member in FlxG.state.members)
-			checkForGraphics(member);
-
-		if(FlxG.state.subState != null)
-			for (member in FlxG.state.subState.members)
+		if (FlxG.state != null)
+		{
+			for (member in FlxG.state.members)
 				checkForGraphics(member);
+
+			if (FlxG.state.subState != null)
+				for (member in FlxG.state.subState.members)
+					checkForGraphics(member);
+		}
 
 		for (key in currentTrackedAssets.keys())
 		{
@@ -240,7 +248,7 @@ class Paths
 	}
 
 	static public function setCurrentLevel(name:String)
-		currentLevel = name.toLowerCase();
+		currentLevel = name != null ? name.toLowerCase() : null;
 
 	public static function getPath(file:String, ?type:AssetType = TEXT, ?parentfolder:String, ?modsAllowed:Bool = true):String
 	{
@@ -537,7 +545,7 @@ class Paths
 			}
 		}
 
-		if (allowGPU && Preferences.data.cacheOnGPU && bitmap.image != null)
+		if (allowGPU && Preferences.data != null && Preferences.data.cacheOnGPU && bitmap != null && bitmap.image != null)
 		{
 			bitmap.lock();
 			if (bitmap.__texture == null)
@@ -632,8 +640,9 @@ class Paths
 	
 	static public function getMultiAtlas(keys:Array<String>, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
 	{
-		
+		if (keys == null || keys.length < 1) return null;
 		var parentFrames:FlxAtlasFrames = Paths.getAtlas(keys[0].trim());
+		if (parentFrames == null) return null;
 		if(keys.length > 1)
 		{
 			var original:FlxAtlasFrames = parentFrames;
@@ -654,11 +663,14 @@ class Paths
 		key = normalizeAssetPath(key);
 		if(key.contains('psychic')) trace(key, parentFolder, allowGPU);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
+		if (imageLoaded == null) return null;
 		#if MODS_ALLOWED
 		var xmlExists:Bool = false;
 
 		var xml:String = modsXml(key);
+		#if sys
 		if(FileSystem.exists(xml)) xmlExists = true;
+		#end
 
 		return FlxAtlasFrames.fromSparrow(imageLoaded, (xmlExists ? File.getContent(xml) : getPath(Language.getFileTranslation('images/$key') + '.xml', TEXT, parentFolder)));
 		#else
@@ -670,11 +682,14 @@ class Paths
 	{
 		key = normalizeAssetPath(key);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
+		if (imageLoaded == null) return null;
 		#if MODS_ALLOWED
 		var txtExists:Bool = false;
 		
 		var txt:String = modsTxt(key);
+		#if sys
 		if(FileSystem.exists(txt)) txtExists = true;
+		#end
 
 		return FlxAtlasFrames.fromSpriteSheetPacker(imageLoaded, (txtExists ? File.getContent(txt) : getPath(Language.getFileTranslation('images/$key') + '.txt', TEXT, parentFolder)));
 		#else
@@ -686,11 +701,14 @@ class Paths
 	{
 		key = normalizeAssetPath(key);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
+		if (imageLoaded == null) return null;
 		#if MODS_ALLOWED
 		var jsonExists:Bool = false;
 
 		var json:String = modsImagesJson(key);
+		#if sys
 		if(FileSystem.exists(json)) jsonExists = true;
+		#end
 
 		return FlxAtlasFrames.fromTexturePackerJson(imageLoaded, (jsonExists ? File.getContent(json) : getPath(Language.getFileTranslation('images/$key') + '.json', TEXT, parentFolder)));
 		#else
@@ -699,6 +717,7 @@ class Paths
 	}
 
 	inline static public function formatToSongPath(path:String) {
+		if (path == null) return '';
 		final invalidChars = ~/[~&;:<>#\s]/g;
 		final hideChars = ~/[.,'"%?!]/g;
 
@@ -728,7 +747,10 @@ class Paths
 			}
 		}
 		localTrackedAssets.push(file);
-		return currentTrackedSounds.get(file);
+		var snd = currentTrackedSounds.get(file);
+		if (snd == null && beepOnNull)
+			return FlxAssets.getSound('flixel/sounds/beep');
+		return snd;
 	}
 
 	#if MODS_ALLOWED
