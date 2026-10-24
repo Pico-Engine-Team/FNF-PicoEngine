@@ -14,7 +14,6 @@ enum MainMenuColumn {
 	LEFT;
 	CENTER;
 	RIGHT;
-	CREDITS;
 }
 
 class MainMenuState extends MusicBeatState
@@ -26,6 +25,7 @@ class MainMenuState extends MusicBeatState
 	public static var curColumn:MainMenuColumn = CENTER;
 
 	var allowMouse:Bool = true;
+	var creditsSelected:Bool = false;
 	var menuItems:FlxTypedGroup<FlxSprite>;
 	var leftItem:FlxSprite;
 	var rightItem:FlxSprite;
@@ -38,7 +38,6 @@ class MainMenuState extends MusicBeatState
 
 	var leftOption:String = #if ACHIEVEMENTS_ALLOWED 'achievements' #else null #end;
 	var rightOption:String = 'options';
-	/** Credits on the right side (mid), separate from bottom Options. */
 	var creditsOption:String = 'credits';
 	var creditsItem:FlxSprite;
 
@@ -70,12 +69,12 @@ class MainMenuState extends MusicBeatState
 			if(AntiPiracy.openIfNeeded(false))
 				return;
 		}
-		catch(e:Dynamic) { trace('[MainMenu] AntiPiracy check failed: ' + e); }
+		catch(e:Dynamic) { trace('[MainMenu] AntiPiracy check failed: ' + e);}
 
 		persistentUpdate = persistentDraw = true;
 
 		var yScroll:Float = 0.25;
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menus/backgrounds/menuBG'));
+		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menus/menuBG'));
 		bg.antialiasing = Preferences.data.antialiasing;
 		bg.scrollFactor.set(0, yScroll);
 		bg.setGraphicSize(Std.int(bg.width * 1.175));
@@ -86,7 +85,7 @@ class MainMenuState extends MusicBeatState
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 
-		magenta = new FlxSprite(-80).loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+		magenta = new FlxSprite(-80).loadGraphic(Paths.image('menus/menuDesat'));
 		magenta.antialiasing = Preferences.data.antialiasing;
 		magenta.scrollFactor.set(0, yScroll);
 		magenta.setGraphicSize(Std.int(magenta.width * 1.175));
@@ -127,15 +126,9 @@ class MainMenuState extends MusicBeatState
 		add(mobileVer);
 		#end
 
-		var psychVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, 'Friday Night Funkin v${FunkinVersion}', 12);
 		var fnfVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, 'v${PicoVersion}', 12);
-
-		psychVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		fnfVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-
-		psychVer.scrollFactor.set();
 		fnfVer.scrollFactor.set();
-		add(psychVer);
 		add(fnfVer);
 
 		#if ACHIEVEMENTS_ALLOWED
@@ -161,6 +154,7 @@ class MainMenuState extends MusicBeatState
 
 		// Ensure a valid selection after coming back from editors
 		curColumn = CENTER;
+		creditsSelected = false;
 		if(curSelected < 0 || curSelected >= optionShit.length)
 			curSelected = 0;
 		changeItem();
@@ -169,23 +163,24 @@ class MainMenuState extends MusicBeatState
 	function createMenuItem(name:String, x:Float, y:Float):FlxSprite
 	{
 		var menuItem:FlxSprite = new FlxSprite(x, y);
-		var atlas = null;
-		try { atlas = Paths.getSparrowAtlas('menus/menu_$name'); } catch(e:Dynamic) { atlas = null; }
+		var atlas = Paths.getSparrowAtlas('main_menu/menu_$name');
+		if(atlas == null)
+			atlas = Paths.getSparrowAtlas('mainmenu/menu_$name');
 		if(atlas != null)
 		{
 			menuItem.frames = atlas;
 			menuItem.animation.addByPrefix('idle', '$name idle', 24, true);
 			menuItem.animation.addByPrefix('selected', '$name selected', 24, true);
-			if(menuItem.animation.exists('idle'))
+			if(menuItem.animation.getByName('idle') != null)
 				menuItem.animation.play('idle');
 		}
 		else
 		{
-			// Fallback graphic so draw never hits null frames
-			menuItem.makeGraphic(150, 150, 0x33FFFFFF);
-			trace('[MainMenuState] Missing atlas: menus/menu_$name');
+			// Placeholder so missing assets do not crash / show Flixel logo forever
+			menuItem.makeGraphic(320, 100, 0xFF333333);
 		}
 		menuItem.updateHitbox();
+		
 		menuItem.antialiasing = Preferences.data.antialiasing;
 		menuItem.scrollFactor.set();
 		menuItems.add(menuItem);
@@ -196,7 +191,7 @@ class MainMenuState extends MusicBeatState
 	var timeNotMoving:Float = 0;
 	override function update(elapsed:Float)
 	{
-		if (FlxG.sound.music.volume < 0.8)
+		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.8)
 			FlxG.sound.music.volume = Math.min(FlxG.sound.music.volume + 0.5 * elapsed, 0.8);
 
 		if (!selectedSomethin)
@@ -214,17 +209,16 @@ class MainMenuState extends MusicBeatState
 				FlxG.mouse.visible = true;
 				timeNotMoving = 0;
 
-				var selectedItem:FlxSprite;
+				var selectedItem:FlxSprite = null;
 				switch(curColumn)
 				{
 					case CENTER:
-						selectedItem = menuItems.members[curSelected];
+						if(menuItems != null && curSelected >= 0 && curSelected < menuItems.length)
+							selectedItem = menuItems.members[curSelected];
 					case LEFT:
 						selectedItem = leftItem;
 					case RIGHT:
-						selectedItem = rightItem;
-					case CREDITS:
-						selectedItem = creditsItem;
+						selectedItem = creditsSelected ? creditsItem : rightItem;
 				}
 
 				if(leftItem != null && FlxG.mouse.overlaps(leftItem))
@@ -241,7 +235,8 @@ class MainMenuState extends MusicBeatState
 					allowMouse = true;
 					if(selectedItem != creditsItem)
 					{
-						curColumn = CREDITS;
+						curColumn = RIGHT;
+						creditsSelected = true;
 						changeItem();
 					}
 				}
@@ -251,6 +246,7 @@ class MainMenuState extends MusicBeatState
 					if(selectedItem != rightItem)
 					{
 						curColumn = RIGHT;
+						creditsSelected = false;
 						changeItem();
 					}
 				}
@@ -299,37 +295,39 @@ class MainMenuState extends MusicBeatState
 					{
 						// Prefer credits (mid-right), then options (bottom-right)
 						if(creditsOption != null && creditsItem != null)
-							curColumn = CREDITS;
-						else if(rightOption != null)
+						{
 							curColumn = RIGHT;
+							creditsSelected = true;
+						}
+						else if(rightOption != null)
+						{
+							curColumn = RIGHT;
+							creditsSelected = false;
+						}
 						changeItem();
 					}
 				case LEFT:
 					if(controls.UI_RIGHT_P)
 					{
 						curColumn = CENTER;
-						changeItem();
-					}
-				case CREDITS:
-					if(controls.UI_LEFT_P)
-					{
-						curColumn = CENTER;
-						changeItem();
-					}
-					else if(controls.UI_DOWN_P && rightOption != null)
-					{
-						curColumn = RIGHT;
+						creditsSelected = false;
 						changeItem();
 					}
 				case RIGHT:
 					if(controls.UI_LEFT_P)
 					{
 						curColumn = CENTER;
+						creditsSelected = false;
 						changeItem();
 					}
-					else if(controls.UI_UP_P && creditsOption != null && creditsItem != null)
+					else if(controls.UI_DOWN_P && creditsSelected && rightOption != null)
 					{
-						curColumn = CREDITS;
+						creditsSelected = false;
+						changeItem();
+					}
+					else if(controls.UI_UP_P && !creditsSelected && creditsOption != null && creditsItem != null)
+					{
+						creditsSelected = true;
 						changeItem();
 					}
 				}
@@ -362,12 +360,16 @@ class MainMenuState extends MusicBeatState
 						item = leftItem;
 
 					case RIGHT:
-						option = rightOption;
-						item = rightItem;
-
-					case CREDITS:
-						option = creditsOption;
-						item = creditsItem;
+						if(creditsSelected)
+						{
+							option = creditsOption;
+							item = creditsItem;
+						}
+						else
+						{
+							option = rightOption;
+							item = rightItem;
+						}
 				}
 				if(item == null || option == null)
 				{
@@ -441,7 +443,11 @@ class MainMenuState extends MusicBeatState
 
 	function changeItem(change:Int = 0)
 	{
-		if(change != 0) curColumn = CENTER;
+		if(change != 0)
+		{
+			curColumn = CENTER;
+			creditsSelected = false;
+		}
 		if(optionShit == null || optionShit.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, optionShit.length - 1);
 		FlxG.sound.play(Paths.sound('scrollMenu'));
@@ -461,9 +467,7 @@ class MainMenuState extends MusicBeatState
 			case LEFT:
 				selectedItem = leftItem;
 			case RIGHT:
-				selectedItem = rightItem;
-			case CREDITS:
-				selectedItem = creditsItem;
+				selectedItem = creditsSelected ? creditsItem : rightItem;
 		}
 		if(selectedItem == null) return;
 

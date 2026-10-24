@@ -52,7 +52,6 @@ class FreeplayMenuState extends MusicBeatState
 	public var bottomText:FlxText;
 	public static var canMove:Bool = true;
 	var bottomBG:FlxSprite;
-	var freeplayExtraMenu:FlxSprite;
 	var player:MusicPlayer;
 
 	var optionShit:Array<String> = [
@@ -90,7 +89,7 @@ class FreeplayMenuState extends MusicBeatState
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In Freeplayer Menu", null);
+		DiscordClient.changePresence("In Freeplay Menu", null);
 		#end
 
 		if(WeekData.weeksList.length < 1)
@@ -98,12 +97,12 @@ class FreeplayMenuState extends MusicBeatState
 			FlxTransitionableState.skipNextTransIn = true;
 			persistentUpdate = false;
 			MusicBeatState.switchState(new funkin.states.ErrorState("NO LEVELS ADDED FOR FREEPLAY\n\nPress ACCEPT to go to the Week Editor Menu.\nPress BACK to return to Main Menu.",
-				function() MusicBeatState.switchState(new funkin.states.editors.data.WeekEditorState()),
+			function() MusicBeatState.switchState(new funkin.states.editors.data.WeekEditorState()),
 			function() MusicBeatState.switchState(new MainMenuState())));
 			return;
 		}
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/menuDesat'));
 		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
@@ -121,7 +120,7 @@ class FreeplayMenuState extends MusicBeatState
 
 		if (titleText == null)
 		{
-			titleText = new Alphabet(0, 60, 'CHOOSE AN OPTION', true);
+			titleText = new Alphabet(0, 60, 'Freeplay Menu Songs', true);
 			titleText.screenCenter(X);
 			add(titleText);
 		}
@@ -139,12 +138,14 @@ class FreeplayMenuState extends MusicBeatState
 			{
 				var item:Alphabet = new Alphabet(0, 0, optionShit[i], true);
 				item.isMenuItem = true;
-				item.targetY = i;
 				item.changeX = false;
-				item.snapToPosition();
-				item.screenCenter(X);
-				item.y = 200 + (i * 100);
+				item.changeY = false;
+				item.targetY = i;
 				item.ID = i;
+				// Centered vertically around mid-screen
+				item.y = (FlxG.height * 0.5) - ((optionShit.length - 1) * 50) + (i * 100) - (item.height * 0.5);
+				item.screenCenter(X);
+				item.x = Math.floor(item.x);
 				menuItems.add(item);
 			}
 		}
@@ -183,6 +184,7 @@ class FreeplayMenuState extends MusicBeatState
 
 			item.targetY = i - selectCurSelected;
 			item.alpha = (i == selectCurSelected) ? 1 : 0.6;
+			item.screenCenter(X);
 		}
 	}
 
@@ -218,10 +220,8 @@ class FreeplayMenuState extends MusicBeatState
 		if (bottomBG != null) bottomBG.visible = true;
 		if (bottomText != null) bottomText.visible = true;
 		if (player != null) player.visible = true;
-		if (freeplayExtraMenu != null) freeplayExtraMenu.visible = true;
-		if (modDirectoryTxt != null) modDirectoryTxt.visible = true;
-		if (modDirectoryBG != null) modDirectoryBG.visible = true;
-		updateModDirectoryLabel();
+			updateModDirectoryLabel();
+		refreshModDirectoryVisibility();
 		changeSelection(0, false);
 		updateTexts();
 	}
@@ -242,8 +242,7 @@ class FreeplayMenuState extends MusicBeatState
 		if (bottomBG != null) bottomBG.visible = false;
 		if (bottomText != null) bottomText.visible = false;
 		if (player != null) player.visible = false;
-		if (freeplayExtraMenu != null) freeplayExtraMenu.visible = false;
-		if (missingText != null) missingText.visible = false;
+			if (missingText != null) missingText.visible = false;
 		if (missingTextBG != null) missingTextBG.visible = false;
 		if (modDirectoryTxt != null) modDirectoryTxt.visible = false;
 		if (modDirectoryBG != null) modDirectoryBG.visible = false;
@@ -342,6 +341,7 @@ class FreeplayMenuState extends MusicBeatState
 		modDirectoryTxt.borderSize = 2;
 		add(modDirectoryTxt);
 		updateModDirectoryLabel();
+		refreshModDirectoryVisibility();
 
 		missingTextBG = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		missingTextBG.alpha = 0.6;
@@ -353,15 +353,6 @@ class FreeplayMenuState extends MusicBeatState
 		missingText.scrollFactor.set();
 		missingText.visible = false;
 		add(missingText);
-
-		freeplayExtraMenu = new FlxSprite(scoreText.x + 50, 600).loadGraphic(Paths.image('menus/freeplay_extra'), true, 360, 110);
-		freeplayExtraMenu.animation.add('idle', [0]);
-		freeplayExtraMenu.animation.add('hover', [1]);
-		freeplayExtraMenu.scrollFactor.set();
-		freeplayExtraMenu.antialiasing = true;
-		freeplayExtraMenu.setGraphicSize(Std.int(freeplayExtraMenu.width * 0.8));
-		freeplayExtraMenu.updateHitbox();
-		add(freeplayExtraMenu);
 
 		if(curSelected >= songs.length) curSelected = 0;
 		bg.color = songs[curSelected].color;
@@ -412,8 +403,11 @@ class FreeplayMenuState extends MusicBeatState
 
 	function weekIsLocked(name:String):Bool
 	{
+		if(name == null) return false;
 		var leWeek:WeekData = WeekData.weeksLoaded.get(name);
-		return (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!StoryModeMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryModeMenuState.weekCompleted.get(leWeek.weekBefore)));
+		if(leWeek == null) return false;
+		var before:String = leWeek.weekBefore != null ? leWeek.weekBefore : '';
+		return (!leWeek.startUnlocked && before.length > 0 && (!StoryModeMenuState.weekCompleted.exists(before) || !StoryModeMenuState.weekCompleted.get(before)));
 	}
 
 	var instPlaying:Int = -1;
@@ -435,31 +429,40 @@ class FreeplayMenuState extends MusicBeatState
 	function loadFreeplaySong(?songName:String = null):Void
 	{
 		var songId:String = getFreeplaySongId(songName);
+		if(songId == null || songId.length < 1)
+			throw 'Invalid freeplay song id';
+
 		var variation:String = null;
-		if(songs.length > 0 && curSelected >= 0 && curSelected < songs.length)
+		if(songs != null && songs.length > 0 && curSelected >= 0 && curSelected < songs.length)
 			variation = songs[curSelected].getCurrentVariation();
 
-		// loadSongWithVariationFallback expects SwagSong?, not a String
+		// Minimal SwagSong-like hint so variation suffixes resolve
 		var songHint:Dynamic = null;
 		var useVariation:Bool = false;
 		if(variation != null && variation.length > 0)
 		{
-			// Minimal object so PlayState can read songVariation / variation
-			songHint = { songVariation: variation, variation: variation };
+			songHint = { songVariation: variation, variation: variation, song: songId };
 			useVariation = true;
 		}
-		PlayState.loadSongWithVariationFallback(songId, cast songHint, curDifficulty, useVariation);
+
+		var loaded = PlayState.loadSongWithVariationFallback(songId, cast songHint, curDifficulty, useVariation);
+		if(loaded == null || PlayState.SONG == null)
+			throw 'Chart not found for "' + songId + '" (diff=' + curDifficulty + ', variation=' + Std.string(variation) + ')';
 	}
 
 	function getLoadedFreeplaySongAssetId(?songName:String = null):String
 	{
-		var baseId:String = songName == null ? PlayState.SONG.song : songName;
+		var baseId:String = songName;
+		if(baseId == null && PlayState.SONG != null) baseId = PlayState.SONG.song;
+		if(baseId == null) baseId = getFreeplaySongId();
 		return PlayState.getSongAssetId(baseId, PlayState.SONG, curDifficulty);
 	}
 
 	function getLoadedFreeplaySongAudioId(?songName:String = null):String
 	{
-		var baseId:String = songName == null ? PlayState.SONG.song : songName;
+		var baseId:String = songName;
+		if(baseId == null && PlayState.SONG != null) baseId = PlayState.SONG.song;
+		if(baseId == null) baseId = getFreeplaySongId();
 		return PlayState.getSongAudioId(baseId, PlayState.SONG, curDifficulty);
 	}
 
@@ -489,28 +492,8 @@ class FreeplayMenuState extends MusicBeatState
 			return;
 		}
 
-		if (FlxG.sound.music.volume < 0.7)
+		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.7)
 			FlxG.sound.music.volume += 0.5 * elapsed;
-
-		if (freeplayExtraMenu != null && freeplayExtraMenu.visible)
-		{
-			if (FlxG.mouse.overlaps(freeplayExtraMenu))
-			{
-				freeplayExtraMenu.animation.play('hover');
-				if (FlxG.mouse.justPressed && canMove)
-				{
-					#if PICO_ALLOWED
-					MusicBeatState.switchState(new FreeplayExtraSongsMenuState());
-					#end
-					FlxG.mouse.visible = false;
-					FlxG.sound.play(Paths.sound('confirmMenu'));
-				}
-			}
-			else
-			{
-				freeplayExtraMenu.animation.play('idle');
-			}
-		}
 
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, Math.exp(-elapsed * 24)));
 		lerpRating = FlxMath.lerp(lerpRating, intendedRating, Math.exp(-elapsed * 12));
@@ -554,8 +537,11 @@ class FreeplayMenuState extends MusicBeatState
 				// highlight that Opponent Mod is active
 				scoreBox = scoreBox.replace('[Tab] Opponent Mod', '[Tab] Opponent Mod: ON');
 			}
-			scoreText.text = scoreBox;
-			positionHighscore();
+			if(scoreText != null)
+			{
+				scoreText.text = scoreBox;
+				positionHighscore();
+			}
 			
 			if(songs.length > 1)
 			{
@@ -669,7 +655,7 @@ class FreeplayMenuState extends MusicBeatState
 				Mods.currentModDirectory = songs[curSelected].folder;
 				loadFreeplaySong();
 				var songAssetId:String = getLoadedFreeplaySongAudioId();
-				if (PlayState.SONG.needsVoices)
+				if (PlayState.SONG != null && PlayState.SONG.needsVoices)
 				{
 					vocals = new FlxSound();
 					try
@@ -1088,13 +1074,59 @@ class FreeplayMenuState extends MusicBeatState
 		}
 	}
 
-		override function destroy():Void
+	override function destroy():Void
 	{
 		super.destroy();
 
 		FlxG.autoPause = Preferences.data.autoPause;
-		if (!FlxG.sound.music.playing && !stopMusicPlay)
+		if (FlxG.sound.music != null && !FlxG.sound.music.playing && !stopMusicPlay)
 			FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
+	}
+
+
+	/** Show mod directory UI only when at least one mod folder is available */
+	function hasInstalledMods():Bool
+	{
+		#if MODS_ALLOWED
+		try
+		{
+			var dirs = Mods.getModDirectories();
+			if(dirs != null)
+			{
+				for (d in dirs)
+					if(d != null && Std.string(d).trim().length > 0)
+						return true;
+			}
+		}
+		catch(e:Dynamic) {}
+		try
+		{
+			var enabled = Mods.getEnabled();
+			if(enabled != null)
+			{
+				for (d in enabled)
+					if(d != null && Std.string(d).trim().length > 0)
+						return true;
+			}
+		}
+		catch(e:Dynamic) {}
+		#end
+		// Songs that already came from a mod folder
+		var source:Array<FreeplaySongData> = (allSongs != null && allSongs.length > 0) ? allSongs : songs;
+		if(source != null)
+		{
+			for (s in source)
+				if(s != null && s.folder != null && s.folder.length > 0)
+					return true;
+		}
+		return false;
+	}
+
+	function refreshModDirectoryVisibility():Void
+	{
+		var show:Bool = hasInstalledMods();
+		if(modDirectoryTxt != null) modDirectoryTxt.visible = show && !inSelectMenu;
+		if(modDirectoryBG != null) modDirectoryBG.visible = show && !inSelectMenu;
 	}
 
 	// ---------- Mod directory / category filter (Psych Online style) ----------
@@ -1235,9 +1267,15 @@ class FreeplayMenuState extends MusicBeatState
 
 	function changeModDirectory(change:Int = 0):Void
 	{
+		if(!hasInstalledMods())
+		{
+			refreshModDirectoryVisibility();
+			return;
+		}
 		if(modDirectoryList == null || modDirectoryList.length < 2)
 		{
 			updateModDirectoryLabel();
+			refreshModDirectoryVisibility();
 			return;
 		}
 		curModDirectoryIndex = FlxMath.wrap(curModDirectoryIndex + change, 0, modDirectoryList.length - 1);

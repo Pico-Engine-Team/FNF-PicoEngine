@@ -66,7 +66,10 @@ class StoryModeMenuState extends MusicBeatState
 		txtWeekTitle.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
 		txtWeekTitle.alpha = 0.7;
 
-		var ui_tex = Paths.getSparrowAtlas('storyMode/ui/Menu_UI');
+		var ui_tex = Paths.getSparrowAtlas('menus/storymode_menu/ui/Menu_UI');
+		if(ui_tex == null) ui_tex = Paths.getSparrowAtlas('menus/storymode_menu//Menu_UI');
+		if(ui_tex == null) ui_tex = Paths.getSparrowAtlas('campaign_menu_UI_assets');
+		if(ui_tex == null) ui_tex = Paths.getSparrowAtlas('menus/storymode_menu/Menu_UI');
 		var bgYellow:FlxSprite = new FlxSprite(0, 56).makeGraphic(FlxG.width, 386, 0xFFF9CF51);
 		bgSprite = new FlxSprite(0, 56);
 
@@ -106,10 +109,17 @@ class StoryModeMenuState extends MusicBeatState
 				{
 					var lock:FlxSprite = new FlxSprite(weekThing.width + 10 + weekThing.x);
 					lock.antialiasing = Preferences.data.antialiasing;
-					lock.frames = ui_tex;
-					lock.animation.addByPrefix('lock', 'lock');
-					lock.animation.play('lock');
-					lock.ID = i;
+					if(ui_tex != null)
+					{
+						lock.frames = ui_tex;
+						lock.animation.addByPrefix('lock', 'lock');
+						lock.animation.play('lock');
+					}
+					else
+					{
+						lock.makeGraphic(32, 32, 0xFF888888);
+					}
+					lock.ID = num; // index in loadedWeeks / grpWeekText
 					grpLocks.add(lock);
 				}
 				num++;
@@ -130,10 +140,17 @@ class StoryModeMenuState extends MusicBeatState
 
 		leftArrow = new FlxSprite(850, grpWeekText.members[0].y + 10);
 		leftArrow.antialiasing = Preferences.data.antialiasing;
-		leftArrow.frames = ui_tex;
-		leftArrow.animation.addByPrefix('idle', "arrow left");
-		leftArrow.animation.addByPrefix('press', "arrow push left");
-		leftArrow.animation.play('idle');
+		if(ui_tex != null)
+		{
+			leftArrow.frames = ui_tex;
+			leftArrow.animation.addByPrefix('idle', "arrow left");
+			leftArrow.animation.addByPrefix('press', "arrow push left");
+			leftArrow.animation.play('idle');
+		}
+		else
+		{
+			leftArrow.makeGraphic(32, 32, 0xFFFFFFFF);
+		}
 		difficultySelectors.add(leftArrow);
 
 		Difficulty.resetList();
@@ -149,10 +166,17 @@ class StoryModeMenuState extends MusicBeatState
 
 		rightArrow = new FlxSprite(leftArrow.x + 376, leftArrow.y);
 		rightArrow.antialiasing = Preferences.data.antialiasing;
-		rightArrow.frames = ui_tex;
-		rightArrow.animation.addByPrefix('idle', 'arrow right');
-		rightArrow.animation.addByPrefix('press', "arrow push right", 24, false);
-		rightArrow.animation.play('idle');
+		if(ui_tex != null)
+		{
+			rightArrow.frames = ui_tex;
+			rightArrow.animation.addByPrefix('idle', 'arrow right');
+			rightArrow.animation.addByPrefix('press', "arrow push right", 24, false);
+			rightArrow.animation.play('idle');
+		}
+		else
+		{
+			rightArrow.makeGraphic(32, 32, 0xFFFFFFFF);
+		}
 		difficultySelectors.add(rightArrow);
 
 		add(bgYellow);
@@ -264,12 +288,23 @@ class StoryModeMenuState extends MusicBeatState
 
 		super.update(elapsed);
 		
-		var offY:Float = grpWeekText.members[curWeek].targetY;
-		for (num => item in grpWeekText.members)
-			item.y = FlxMath.lerp(item.targetY - offY + 480, item.y, Math.exp(-elapsed * 10.2));
+		if(grpWeekText != null && grpWeekText.length > 0 && curWeek >= 0 && curWeek < grpWeekText.length)
+		{
+			var offY:Float = grpWeekText.members[curWeek].targetY;
+			for (num => item in grpWeekText.members)
+				if(item != null)
+					item.y = FlxMath.lerp(item.targetY - offY + 480, item.y, Math.exp(-elapsed * 10.2));
+		}
 
 		for (num => lock in grpLocks.members)
-			lock.y = grpWeekText.members[lock.ID].y + grpWeekText.members[lock.ID].height/2 - lock.height/2;
+		{
+			if(lock == null) continue;
+			var itemIdx:Int = lock.ID;
+			if(itemIdx < 0 || itemIdx >= grpWeekText.length) continue;
+			var weekItem = grpWeekText.members[itemIdx];
+			if(weekItem == null) continue;
+			lock.y = weekItem.y + weekItem.height/2 - lock.height/2;
+		}
 	}
 
 	var movedBack:Bool = false;
@@ -362,11 +397,16 @@ class StoryModeMenuState extends MusicBeatState
 		if (Paths.fileExists('images/storymenu/difficulties/' + Paths.formatToSongPath(diff) + ".xml",BINARY))
 		{
 			var newFrames = Paths.getSparrowAtlas('storymenu/difficulties/' + Paths.formatToSongPath(diff));
-			sprDifficulty.frames = newFrames;
-			sprDifficulty.animation.addByPrefix('idle', 'idle0', 24, true);
+			if(newFrames != null)
+			{
+				sprDifficulty.frames = newFrames;
+				sprDifficulty.animation.addByPrefix('idle', 'idle0', 24, true);
+			}
 
 			if (VsliceOptions.FLASHBANG)
-			sprDifficulty.animation.play('idle');
+				sprDifficulty.animation.play('idle');
+			else if(sprDifficulty.animation.getByName('idle') != null)
+				sprDifficulty.animation.play('idle');
 			sprDifficulty.x = leftArrow.x + 60;
 			sprDifficulty.x += (308 - sprDifficulty.width) / 3;
 			sprDifficulty.alpha = 0;
@@ -378,8 +418,13 @@ class StoryModeMenuState extends MusicBeatState
 		else
 		{
 			var newImage:FlxGraphic = Paths.image('storymenu/difficulties/' + Paths.formatToSongPath(diff));
-
-			if (sprDifficulty.graphic != newImage)
+			if (newImage == null)
+			{
+				// Fallback: blank / hide rather than HaxeFlixel logo
+				sprDifficulty.makeGraphic(1, 1, 0x00000000);
+				sprDifficulty.alpha = 0;
+			}
+			else if (sprDifficulty.graphic != newImage)
 			{
 				sprDifficulty.loadGraphic(newImage);
 				sprDifficulty.x = leftArrow.x + 60;
@@ -438,6 +483,8 @@ class StoryModeMenuState extends MusicBeatState
 		difficultySelectors.visible = unlocked;
 
 		curDifficulty = getWeekDifficultyIndex(leWeek);
+		// Force difficulty art + score refresh (index alone does not update sprDifficulty)
+		changeDifficulty(0);
 		updateText();
 	}
 
@@ -469,8 +516,12 @@ class StoryModeMenuState extends MusicBeatState
 	}
 
 	function weekIsLocked(name:String):Bool {
+		if(name == null) return false;
 		var leWeek:WeekData = WeekData.weeksLoaded.get(name);
-		return (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!weekCompleted.exists(leWeek.weekBefore) || !weekCompleted.get(leWeek.weekBefore)));
+		if(leWeek == null) return false;
+		var before:String = leWeek.weekBefore;
+		if(before == null) before = '';
+		return (!leWeek.startUnlocked && before.length > 0 && (!weekCompleted.exists(before) || !weekCompleted.get(before)));
 	}
 
 	function updateText()

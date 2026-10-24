@@ -75,10 +75,10 @@ class FreeplayExtraSongsMenuState extends MusicBeatState
 		loadExtraSongs();
 
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Freeplay Extra Song", "Selecting An Extra Song");
+		DiscordClient.changePresence("In Freeplay Extra Songs Menu", "Selecting An Extra Song");
 		#end
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/menuDesat'));
 		bg.antialiasing = Preferences.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
@@ -353,8 +353,8 @@ class FreeplayExtraSongsMenuState extends MusicBeatState
 
 				if (rest.length > 0)
 					found.push(rest);
-				else if (!containsDiff(found, 'pico'))
-					found.push('pico');
+				else if (!containsDiff(found, 'normal'))
+					found.push('normal');
 			}
 		}
 		catch (e:Dynamic) {}
@@ -373,7 +373,7 @@ class FreeplayExtraSongsMenuState extends MusicBeatState
 
 		var char:String = (icon != null && icon.trim().length > 0) ? icon.trim() : 'face';
 		var col:Int = color != null ? color : colorFromPathName(pathName);
-		var d:Array<String> = (diffs != null && diffs.length > 0) ? normalizeDiffs(diffs) : ['pico'];
+		var d:Array<String> = (diffs != null && diffs.length > 0) ? normalizeDiffs(diffs) : ['normal'];
 		var modFolder:String = folder ?? (Mods.currentModDirectory ?? '');
 
 		songs.push(new ExtraSongData(display, pathName, char, col, d, modFolder));
@@ -579,7 +579,7 @@ class FreeplayExtraSongsMenuState extends MusicBeatState
 		Difficulty.copyFrom(song.diffs);
 		Mods.currentModDirectory = song.folder ?? '';
 
-		FlxG.sound.music.volume = 0;
+		if (FlxG.sound.music != null) FlxG.sound.music.volume = 0;
 		LoadingScreenMenuState.prepareToSong();
 		LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 	}
@@ -775,7 +775,7 @@ class FreeplayExtraSongsMenuState extends MusicBeatState
 				diffs.push(clean);
 		}
 		if (diffs.length < 1)
-			diffs.push('pico');
+			diffs.push('normal');
 		return diffs;
 	}
 
@@ -836,7 +836,7 @@ class ExtraSongData
 		this.pathName = pathName;
 		this.songCharacter = (songCharacter != null && songCharacter.length > 0) ? songCharacter : 'face';
 		this.color = color;
-		this.diffs = (diffs != null && diffs.length > 0) ? diffs : ['pico'];
+		this.diffs = (diffs != null && diffs.length > 0) ? diffs : ['normal'];
 		this.folder = folder ?? (Mods.currentModDirectory ?? '');
 	}
 }
