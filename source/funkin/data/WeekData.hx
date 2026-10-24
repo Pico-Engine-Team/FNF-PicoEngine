@@ -3,6 +3,12 @@ package funkin.data;
 import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import haxe.Json;
+using StringTools;
+
+#if MODS_ALLOWED
+import sys.FileSystem;
+import sys.io.File;
+#end
 
 /**
  * Week file (levels/*.json).
@@ -10,6 +16,10 @@ import haxe.Json;
  * Song list only identifies which songs belong to the week.
  * Difficulties, freeplay icon and color come from each song's meta.json
  * (assets/songs/<song>/meta.json) — not from the week file.
+ *
+ * Week title image is independent from the JSON file name:
+ *   "week_title_Path": "storyMode/weekTitles/weekend1"
+ * falls back to storymenu/titles/<weekFileName> if missing.
  *
  * songs entry formats still accepted for compatibility:
  *   "Bopeebo"
@@ -31,6 +41,17 @@ typedef WeekFile =
 	@:optional var hideStorySongs:Array<String>;
 	@:optional var section:Dynamic;
 	@:optional var sections:Dynamic;
+	/** Path to week title image (without images/ and .png), e.g. storyMode/weekTitles/weekend1 */
+	@:optional var week_title_Path:String;
+	// New Pico week format (normalized into the fields above on load)
+	@:optional var week_Songs:Array<Dynamic>;
+	@:optional var Background:String;
+	@:optional var props:Array<String>;
+	@:optional var weekStoryMode_Name:String;
+	@:optional var weekStartUnlocked:Bool;
+	@:optional var weekHideTo_storyMode:Bool;
+	@:optional var weekhideTo_freeplayMenu:Bool;
+	@:optional var weekHideTo_freeplayMenu:Bool;
 }
 
 class WeekData
@@ -54,6 +75,7 @@ class WeekData
 	public var hideStorySongs:Array<String>;
 	public var section:Dynamic;
 	public var sections:Dynamic;
+	public var week_title_Path:String;
 	public var fileName:String;
 
 	public static function createWeekFile():WeekFile
@@ -75,19 +97,175 @@ class WeekData
 			hideStoryMode: false,
 			hideFreeplay: false,
 			hideStorySongs: [],
-			section: ['storyMode', 'freeplay']
+			section: ['storyMode', 'freeplay'],
+			week_title_Path: 'storyMode/weekTitles/week1'
 		};
 		return weekFile;
 	}
 
 	public function new(weekFile:WeekFile, fileName:String)
 	{
-		for (field in Reflect.fields(weekFile))
-			if (Reflect.fields(this).contains(field))
-				Reflect.setProperty(this, field, Reflect.getProperty(weekFile, field));
+		if (weekFile != null)
+		{
+			for (field in Reflect.fields(weekFile))
+			{
+				if (field == null || field.length < 1) continue;
+				try
+				{
+					if (Reflect.hasField(this, field) || Reflect.fields(this).contains(field))
+						Reflect.setProperty(this, field, Reflect.getProperty(weekFile, field));
+				}
+				catch (e:Dynamic) {}
+			}
+		}
 
-		this.fileName = fileName;
+		this.fileName = fileName != null ? fileName : '';
 		hideStorySongs = parseHiddenStorySongs(hideStorySongs);
+		if (hideStorySongs == null) hideStorySongs = [];
+
+		// Ensure title path always resolves for Story Mode menus
+		if (week_title_Path == null || Std.string(week_title_Path).trim().length < 1)
+			week_title_Path = defaultWeekTitlePath(this.fileName);
+	}
+
+	/**
+	 * Resolve the week title image path used by Story Mode / Week Editor.
+	 * Prefers week_title_Path; falls back to legacy storymenu/titles/<fileName>.
+	 */
+	public static function getWeekTitlePath(week:Dynamic, ?fileName:String = null):String
+	{
+		var path:String = null;
+		if (week != null)
+		{
+			var raw:Dynamic = Reflect.field(week, 'week_title_Path');
+			if (raw == null) raw = Reflect.field(week, 'weekTitlePath');
+			if (raw == null) raw = Reflect.field(week, 'week_title');
+			if (raw != null)
+			{
+				path = Std.string(raw).trim().replace('\\', '/');
+				if (path.length > 0)
+				{
+					if (path.startsWith('images/')) path = path.substr(7);
+					if (path.endsWith('.png')) path = path.substr(0, path.length - 4);
+					return path;
+				}
+			}
+		}
+
+		var name:String = fileName;
+		if ((name == null || name.length < 1) && week != null)
+		{
+			var fn:Dynamic = Reflect.field(week, 'fileName');
+			if (fn != null) name = Std.string(fn);
+		}
+		return defaultWeekTitlePath(name);
+	}
+
+	public static function defaultWeekTitlePath(?fileName:String = null):String
+	{
+		var name:String = (fileName != null && fileName.length > 0) ? fileName : 'week1';
+		return 'storyMode/weekTitles/' + name;
+	}
+
+	/** Check whether a week title image exists for the given path (mods + shared). */
+	public static function weekTitleExists(titlePath:String):Bool
+	{
+		if (titlePath == null || titlePath.trim().length < 1) return false;
+		var p = titlePath.trim().replace('\\', '/');
+		if (p.startsWith('images/')) p = p.substr(7);
+		if (p.endsWith('.png')) p = p.substr(0, p.length - 4);
+
+		#if MODS_ALLOWED
+		try
+		{
+			if (FileSystem.exists(Paths.modsImages(p))) return true;
+		}
+		catch (e:Dynamic)
+		{
+			try
+			{
+				if (FileSystem.exists(Paths.mods('images/' + p + '.png'))) return true;
+			}
+			catch (e2:Dynamic) {}
+		}
+		#end
+		try
+		{
+			if (OpenFlAssets.exists(Paths.getPath('images/' + p + '.png', IMAGE), IMAGE)) return true;
+		}
+		catch (e:Dynamic) {}
+
+		// Legacy Psych path fallback when only the short name was stored
+		var legacy = 'storymenu/titles/' + haxe.io.Path.withoutDirectory(p);
+		#if MODS_ALLOWED
+		try
+		{
+			if (FileSystem.exists(Paths.modsImages(legacy))) return true;
+		}
+		catch (e:Dynamic)
+		{
+			try
+			{
+				if (FileSystem.exists(Paths.mods('images/' + legacy + '.png'))) return true;
+			}
+			catch (e2:Dynamic) {}
+		}
+		#end
+		try
+		{
+			if (OpenFlAssets.exists(Paths.getPath('images/' + legacy + '.png', IMAGE), IMAGE)) return true;
+		}
+		catch (e:Dynamic) {}
+		return false;
+	}
+
+	/** Load graphic path candidates for a week title (first existing wins). */
+	public static function resolveWeekTitleImage(titlePath:String, ?fileName:String = null):String
+	{
+		var candidates:Array<String> = [];
+		if (titlePath != null && titlePath.trim().length > 0)
+		{
+			var p = titlePath.trim().replace('\\', '/');
+			if (p.startsWith('images/')) p = p.substr(7);
+			if (p.endsWith('.png')) p = p.substr(0, p.length - 4);
+			candidates.push(p);
+			// If user stored only "weekend1", try under weekTitles
+			if (!p.contains('/'))
+			{
+				candidates.push('storyMode/weekTitles/' + p);
+				candidates.push('storymenu/titles/' + p);
+			}
+		}
+		if (fileName != null && fileName.length > 0)
+		{
+			candidates.push('storyMode/weekTitles/' + fileName);
+			candidates.push('storymenu/titles/' + fileName);
+		}
+
+		for (c in candidates)
+		{
+			if (c == null || c.length < 1) continue;
+			#if MODS_ALLOWED
+			try
+			{
+				if (FileSystem.exists(Paths.modsImages(c))) return c;
+			}
+			catch (e:Dynamic)
+			{
+				try
+				{
+					if (FileSystem.exists(Paths.mods('images/' + c + '.png'))) return c;
+				}
+				catch (e2:Dynamic) {}
+			}
+			#end
+			try
+			{
+				if (OpenFlAssets.exists(Paths.getPath('images/' + c + '.png', IMAGE), IMAGE)) return c;
+			}
+			catch (e:Dynamic) {}
+		}
+		return candidates.length > 0 ? candidates[0] : defaultWeekTitlePath(fileName);
 	}
 
 	public static function getWeekSongName(song:Dynamic):String
@@ -238,14 +416,24 @@ class WeekData
 		var directories:Array<String> = [Paths.mods(), Paths.getSharedPath()];
 		var originalLength:Int = directories.length;
 
-		for (mod in Mods.parseList().enabled)
-			directories.push(Paths.mods(mod + '/'));
+		try
+		{
+			var modList = Mods.parseList();
+			if (modList != null && modList.enabled != null)
+			{
+				for (mod in modList.enabled)
+					if (mod != null && mod.length > 0)
+						directories.push(Paths.mods(mod + '/'));
+			}
+		}
+		catch (e:Dynamic) {}
 		#else
 		var directories:Array<String> = [Paths.getSharedPath()];
 		var originalLength:Int = directories.length;
 		#end
 
 		var sexList:Array<String> = CoolUtil.coolTextFile(Paths.getSharedPath('levels/WeeksList.txt'));
+		if (sexList == null) sexList = [];
 		for (i in 0...sexList.length)
 		{
 			for (j in 0...directories.length)
@@ -282,6 +470,7 @@ class WeekData
 			if (FileSystem.exists(directory))
 			{
 				var listOfWeeks:Array<String> = CoolUtil.coolTextFile(directory + 'weekList.txt');
+				if (listOfWeeks == null) listOfWeeks = [];
 				for (daWeek in listOfWeeks)
 				{
 					var path:String = directory + daWeek + '.json';
@@ -417,27 +606,136 @@ class WeekData
 
 		if (rawJson != null && rawJson.length > 0)
 		{
-			return cast tjson.TJSON.parse(rawJson);
+			var week:WeekFile = cast tjson.TJSON.parse(rawJson);
+			normalizeWeekFile(week);
+			return week;
 		}
 		return null;
 	}
 
+	/**
+	 * Map new Pico week JSON → Psych-compatible WeekFile fields.
+	 * New: week_Songs, Background, props, weekStoryMode_Name, weekStartUnlocked, weekHideTo_*, week_title_Path
+	 */
+	public static function normalizeWeekFile(week:WeekFile):Void
+	{
+		if(week == null) return;
+
+		// week_Songs → songs
+		if((week.songs == null || week.songs.length < 1) && Reflect.hasField(week, 'week_Songs'))
+		{
+			var ws:Dynamic = Reflect.field(week, 'week_Songs');
+			if(ws != null && Std.isOfType(ws, Array))
+				week.songs = cast ws;
+		}
+
+		// Background → weekBackground
+		if((week.weekBackground == null || week.weekBackground.length < 1) && Reflect.hasField(week, 'Background'))
+		{
+			var bg:Dynamic = Reflect.field(week, 'Background');
+			if(bg != null) week.weekBackground = Std.string(bg);
+		}
+
+		// props → weekCharacters
+		if((week.weekCharacters == null || week.weekCharacters.length < 1) && Reflect.hasField(week, 'props'))
+		{
+			var props:Dynamic = Reflect.field(week, 'props');
+			if(props != null && Std.isOfType(props, Array))
+			{
+				var arr:Array<String> = [];
+				for (p in (cast props:Array<Dynamic>))
+					if(p != null) arr.push(Std.string(p));
+				week.weekCharacters = arr;
+			}
+		}
+
+		// weekStoryMode_Name → storyName
+		if((week.storyName == null || week.storyName.length < 1) && Reflect.hasField(week, 'weekStoryMode_Name'))
+		{
+			var sn:Dynamic = Reflect.field(week, 'weekStoryMode_Name');
+			if(sn != null) week.storyName = Std.string(sn);
+		}
+
+		// weekStartUnlocked → startUnlocked
+		if(Reflect.hasField(week, 'weekStartUnlocked'))
+		{
+			var u:Dynamic = Reflect.field(week, 'weekStartUnlocked');
+			if(u == true || u == false) week.startUnlocked = u;
+		}
+
+		// weekHideTo_storyMode → hideStoryMode
+		if(Reflect.hasField(week, 'weekHideTo_storyMode'))
+		{
+			var h:Dynamic = Reflect.field(week, 'weekHideTo_storyMode');
+			if(h == true || h == false) week.hideStoryMode = h;
+		}
+
+		// weekhideTo_freeplayMenu / weekHideTo_freeplayMenu → hideFreeplay
+		if(Reflect.hasField(week, 'weekhideTo_freeplayMenu'))
+		{
+			var h2:Dynamic = Reflect.field(week, 'weekhideTo_freeplayMenu');
+			if(h2 == true || h2 == false) week.hideFreeplay = h2;
+		}
+		else if(Reflect.hasField(week, 'weekHideTo_freeplayMenu'))
+		{
+			var h3:Dynamic = Reflect.field(week, 'weekHideTo_freeplayMenu');
+			if(h3 == true || h3 == false) week.hideFreeplay = h3;
+		}
+
+		// week_title_Path aliases
+		if(week.week_title_Path == null || Std.string(week.week_title_Path).trim().length < 1)
+		{
+			var alt:Dynamic = null;
+			if(Reflect.hasField(week, 'weekTitlePath')) alt = Reflect.field(week, 'weekTitlePath');
+			else if(Reflect.hasField(week, 'week_title')) alt = Reflect.field(week, 'week_title');
+			if(alt != null)
+			{
+				var p = Std.string(alt).trim().replace('\\', '/');
+				if(p.startsWith('images/')) p = p.substr(7);
+				if(p.endsWith('.png')) p = p.substr(0, p.length - 4);
+				if(p.length > 0) week.week_title_Path = p;
+			}
+		}
+		else
+		{
+			var p = Std.string(week.week_title_Path).trim().replace('\\', '/');
+			if(p.startsWith('images/')) p = p.substr(7);
+			if(p.endsWith('.png')) p = p.substr(0, p.length - 4);
+			week.week_title_Path = p;
+		}
+
+		// Defaults for fields that might be missing entirely in new format
+		if(week.weekCharacters == null) week.weekCharacters = ['dad', 'bf', 'gf'];
+		if(week.weekBackground == null) week.weekBackground = 'stage';
+		if(week.weekBefore == null) week.weekBefore = '';
+		if(week.storyName == null) week.storyName = week.weekName != null ? week.weekName : '';
+		if(week.weekName == null) week.weekName = '';
+		if(week.songs == null) week.songs = [];
+	}
+
 	public static function getWeekFileName():String
 	{
-		return weeksList[PlayState.storyWeek];
+		if (weeksList == null || weeksList.length < 1) return '';
+		var idx:Int = 0;
+		try { idx = PlayState.storyWeek; } catch (e:Dynamic) { idx = 0; }
+		if (idx < 0) idx = 0;
+		if (idx >= weeksList.length) idx = weeksList.length - 1;
+		return weeksList[idx];
 	}
 
 	public static function getCurrentWeek():WeekData
 	{
-		return weeksLoaded.get(weeksList[PlayState.storyWeek]);
+		var name:String = getWeekFileName();
+		if (name == null || name.length < 1) return null;
+		return weeksLoaded.get(name);
 	}
 
 	public static function setDirectoryFromWeek(?data:WeekData = null)
 	{
+		#if MODS_ALLOWED
 		Mods.currentModDirectory = '';
 		if (data != null && data.folder != null && data.folder.length > 0)
-		{
 			Mods.currentModDirectory = data.folder;
-		}
+		#end
 	}
 }

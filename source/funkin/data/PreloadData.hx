@@ -1,6 +1,12 @@
 package funkin.data;
 
 import haxe.Json;
+using StringTools;
+
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
 
 /**
  * Pico Engine song preload (scripts/songs/).
@@ -64,9 +70,23 @@ class PreloadData
 			try { folder = PlayState.SONG.song; } catch(e:Dynamic) { folder = null; }
 		}
 		if(folder == null || folder.length < 1)
-			return empty();
+		{
+			lastList = empty();
+			lastSongFolder = null;
+			lastJsonPath = null;
+			lastLuaPath = null;
+			return lastList;
+		}
 
-		folder = Paths.formatToSongPath(folder);
+		try { folder = Paths.formatToSongPath(folder); } catch(e:Dynamic) { folder = folder.trim().toLowerCase().replace(' ', '-'); }
+		if(folder == null || folder.length < 1)
+		{
+			lastList = empty();
+			lastSongFolder = null;
+			lastJsonPath = null;
+			lastLuaPath = null;
+			return lastList;
+		}
 		lastSongFolder = folder;
 		lastJsonPath = null;
 		lastLuaPath = null;
