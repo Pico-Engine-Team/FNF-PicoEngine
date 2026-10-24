@@ -7,10 +7,10 @@ import funkin.play.Highscore;
 
 import funkin.data.WeekData;
 import funkin.data.dialogue.DialogueBoxPsych;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.data.NoteSplash;
-import funkin.data.objects.game.notes.config.StrumNote;
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.data.NoteSplash;
+import funkin.data.objects.game.note.config.StrumNote;
+import funkin.data.objects.CharactersData as Character;
 
 import funkin.states.PauseMenuState;
 import funkin.states.GameOverState;
@@ -43,6 +43,11 @@ import funkin.modding.scripting.psychlua.ModchartSprite;
 import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepadInputID;
 import haxe.Json;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 class FunkinLuaProgramming
 {
@@ -69,7 +74,7 @@ class FunkinLuaProgramming
 
 		//LuaL.dostring(lua, CLENSE);
 
-		this.scriptName = scriptName.trim();
+		this.scriptName = (scriptName != null) ? scriptName.trim() : '';
 		var game:PlayState = PlayState.instance;
 		if(game != null) game.luaArray.push(this);
 
@@ -87,23 +92,24 @@ class FunkinLuaProgramming
 		set('Function_Continue', LuaUtils.Function_Continue);
 		set('luaDebugMode', false);
 		set('luaDeprecatedWarnings', true);
-		set('version', MainMenuState.PicoVersion.trim());
+		set('version', MainMenuState.PicoVersion != null ? MainMenuState.PicoVersion.trim() : '');
 		set('modFolder', this.modFolder);
 
 		// Song/Week shit
 		set('curBpm', Conductor.bpm);
-		set('bpm', PlayState.SONG.bpm);
-		set('scrollSpeed', PlayState.SONG.speed);
+		var songData = PlayState.SONG;
+		set('bpm', songData != null ? songData.bpm : 100);
+		set('scrollSpeed', songData != null ? songData.speed : 1);
 		set('crochet', Conductor.crochet);
 		set('stepCrochet', Conductor.stepCrochet);
-		set('songLength', FlxG.sound.music.length);
-		set('songName', PlayState.SONG.song);
-		set('songPath', Paths.formatToSongPath(PlayState.SONG.song));
+		set('songLength', FlxG.sound.music != null ? FlxG.sound.music.length : 0);
+		set('songName', songData != null ? songData.song : '');
+		set('songPath', Paths.formatToSongPath(songData != null ? songData.song : ''));
 		set('loadedSongName', Song.loadedSongName);
-		set('loadedSongPath', Paths.formatToSongPath(Song.loadedSongName));
+		set('loadedSongPath', Paths.formatToSongPath(Song.loadedSongName != null ? Song.loadedSongName : ''));
 		set('chartPath', Song.chartPath);
 		set('startedCountdown', false);
-		set('curStage', PlayState.SONG.stage);
+		set('curStage', songData != null ? songData.stage : '');
 
 		set('isStoryMode', PlayState.isStoryMode);
 		set('difficulty', PlayState.storyDifficulty);
@@ -112,9 +118,9 @@ class FunkinLuaProgramming
 		set('difficultyPath', Difficulty.getFilePath());
 		set('difficultyNameTranslation', Difficulty.getString(true));
 		set('weekRaw', PlayState.storyWeek);
-		set('week', WeekData.weeksList[PlayState.storyWeek]);
+		set('week', (WeekData.weeksList != null && PlayState.storyWeek >= 0 && PlayState.storyWeek < WeekData.weeksList.length) ? WeekData.weeksList[PlayState.storyWeek] : '');
 		set('seenCutscene', PlayState.seenCutscene);
-		set('hasVocals', PlayState.SONG.needsVoices);
+		set('hasVocals', PlayState.SONG != null ? PlayState.SONG.needsVoices : true);
 
 		// Screen stuff
 		set('screenWidth', FlxG.width);
@@ -125,7 +131,7 @@ class FunkinLuaProgramming
 		if(game != null)
 		@:privateAccess
 		{
-			var curSection:SwagSection = PlayState.SONG.notes[game.curSection];
+			var curSection:SwagSection = (PlayState.SONG != null && PlayState.SONG.notes != null && game.curSection >= 0 && game.curSection < PlayState.SONG.notes.length) ? PlayState.SONG.notes[game.curSection] : null;
 			set('curSection', game.curSection);
 			set('curBeat', game.curBeat);
 			set('curStep', game.curStep);
@@ -178,40 +184,44 @@ class FunkinLuaProgramming
 			set('defaultGirlfriendX', game.GF_X);
 			set('defaultGirlfriendY', game.GF_Y);
 
-			set('boyfriendName', game.boyfriend != null ? game.boyfriend.curCharacter : PlayState.SONG.player);
-			set('dadName', game.dad != null ? game.dad.curCharacter : PlayState.SONG.girlfriend);
-			set('gfName', game.gf != null ? game.gf.curCharacter : PlayState.SONG.opponent);
+			var songPlayer:String = (PlayState.SONG != null && PlayState.SONG.player != null) ? PlayState.SONG.player : 'bf';
+			var songOpponent:String = (PlayState.SONG != null && PlayState.SONG.opponent != null) ? PlayState.SONG.opponent : 'dad';
+			var songGf:String = (PlayState.SONG != null && PlayState.SONG.girlfriend != null) ? PlayState.SONG.girlfriend : 'gf';
+			set('boyfriendName', game.boyfriend != null ? game.boyfriend.curCharacter : songPlayer);
+			set('dadName', game.dad != null ? game.dad.curCharacter : songOpponent);
+			set('gfName', game.gf != null ? game.gf.curCharacter : songGf);
 		}
 
 		// Other settings
-		set('downscroll', Preferences.data.downScroll);
-		set('middlescroll', Preferences.data.middleScroll);
-		set('framerate', Preferences.data.framerate);
-		set('ghostTapping', Preferences.data.ghostTapping);
-		set('hideHud', Preferences.data.hideHud);
-		set('timeBarType', Preferences.data.timeBarType);
-		set('scoreZoom', Preferences.data.scoreZoom);
-		set('cameraZoomOnBeat', Preferences.data.camZooms);
-		set('flashingLights', Preferences.data.flashing);
-		set('noteOffset', Preferences.data.noteOffset);
-		set('healthBarAlpha', Preferences.data.healthBarAlpha);
-		set('noResetButton', Preferences.data.noReset);
+		var prefs = Preferences.data;
+		set('downscroll', prefs != null ? prefs.downScroll : false);
+		set('middlescroll', prefs != null ? prefs.middleScroll : false);
+		set('framerate', prefs != null ? prefs.framerate : 60);
+		set('ghostTapping', prefs != null ? prefs.ghostTapping : true);
+		set('hideHud', prefs != null ? prefs.hideHud : false);
+		set('timeBarType', prefs != null ? prefs.timeBarType : 'Time Left');
+		set('scoreZoom', prefs != null ? prefs.scoreZoom : true);
+		set('cameraZoomOnBeat', prefs != null ? prefs.camZooms : true);
+		set('flashingLights', prefs != null ? prefs.flashing : true);
+		set('noteOffset', prefs != null ? prefs.noteOffset : 0);
+		set('healthBarAlpha', prefs != null ? prefs.healthBarAlpha : 1);
+		set('noResetButton', prefs != null ? prefs.noReset : false);
 		set('lowQuality', Preferences.isLowQuality);
-		set('shadersEnabled', Preferences.data.shaders);
+		set('shadersEnabled', prefs != null ? prefs.shaders : true);
 		set('scriptName', scriptName);
 		set('currentModDirectory', Mods.currentModDirectory);
 
 		// Noteskin/Splash
-		set('noteSkin', Preferences.data.noteSkin);
+		set('noteSkin', prefs != null ? prefs.noteSkin : 'Default');
 		set('noteSkinPostfix', Note.getNoteSkinPostfix());
-		set('splashSkin', Preferences.data.splashSkin);
+		set('splashSkin', prefs != null ? prefs.splashSkin : 'Psych');
 		set('splashSkinPostfix', NoteSplash.getSplashSkinPostfix());
-		set('splashAlpha', Preferences.data.splashAlpha);
+		set('splashAlpha', prefs != null ? prefs.splashAlpha : 0.6);
 
-		set('useCombo', Preferences.data.useCombo);
-		set('useHoldCover', Preferences.data.useHoldCover);
-		set('useHoldAnimation', Preferences.data.useHoldAnimation);
-		set('useCharacterNoteStyle', Preferences.data.useCharacterNoteStyle);
+		set('useCombo', prefs != null ? prefs.useCombo : true);
+		set('useHoldCover', prefs != null ? prefs.useHoldCover : false);
+		set('useHoldAnimation', prefs != null ? prefs.useHoldAnimation : false);
+		set('useCharacterNoteStyle', prefs != null ? prefs.useCharacterNoteStyle : true);
 
 		// build target (windows, mac, linux, etc.)
 		set('buildTarget', LuaUtils.getBuildTarget());
@@ -1265,7 +1275,7 @@ class FunkinLuaProgramming
 				spr = LuaUtils.getVarInArray(LuaUtils.getPropertyLoop(split), split[split.length-1]);
 			}
 
-			if(spr != null) return spr.pixels.getPixel32(x, y);
+			if(spr != null && spr.pixels != null) return spr.pixels.getPixel32(x, y);
 			return FlxColor.BLACK;
 		});
 		Lua_helper.add_callback(lua, "startDialogue", function(dialogueFile:String, ?music:String = null) {
@@ -1653,8 +1663,9 @@ class FunkinLuaProgramming
 				return LuaUtils.Function_Continue;
 			}
 
-			for (arg in args) Convert.toLua(lua, arg);
-			var status:Int = Lua.pcall(lua, args.length, 1, 0);
+			var argList:Array<Dynamic> = args != null ? args : [];
+			for (arg in argList) Convert.toLua(lua, arg);
+			var status:Int = Lua.pcall(lua, argList.length, 1, 0);
 
 			// Checks if it's not successful, then show a error.
 			if (status != Lua.LUA_OK) {
@@ -1732,6 +1743,8 @@ class FunkinLuaProgramming
 	{
 		if(PlayState.instance == null) return null;
 
+		if(PlayState.instance.strumLineNotes == null || PlayState.instance.strumLineNotes.length < 1)
+			return null;
 		var strumNote:StrumNote = PlayState.instance.strumLineNotes.members[note % PlayState.instance.strumLineNotes.length];
 		if(strumNote == null) return null;
 
@@ -1760,7 +1773,10 @@ class FunkinLuaProgramming
 			if(deprecated && !getBool('luaDeprecatedWarnings')) {
 				return;
 			}
-			PlayState.instance.addTextToDebug(text, color);
+			if(PlayState.instance != null)
+				PlayState.instance.addTextToDebug(text, color);
+			else
+				trace(text);
 		}
 	}
 
@@ -1834,7 +1850,7 @@ class FunkinLuaProgramming
 
 	public function initLuaShader(name:String)
 	{
-		if(!Preferences.data.shaders) return false;
+		if(Preferences.data == null || !Preferences.data.shaders) return false;
 
 		#if (!flash && sys)
 		if(runtimeShaders.exists(name))

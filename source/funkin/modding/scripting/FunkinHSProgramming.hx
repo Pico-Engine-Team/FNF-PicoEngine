@@ -1,6 +1,6 @@
 package funkin.modding.scripting;
 
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData as Character;
 import funkin.modding.scripting.psychlua.LuaUtils;
 import funkin.modding.scripting.psychlua.CustomSubstate;
 import flixel.FlxBasic;
@@ -98,12 +98,25 @@ class FunkinHSProgramming extends Iris
 		}
 		var scriptThing:String = file;
 		var scriptName:String = null;
-		if(parent == null && file != null)
+		if(parent == null && file != null && file.length > 0)
 		{
 			var f:String = file.replace('\\', '/');
 			if(f.contains('/') && !f.contains('\n')) {
-				scriptThing = File.getContent(f);
-				scriptName = f;
+				#if sys
+				if(FileSystem.exists(f))
+				{
+					try {
+						scriptThing = File.getContent(f);
+						scriptName = f;
+					} catch(e:Dynamic) {
+						scriptThing = file;
+					}
+				}
+				else
+					scriptThing = file;
+				#else
+				scriptThing = file;
+				#end
 			}
 		}
 		#if LUA_ALLOWED
@@ -161,15 +174,15 @@ class FunkinHSProgramming extends Iris
 		set('PlayState', funkin.states.PlayState);
 		set('Paths', funkin.utils.Paths);
 		set('Conductor', funkin.play.Conductor);
-		set('Preferences', Preferences);
+		set('Preferences', funkin.data.Preferences);
 
 		#if ACHIEVEMENTS_ALLOWED
-		set('Achievements', funkin.states.achievements.data.Achievements);
+		set('Achievements', funkin.play.Achievements);
 		#end
 
-		set('Character', funkin.data.objects.game.characters.Character);
+		set('Character', funkin.data.objects.CharactersData);
 		set('Alphabet', funkin.data.objects.Alphabet);
-		set('Note', funkin.data.objects.game.notes.data.Note);
+		set('Note', funkin.data.objects.game.note.data.Note);
 		set('CustomSubstate', funkin.modding.scripting.psychlua.CustomSubstate);
 
 		#if (!flash && sys)
@@ -205,7 +218,10 @@ class FunkinHSProgramming extends Iris
 		});
 		set('debugPrint', function(text:String, ?color:FlxColor = null) {
 			if(color == null) color = FlxColor.WHITE;
-			PlayState.instance.addTextToDebug(text, color);
+			if(PlayState.instance != null)
+				PlayState.instance.addTextToDebug(text, color);
+			else
+				trace(text);
 		});
 		set('getModSetting', function(saveTag:String, ?modName:String = null) {
 			if(modName == null)
@@ -226,7 +242,7 @@ class FunkinHSProgramming extends Iris
 		set('keyboardReleased', function(name:String) return Reflect.getProperty(FlxG.keys.justReleased, name));
 
 		set('anyGamepadJustPressed', function(name:String) return FlxG.gamepads.anyJustPressed(name));
-		set('anyGamepadPressed', function(name:String) FlxG.gamepads.anyPressed(name));
+		set('anyGamepadPressed', function(name:String) return FlxG.gamepads.anyPressed(name));
 		set('anyGamepadReleased', function(name:String) return FlxG.gamepads.anyJustReleased(name));
 
 		set('gamepadAnalogX', function(id:Int, ?leftStick:Bool = true)
@@ -266,7 +282,8 @@ class FunkinHSProgramming extends Iris
 		});
 
 		set('keyJustPressed', function(name:String = '') {
-			name = name.toLowerCase();
+			if(Controls.instance == null) return false;
+			name = name != null ? name.toLowerCase() : '';
 			switch(name) {
 				case 'left': return Controls.instance.NOTE_LEFT_P;
 				case 'down': return Controls.instance.NOTE_DOWN_P;
@@ -277,7 +294,8 @@ class FunkinHSProgramming extends Iris
 			return false;
 		});
 		set('keyPressed', function(name:String = '') {
-			name = name.toLowerCase();
+			if(Controls.instance == null) return false;
+			name = name != null ? name.toLowerCase() : '';
 			switch(name) {
 				case 'left': return Controls.instance.NOTE_LEFT;
 				case 'down': return Controls.instance.NOTE_DOWN;
@@ -288,7 +306,8 @@ class FunkinHSProgramming extends Iris
 			return false;
 		});
 		set('keyReleased', function(name:String = '') {
-			name = name.toLowerCase();
+			if(Controls.instance == null) return false;
+			name = name != null ? name.toLowerCase() : '';
 			switch(name) {
 				case 'left': return Controls.instance.NOTE_LEFT_R;
 				case 'down': return Controls.instance.NOTE_DOWN_R;
@@ -304,9 +323,12 @@ class FunkinHSProgramming extends Iris
 		#if LUA_ALLOWED
 		set('createGlobalCallback', function(name:String, func:Dynamic)
 		{
-			for (script in PlayState.instance.luaArray)
-				if(script != null && script.lua != null && !script.closed)
-					Lua_helper.add_callback(script.lua, name, func);
+			if(PlayState.instance != null && PlayState.instance.luaArray != null)
+			{
+				for (script in PlayState.instance.luaArray)
+					if(script != null && script.lua != null && !script.closed)
+						Lua_helper.add_callback(script.lua, name, func);
+			}
 
 			FunkinLuaProgramming.customFunctions.set(name, func);
 		});
@@ -480,8 +502,9 @@ class FunkinHSProgramming extends Iris
 		{
 			for (key in Reflect.fields(values))
 			{
-				key = key.trim();
-				set(key, Reflect.field(values, key));
+				if(key == null) continue;
+				var k:String = key.trim();
+				set(k, Reflect.field(values, key));
 			}
 		}
 
@@ -531,7 +554,7 @@ class CustomFlxColor {
 
 class CustomInterp extends crowplexus.hscript.Interp
 {
-	public var parentInstance(default, set):Dynamic = [];
+	public var parentInstance(default, set):Dynamic = null;
 	private var _instanceFields:Array<String>;
 	function set_parentInstance(inst:Dynamic):Dynamic
 	{
@@ -541,7 +564,8 @@ class CustomInterp extends crowplexus.hscript.Interp
 			_instanceFields = [];
 			return inst;
 		}
-		_instanceFields = Type.getInstanceFields(Type.getClass(inst));
+		var cls = Type.getClass(inst);
+		_instanceFields = cls != null ? Type.getInstanceFields(cls) : [];
 		return inst;
 	}
 
