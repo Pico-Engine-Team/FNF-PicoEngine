@@ -524,7 +524,11 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		{
 			Preferences.toggleVolumeKeys(true);
 			if(FlxG.keys.justPressed.SPACE && UI_mainbox.selectedName == 'Character') {
-				character.playAnim(character.jsonFile.animations[curAnim].anim);
+				if(character.jsonFile.animations != null && character.jsonFile.animations.length > 0)
+				{
+					if(curAnim < 0 || curAnim >= character.jsonFile.animations.length) curAnim = 0;
+					character.playAnim(character.jsonFile.animations[curAnim].anim);
+				}
 				daText.resetDialogue();
 				updateTextBox();
 			}
@@ -633,11 +637,15 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 					updateTextBox();
 					daText.resetDialogue();
 					
-					if(curAnim < 0) curAnim = character.jsonFile.animations.length - 1;
-					else if(curAnim >= character.jsonFile.animations.length) curAnim = 0;
-					
-					character.playAnim(character.jsonFile.animations[curAnim].anim);
-					animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+					if(character.jsonFile.animations != null && character.jsonFile.animations.length > 0)
+					{
+						if(curAnim < 0) curAnim = character.jsonFile.animations.length - 1;
+						else if(curAnim >= character.jsonFile.animations.length) curAnim = 0;
+						character.playAnim(character.jsonFile.animations[curAnim].anim);
+						animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+					}
+					else
+						animText.text = 'Animation: (none)';
 				}
 				lastTab = UI_mainbox.selectedName;
 				currentGhosts = 0;

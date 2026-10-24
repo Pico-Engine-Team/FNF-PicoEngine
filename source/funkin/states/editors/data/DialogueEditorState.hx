@@ -400,7 +400,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		reloadText(false);
 		updateTextBox();
 
-		if(character.jsonFile.animations.length > 0)
+		if(character.jsonFile != null && character.jsonFile.animations != null && character.jsonFile.animations.length > 0)
 		{
 			for (num => animData in character.jsonFile.animations)
 			{
@@ -410,6 +410,8 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 					break;
 				}
 			}
+			if(curAnim < 0 || curAnim >= character.jsonFile.animations.length)
+				curAnim = 0;
 
 			var selectedAnim:String = character.jsonFile.animations[curAnim].anim;
 			character.playAnim(selectedAnim, daText.finishedText);

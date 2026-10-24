@@ -1,8 +1,7 @@
 package funkin.states.editors.data;
 
 import funkin.stages.StageData;
-import funkin.data.objects.game.characters.Character;
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData as Character;
 
 import funkin.states.editors.components.Prompt;
 import funkin.states.editors.components.PreloadListSubState;
@@ -11,11 +10,9 @@ import funkin.utils.engines.psych.PsychCamera;
 import funkin.utils.engines.psych.PsychJsonPrinter;
 
 import funkin.modding.scripting.psychlua.LuaUtils;
-import funkin.modding.scripting.psychlua.LuaUtils;
 import funkin.modding.scripting.psychlua.ModchartSprite;
 
 import flixel.FlxObject;
-import flixel.math.FlxRect;
 import flixel.math.FlxRect;
 import flash.net.FileFilter;
 import flixel.util.FlxDestroyUtil;
@@ -36,9 +33,10 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 	final minZoom = 0.1;
 	final maxZoom = 2;
 
-	var gf:Character;
-	var dad:Character;
-	var boyfriend:Character;
+	var boyfriend:funkin.data.objects.CharactersData;
+	var gf:funkin.data.objects.CharactersData;
+	var dad:funkin.data.objects.CharactersData;
+
 	var stageJson:StageFile;
 	var camGame:FlxCamera;
 
@@ -128,9 +126,19 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 		trace('Setting asset folder to ' + directory);
 	}
 
+	/**
+	 * Normalize stage JSON (Psych + new Pico format).
+	 * New format fields:
+	 *   stage_directory, default_cameraZoom, camera_ScrollSpeed, ratingsOffsets,
+	 *   characters.{bf|gf|dad}.{positionOffsets, cameraPosition, Girlfriend_Hide},
+	 *   preload
+	 */
 	function normalizeStageJsonData()
 	{
 		if(stageJson == null) return;
+
+		// Map new Pico stage format → StageFile fields
+		StageData.mapNewStageFormat(stageJson);
 
 		stageJson.defaultZoom = stageEditorFloat(stageJson.defaultZoom, 0.9);
 		stageJson.camera_speed = stageJson.camera_speed != null ? stageEditorFloat(stageJson.camera_speed, 1) : 1;
@@ -145,6 +153,109 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 		{
 			for (object in stageJson.objects)
 				normalizeStageObjectData(object);
+		}
+	}
+
+	/** Convert new Pico stage JSON keys onto Psych StageFile fields (in-place). */
+	static function mapNewStageFormat(json:Dynamic):Void
+	{
+		if(json == null) return;
+
+		// stage_directory → directory
+		if((Reflect.field(json, 'directory') == null || Std.string(Reflect.field(json, 'directory')).length < 1)
+			&& Reflect.hasField(json, 'stage_directory'))
+			Reflect.setField(json, 'directory', Reflect.field(json, 'stage_directory'));
+
+		// default_cameraZoom → defaultZoom
+		if(Reflect.field(json, 'defaultZoom') == null && Reflect.hasField(json, 'default_cameraZoom'))
+			Reflect.setField(json, 'defaultZoom', Reflect.field(json, 'default_cameraZoom'));
+
+		// camera_ScrollSpeed → camera_speed
+		if(Reflect.field(json, 'camera_speed') == null && Reflect.hasField(json, 'camera_ScrollSpeed'))
+			Reflect.setField(json, 'camera_speed', Reflect.field(json, 'camera_ScrollSpeed'));
+
+		// ratingsOffsets → ratingsOffset (array of numbers/strings)
+		if(Reflect.field(json, 'ratingsOffset') == null && Reflect.hasField(json, 'ratingsOffsets'))
+			Reflect.setField(json, 'ratingsOffset', Reflect.field(json, 'ratingsOffsets'));
+
+		// characters block
+		var chars:Dynamic = Reflect.field(json, 'characters');
+		if(chars != null && Type.typeof(chars) == TObject)
+		{
+			// bf
+			var bf:Dynamic = Reflect.field(chars, 'bf');
+			if(bf == null) bf = Reflect.field(chars, 'boyfriend');
+			if(bf == null) bf = Reflect.field(chars, 'player');
+			if(bf != null)
+			{
+				if(Reflect.field(json, 'boyfriend') == null)
+				{
+					var pos:Dynamic = Reflect.field(bf, 'positionOffsets');
+					if(pos == null) pos = Reflect.field(bf, 'position');
+					if(pos != null) Reflect.setField(json, 'boyfriend', pos);
+				}
+				if(Reflect.field(json, 'camera_boyfriend') == null)
+				{
+					var cam:Dynamic = Reflect.field(bf, 'cameraPosition');
+					if(cam == null) cam = Reflect.field(bf, 'camera');
+					if(cam != null) Reflect.setField(json, 'camera_boyfriend', cam);
+				}
+			}
+
+			// gf
+			var gf:Dynamic = Reflect.field(chars, 'gf');
+			if(gf == null) gf = Reflect.field(chars, 'girlfriend');
+			if(gf != null)
+			{
+				if(Reflect.field(json, 'girlfriend') == null)
+				{
+					var posG:Dynamic = Reflect.field(gf, 'positionOffsets');
+					if(posG == null) posG = Reflect.field(gf, 'position');
+					if(posG != null) Reflect.setField(json, 'girlfriend', posG);
+				}
+				if(Reflect.field(json, 'camera_girlfriend') == null)
+				{
+					var camG:Dynamic = Reflect.field(gf, 'cameraPosition');
+					if(camG == null) camG = Reflect.field(gf, 'camera');
+					if(camG != null) Reflect.setField(json, 'camera_girlfriend', camG);
+				}
+				if(Reflect.field(json, 'hide_girlfriend') == null)
+				{
+					if(Reflect.hasField(gf, 'Girlfriend_Hide'))
+						Reflect.setField(json, 'hide_girlfriend', Reflect.field(gf, 'Girlfriend_Hide') == true);
+					else if(Reflect.hasField(gf, 'hide'))
+						Reflect.setField(json, 'hide_girlfriend', Reflect.field(gf, 'hide') == true);
+				}
+				// preload sometimes nested under characters by mistake — promote
+				if(Reflect.field(json, 'preload') == null && Reflect.hasField(gf, 'preload') == false)
+				{
+					if(Reflect.hasField(chars, 'preload'))
+						Reflect.setField(json, 'preload', Reflect.field(chars, 'preload'));
+				}
+			}
+
+			// dad / opponent
+			var dad:Dynamic = Reflect.field(chars, 'dad');
+			if(dad == null) dad = Reflect.field(chars, 'opponent');
+			if(dad != null)
+			{
+				if(Reflect.field(json, 'opponent') == null)
+				{
+					var posD:Dynamic = Reflect.field(dad, 'positionOffsets');
+					if(posD == null) posD = Reflect.field(dad, 'position');
+					if(posD != null) Reflect.setField(json, 'opponent', posD);
+				}
+				if(Reflect.field(json, 'camera_opponent') == null)
+				{
+					var camD:Dynamic = Reflect.field(dad, 'cameraPosition');
+					if(camD == null) camD = Reflect.field(dad, 'camera');
+					if(camD != null) Reflect.setField(json, 'camera_opponent', camD);
+				}
+			}
+
+			// preload nested inside characters (malformed JSON still accepted)
+			if(Reflect.field(json, 'preload') == null && Reflect.hasField(chars, 'preload'))
+				Reflect.setField(json, 'preload', Reflect.field(chars, 'preload'));
 		}
 	}
 
@@ -2129,7 +2240,7 @@ class StageEditorMetaSprite
 
 	// "animatedSprite" only variables
 	public var firstAnimation:String;
-	public var animations:Array<AnimArray>;
+	public var animations:Array<funkin.data.objects.CharactersData.AnimArray>;
 
 	public function new(data:Dynamic, spr:FlxSprite)
 	{
@@ -2285,7 +2396,7 @@ class StageEditorAnimationSubstate extends MusicBeatSubstate {
 		animationLoopCheckBox = new PsychUICheckBox(animationNameInputText.x + 170, animationNameInputText.y - 1, 'Should it Loop?', 100);
 
 		animationDropDown = new PsychUIDropDownMenu(15, animationInputText.y - 55, [''], function(selectedAnimation:Int, pressed:String) {
-			var anim:AnimArray = target.animations[selectedAnimation];
+			var anim:funkin.data.objects.CharactersData.AnimArray = target.animations[selectedAnimation];
 			if(anim == null) return;
 
 			animationInputText.text = anim.anim;
@@ -2299,7 +2410,7 @@ class StageEditorAnimationSubstate extends MusicBeatSubstate {
 
 		mainAnimTxt = new FlxText(160, animationDropDown.y - 18, 0, 'Main Anim.: ');
 		var initAnimButton:PsychUIButton = new PsychUIButton(160, animationDropDown.y, 'Main Animation', function() {
-			var anim:AnimArray = target.animations[curAnim];
+			var anim:funkin.data.objects.CharactersData.AnimArray = target.animations[curAnim];
 			if(anim == null) return;
 
 			mainAnimTxt.text = 'Main Anim.: ${anim.anim}';
@@ -2315,8 +2426,8 @@ class StageEditorAnimationSubstate extends MusicBeatSubstate {
 			var indicesStr:Array<String> = animationIndicesInputText.text.trim().split(',');
 			if(indicesStr.length > 1) {
 				for (i in 0...indicesStr.length) {
-					var index:Int = Std.parseInt(indicesStr[i]);
-					if(indicesStr[i] != null && indicesStr[i] != '' && !Math.isNaN(index) && index > -1) {
+					var index:Null<Int> = Std.parseInt(indicesStr[i].trim());
+					if(indicesStr[i] != null && indicesStr[i].trim() != '' && index != null && index > -1) {
 						indices.push(index);
 					}
 				}
@@ -2333,7 +2444,7 @@ class StageEditorAnimationSubstate extends MusicBeatSubstate {
 					target.animations.remove(anim);
 				}
 
-			var addedAnim:AnimArray = {
+			var addedAnim:funkin.data.objects.CharactersData.AnimArray = {
 				anim: animationInputText.text,
 				name: animationNameInputText.text,
 				fps: Math.round(animationFramerate.value),

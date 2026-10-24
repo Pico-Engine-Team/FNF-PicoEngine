@@ -403,10 +403,12 @@ class WeekEditorState extends MusicBeatState implements PsychUIEventHandler.Psyc
 						weekFile.songs.push([splittedText[i], 'face', [146, 113, 253]]);
 					} else { //Edit song
 						weekFile.songs[i][0] = splittedText[i];
-						if(weekFile.songs[i][1] == null || weekFile.songs[i][1]) {
+						// Only fill missing icon/color — do NOT overwrite existing values
+						var iconVal:Dynamic = weekFile.songs[i][1];
+						if(iconVal == null || Std.string(iconVal).trim().length < 1)
 							weekFile.songs[i][1] = 'face';
+						if(weekFile.songs[i][2] == null)
 							weekFile.songs[i][2] = [146, 113, 253];
-						}
 					}
 				}
 				updateText();

@@ -7,9 +7,10 @@ import funkin.play.Difficulty;
 import funkin.stages.StageData;
 
 import funkin.data.objects.HealthIcon;
-import funkin.data.objects.game.characters.Character;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.config.StrumNote;
+import funkin.data.objects.CharactersData;
+import funkin.data.objects.CharactersData as Character;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.config.StrumNote;
 
 import funkin.utils.engines.psych.PsychJsonPrinter;
 import funkin.states.editors.components.ChartingGridSprite;
@@ -35,11 +36,10 @@ enum abstract UndoAction(String)
 
 enum abstract ChartingTheme(String)
 {
+	var DEFAULT = 'default';
 	var LIGHT = 'light';
 	var DARK = 'dark';
-	var DEFAULT = 'default';
 	var VSLICE = 'vslice';
-	var CUSTOM = 'custom';
 }
 
 enum abstract WaveformTarget(String)
@@ -263,7 +263,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		chartEditorSave = new FlxSave();
 		chartEditorSave.bind('chart_editor_data', CoolUtil.getSavePath());
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menus/backgrounds/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menus/menuDesat'));
 		bg.antialiasing = Preferences.data.antialiasing;
 		bg.scrollFactor.set();
 		add(bg);
@@ -272,11 +272,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(chartEditorSave.data.backupLimit != null) backupLimit = chartEditorSave.data.backupLimit;
 		if(chartEditorSave.data.vortex != null) vortexEnabled = chartEditorSave.data.vortex;
 
-		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
-		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
-			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
-		if(chartEditorSave.data.customNextGridColors == null || chartEditorSave.data.customNextGridColors.length < 2)
-			chartEditorSave.data.customNextGridColors = ['5F5F5F', '4A4A4A'];
 		changeTheme(chartEditorSave.data.theme != null ? chartEditorSave.data.theme : DEFAULT, false);
 		createGrids();
 
@@ -562,6 +557,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var gridColorsOther:Array<FlxColor>;
 	function changeTheme(changeTo:ChartingTheme, ?doSave:Bool = true)
 	{
+		if(changeTo != DEFAULT && changeTo != LIGHT && changeTo != DARK && changeTo != VSLICE)
+			changeTo = DEFAULT;
+
 		var oldTheme:ChartingTheme = theme;
 		theme = changeTo;
 		chartEditorSave.data.theme = changeTo;
@@ -581,17 +579,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				bg.color = 0xFF673AB7;
 				gridColors = [0xFFD0D0D0, 0xFFAFAFAF];
 				gridColorsOther = [0xFF595959, 0xFF464646];
-			case CUSTOM:
-				bg.color = CoolUtil.colorFromString(chartEditorSave.data.customBgColor);
-				gridColors = [CoolUtil.colorFromString(chartEditorSave.data.customGridColors[0]), CoolUtil.colorFromString(chartEditorSave.data.customGridColors[1])];
-				gridColorsOther = [CoolUtil.colorFromString(chartEditorSave.data.customNextGridColors[0]), CoolUtil.colorFromString(chartEditorSave.data.customNextGridColors[1])];
 			default:
-				bg.color = 0xFF303030;
-				gridColors = [0xFFDFDFDF, 0xFFBFBFBF];
-				gridColorsOther = [0xFF5F5F5F, 0xFF4A4A4A];
+				bg.color = 0xFF4CAF50;
+				gridColors = [0xFF3F3F3F, 0xFF2F2F2F];
+				gridColorsOther = [0xFF1F1F1F, 0xFF111111];
 		}
 
-		if(theme != oldTheme || theme == CUSTOM)
+		if(theme != oldTheme)
 		{
 			if(gridBg != null)
 			{
@@ -2055,7 +2049,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		else
 			col = SHOW_GLOBAL_EVENT_COLUMN ? 1 : 0;
 		swagEvent.x = gridBg.x + (GRID_SIZE * col);
-		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
+		if(swagEvent.eventText != null)
+			swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
 		swagEvent.scrollFactor.x = 0;
 		swagEvent.active = false;
 
@@ -2186,8 +2181,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function loadSection(?sec:Null<Int> = null)
 	{
 		if(sec != null) curSec = sec;
+		if(PlayState.SONG == null || PlayState.SONG.notes == null || PlayState.SONG.notes.length < 1)
+		{
+			curSec = 0;
+			softReloadNotes();
+			return;
+		}
 		curSec = Std.int(FlxMath.bound(curSec, 0, PlayState.SONG.notes.length-1));
-		Conductor.bpm = cachedSectionBPMs[curSec];
+		if(cachedSectionBPMs != null && curSec < cachedSectionBPMs.length)
+			Conductor.bpm = cachedSectionBPMs[curSec];
 
 		var hei:Float = 0;
 		if(curSec > 0)
@@ -2277,7 +2279,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(!firstEvent) sectionFirstEventID = num;
 					curRenderedNotes.add(event);
 					event.alpha = (event.strumTime >= Conductor.songPosition) ? 1 : 0.6;
-					event.eventText.visible = true;
+					if(event.eventText != null) event.eventText.visible = true;
 				}
 			}
 			for (event in globalEvents)
@@ -2286,7 +2288,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					curRenderedNotes.add(event);
 					event.alpha = (event.strumTime >= Conductor.songPosition) ? 1 : 0.6;
-					event.eventText.visible = true;
+					if(event.eventText != null) event.eventText.visible = true;
 				}
 			}
 		}
@@ -2318,13 +2320,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					{
 						behindRenderedNotes.add(event);
 						event.alpha = 0.4;
-						event.eventText.visible = false;
+						if(event.eventText != null) event.eventText.visible = false;
 					}
 					for(event in globalEvents.filter(otherSecFilter))
 					{
 						behindRenderedNotes.add(event);
 						event.alpha = 0.4;
-						event.eventText.visible = false;
+						if(event.eventText != null) event.eventText.visible = false;
 					}
 				}
 			}
@@ -3547,7 +3549,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var objY = 25;
 
 		songNameInputText = new PsychUIInputText(objX, objY, 100, 'None', 8);
-		songNameInputText.onChange = function(old:String, cur:String) PlayState.SONG.song = cur;
+		songNameInputText.onChange = function(old:String, cur:String) {
+			PlayState.SONG.song = cur;
+			PlayState.SONG.songFileName = Paths.formatToSongPath(cur);
+		};
 
 		allowVocalsCheckBox = new PsychUICheckBox(objX, objY + 20, 'Allow Vocals', 80, function()
 		{
@@ -4805,7 +4810,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					state.add(btn);
 
 					var btnY = 320;
-					var btn:PsychUIButton = new PsychUIButton(0, btnY, 'Light', changeTheme.bind(LIGHT));
+					var btn:PsychUIButton = new PsychUIButton(0, btnY, 'Default', changeTheme.bind(DEFAULT));
 					btn.screenCenter(X);
 					btn.x -= 180;
 					btn.cameras = state.cameras;
@@ -4817,7 +4822,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					btn.cameras = state.cameras;
 					state.add(btn);
 					
-					var btn:PsychUIButton = new PsychUIButton(0, btnY, 'Default', changeTheme.bind(DEFAULT));
+					var btn:PsychUIButton = new PsychUIButton(0, btnY, 'Light', changeTheme.bind(LIGHT));
 					btn.screenCenter(X);
 					btn.cameras = state.cameras;
 					btn.x += 60;
@@ -4828,107 +4833,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					btn.x += 180;
 					btn.cameras = state.cameras;
 					state.add(btn);
-
-					btnY += 60;
-					var btn:PsychUIButton = new PsychUIButton(0, btnY, 'Custom', changeTheme.bind(CUSTOM));
-					btn.screenCenter(X);
-					btn.x -= 180;
-					btn.cameras = state.cameras;
-					state.add(btn);
-
-					var customBgC:String = '303030';
-					if(chartEditorSave.data.customBgColor != null)
-						customBgC = chartEditorSave.data.customBgColor;
-
-					var input:PsychUIInputText = new PsychUIInputText(0, btnY, 80, customBgC, 10);
-					input.maxLength = 6;
-					input.filterMode = ONLY_HEXADECIMAL;
-					input.forceCase = UPPER_CASE;
-					input.screenCenter(X);
-					input.x -= 60;
-					input.cameras = state.cameras;
-					input.onChange = function(old:String, cur:String)
-					{
-						chartEditorSave.data.customBgColor = cur;
-						changeTheme(CUSTOM);
-					}
-
-					var txt:FlxText = new FlxText(input.x, input.y - 15, 120, 'BG Color:');
-					txt.cameras = state.cameras;
-					state.add(txt);
-					state.add(input);
-
-					var customGridC:Array<String> = ['DFDFDF', 'BFBFBF'];
-					if(chartEditorSave.data.customGridColors != null && chartEditorSave.data.customGridColors.length > 1)
-						customGridC = chartEditorSave.data.customGridColors;
-
-					var input:PsychUIInputText = new PsychUIInputText(0, btnY, 80, customGridC[0], 10);
-					input.maxLength = 6;
-					input.filterMode = ONLY_HEXADECIMAL;
-					input.forceCase = UPPER_CASE;
-					input.screenCenter(X);
-					input.x += 60;
-					input.cameras = state.cameras;
-					input.onChange = function(old:String, cur:String)
-					{
-						chartEditorSave.data.customGridColors[0] = cur;
-						changeTheme(CUSTOM);
-					}
-
-					var txt:FlxText = new FlxText(input.x, input.y - 15, 120, 'Grid Colors:');
-					txt.cameras = state.cameras;
-					state.add(txt);
-					state.add(input);
-
-					var input:PsychUIInputText = new PsychUIInputText(0, btnY + 30, 80, customGridC[1], 10);
-					input.maxLength = 6;
-					input.filterMode = ONLY_HEXADECIMAL;
-					input.forceCase = UPPER_CASE;
-					input.screenCenter(X);
-					input.x += 60;
-					input.cameras = state.cameras;
-					input.onChange = function(old:String, cur:String)
-					{
-						chartEditorSave.data.customGridColors[1] = cur;
-						changeTheme(CUSTOM);
-					}
-					state.add(input);
-
-					var customGridOtherC:Array<String> = ['5F5F5F', '4A4A4A'];
-					if(chartEditorSave.data.customNextGridColors != null && chartEditorSave.data.customNextGridColors.length > 1)
-						customGridOtherC = chartEditorSave.data.customNextGridColors;
-
-					var input:PsychUIInputText = new PsychUIInputText(0, btnY, 80, customGridOtherC[0], 10);
-					input.maxLength = 6;
-					input.filterMode = ONLY_HEXADECIMAL;
-					input.forceCase = UPPER_CASE;
-					input.screenCenter(X);
-					input.x += 180;
-					input.cameras = state.cameras;
-					input.onChange = function(old:String, cur:String)
-					{
-						chartEditorSave.data.customNextGridColors[0] = cur;
-						changeTheme(CUSTOM);
-					}
-
-					var txt:FlxText = new FlxText(input.x, input.y - 15, 120, 'Next Grid Colors:');
-					txt.cameras = state.cameras;
-					state.add(txt);
-					state.add(input);
-
-					var input:PsychUIInputText = new PsychUIInputText(0, btnY + 30, 80, customGridOtherC[1], 10);
-					input.maxLength = 6;
-					input.filterMode = ONLY_HEXADECIMAL;
-					input.forceCase = UPPER_CASE;
-					input.screenCenter(X);
-					input.x += 180;
-					input.cameras = state.cameras;
-					input.onChange = function(old:String, cur:String)
-					{
-						chartEditorSave.data.customNextGridColors[1] = cur;
-						changeTheme(CUSTOM);
-					}
-					state.add(input);
 				}
 			));
 		}, btnWid);
@@ -5032,12 +4936,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 
 	/** Path: assets/songs/<song>/events-global.json */
+	/** Prefer Song.globalEventsJsonPath — kept for editor convenience */
 	public static function globalEventsJsonPath(songFolder:String):String
-	{
-		var folder:String = Paths.formatToSongPath(songFolder != null ? songFolder : '');
-		if(folder.length < 1) folder = 'unknown';
-		return Paths.getPath(folder + '/events-global.json', TEXT, 'songs', true);
-	}
+		return Song.globalEventsJsonPath(songFolder);
 
 	function loadGlobalEventsIntoEditor():Void
 	{
@@ -5054,8 +4955,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		if(list == null || list.length < 1)
 		{
-			var songFolder:String = Paths.formatToSongPath(PlayState.SONG != null && PlayState.SONG.song != null ? PlayState.SONG.song : Song.loadedSongName);
-			var path:String = globalEventsJsonPath(songFolder);
+			var songFolder:String = Song.resolveSongFolder(PlayState.SONG);
+			var path:String = Song.globalEventsJsonPath(songFolder);
 			var text:String = null;
 			#if MODS_ALLOWED
 			try
@@ -5105,9 +5006,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function saveGlobalEventsBesideSong():Void
 	{
 		if(PlayState.SONG == null) return;
-		var songFolder:String = Paths.formatToSongPath(PlayState.SONG.song != null ? PlayState.SONG.song : Song.loadedSongName);
+		var songFolder:String = Song.resolveSongFolder(PlayState.SONG);
 		if(songFolder == null || songFolder.length < 1) return;
-		var path:String = globalEventsJsonPath(songFolder);
+		var path:String = Song.globalEventsJsonPath(songFolder);
 		var data:Array<Dynamic> = [];
 		for (e in globalEvents)
 			if(e != null) data.push(e.songData);
@@ -5133,7 +5034,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function saveEventsBesideSong():Void
 	{
 		if(PlayState.SONG == null) return;
-		var songFolder:String = Paths.formatToSongPath(PlayState.SONG.song != null ? PlayState.SONG.song : Song.loadedSongName);
+		var songFolder:String = Song.resolveSongFolder(PlayState.SONG);
 		if(songFolder == null || songFolder.length < 1) return;
 		var path:String = Song.eventsJsonPath(songFolder);
 		var content:String = Song.eventsToJsonString(PlayState.SONG.events);
@@ -5231,19 +5132,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					trace('failsafe, cancel early and delete notes after this');
 					var changedSelected:Bool = false;
+					// Copy references first — mutating notes while iterating by index is unsafe
+					var toRemove:Array<MetaNote> = [];
 					for(i in num...notes.length)
 					{
-						var n = notes[num];
-						if(n != null)
+						var n = notes[i];
+						if(n != null) toRemove.push(n);
+					}
+					for (n in toRemove)
+					{
+						if(selectedNotes.contains(n))
 						{
-							if(selectedNotes.contains(n))
-							{
-								selectedNotes.remove(n);
-								changedSelected = true;
-							}
-							notes.remove(n);
-							note.destroy();
+							selectedNotes.remove(n);
+							changedSelected = true;
 						}
+						notes.remove(n);
+						n.destroy();
 					}
 					if(changedSelected) onSelectNote();
 					loadSection();
@@ -5255,7 +5159,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var shouldBound:Bool = (note.strumTime >= oldCurSectionTime && note.strumTime < oldNextSectionTime);
 			var strumTime:Float = note.strumTime;
 
-			var ratio:Float = (nextSectionTime - curSectionTime) / (oldNextSectionTime - oldCurSectionTime);
+			var oldSpan:Float = oldNextSectionTime - oldCurSectionTime;
+			var ratio:Float = (oldSpan != 0) ? ((nextSectionTime - curSectionTime) / oldSpan) : 1;
 			var adaptedStrumTime:Float = ((note.strumTime - oldCurSectionTime) * ratio) + curSectionTime;
 			note.setStrumTime(adaptedStrumTime);
 			if(shouldBound)
@@ -5353,6 +5258,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		setSongPlaying(false);
 		updateChartData();
+		// Mark playtest so PauseMenu returns to the Chart Editor instead of Freeplay
+		PlayState.chartingMode = true;
+		PlayState.seenCutscene = true; // skip cutscenes during chart playtest
 		StageData.loadDirectory(PlayState.SONG);
 		LoadingScreenMenuState.loadAndSwitchState(new PlayState());
 		Preferences.toggleVolumeKeys(true);
@@ -5377,7 +5285,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	override function destroy()
 	{
 		Note.globalRgbShaders = [];
-		funkin.data.objects.game.notes.config.NoteTypesConfig.clearNoteTypesData();
+		funkin.data.objects.game.note.config.NoteTypesConfig.clearNoteTypesData();
 
 		for (num => text in MetaNote.noteTypeTexts)
 			text.destroy();

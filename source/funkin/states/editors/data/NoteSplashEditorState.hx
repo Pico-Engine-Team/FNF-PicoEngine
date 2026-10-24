@@ -1,8 +1,8 @@
 package funkin.states.editors.data;
 
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.data.NoteSplash;
-import funkin.data.objects.game.notes.config.StrumNote;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.data.NoteSplash;
+import funkin.data.objects.game.note.config.StrumNote;
 
 import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
 import flixel.input.keyboard.FlxKey;
@@ -13,7 +13,7 @@ import openfl.net.FileReference;
 import openfl.net.FileFilter;
 import haxe.Json;
 
-@:access(funkin.data.objects.game.notes.data.NoteSplash)
+@:access(funkin.data.objects.game.note.data.NoteSplash)
 class NoteSplashEditorState extends MusicBeatState
 {
     var strums:FlxTypedSpriteGroup<StrumNote> = new FlxTypedSpriteGroup();
@@ -46,7 +46,7 @@ class NoteSplashEditorState extends MusicBeatState
         DiscordClient.changePresence('Note Splash Editor');
         #end
 
-        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menus/bg/menuDesat'));
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
         bg.scrollFactor.set();
         bg.color = 0xFF505050;
         add(bg);      
@@ -225,8 +225,8 @@ class NoteSplashEditorState extends MusicBeatState
             {
                 for (i in indices_input.text.split(','))
                 {
-                    var index:Null<Int> = Std.parseInt(i);
-                    if (!Math.isNaN(index) && index != null)
+                    var index:Null<Int> = Std.parseInt(i.trim());
+                    if (index != null && index >= 0)
                     {
                         indices.push(index);
                     }
@@ -560,29 +560,38 @@ class NoteSplashEditorState extends MusicBeatState
 
             var multiplier:Int = (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER)) ? 10 : 1;
 
-            var moveKeysP = [FlxG.keys.justPressed.LEFT, FlxG.keys.justPressed.RIGHT, FlxG.keys.justPressed.UP, FlxG.keys.justPressed.DOWN];
-            if(moveKeysP.contains(true))
+            var animConf = config.animations.get(curAnim);
+            if (animConf != null)
             {
-                config.animations[curAnim].offsets[0] += ((moveKeysP[0] ? 1 : 0) - (moveKeysP[1] ? 1 : 0)) * multiplier;
-                config.animations[curAnim].offsets[1] += ((moveKeysP[2] ? 1 : 0) - (moveKeysP[3] ? 1 : 0)) * multiplier;
-                changedOffset = true;
-            }
-    
-            var moveKeys = [FlxG.keys.pressed.LEFT, FlxG.keys.pressed.RIGHT, FlxG.keys.pressed.UP, FlxG.keys.pressed.DOWN];
-            if(moveKeys.contains(true))
-            {
-                holdingArrowsTime += elapsed;
-                if(holdingArrowsTime > 0.6)
+                if (animConf.offsets == null) animConf.offsets = [0, 0];
+
+                var moveKeysP = [FlxG.keys.justPressed.LEFT, FlxG.keys.justPressed.RIGHT, FlxG.keys.justPressed.UP, FlxG.keys.justPressed.DOWN];
+                if(moveKeysP.contains(true))
                 {
-                    holdingArrowsElapsed += elapsed;
-                    while(holdingArrowsElapsed > (1/60))
+                    animConf.offsets[0] += ((moveKeysP[0] ? 1 : 0) - (moveKeysP[1] ? 1 : 0)) * multiplier;
+                    animConf.offsets[1] += ((moveKeysP[2] ? 1 : 0) - (moveKeysP[3] ? 1 : 0)) * multiplier;
+                    config.animations.set(curAnim, animConf);
+                    changedOffset = true;
+                }
+
+                var moveKeys = [FlxG.keys.pressed.LEFT, FlxG.keys.pressed.RIGHT, FlxG.keys.pressed.UP, FlxG.keys.pressed.DOWN];
+                if(moveKeys.contains(true))
+                {
+                    holdingArrowsTime += elapsed;
+                    if(holdingArrowsTime > 0.6)
                     {
-                        config.animations[curAnim].offsets[0] += ((moveKeys[0] ? 1 : 0) - (moveKeys[1] ? 1 : 0)) * multiplier;
-                        config.animations[curAnim].offsets[1] += ((moveKeys[2] ? 1 : 0) - (moveKeys[3] ? 1 : 0)) * multiplier;
-                        holdingArrowsElapsed -= (1/60);
-                        changedOffset = true;
+                        holdingArrowsElapsed += elapsed;
+                        while(holdingArrowsElapsed > (1/60))
+                        {
+                            animConf.offsets[0] += ((moveKeys[0] ? 1 : 0) - (moveKeys[1] ? 1 : 0)) * multiplier;
+                            animConf.offsets[1] += ((moveKeys[2] ? 1 : 0) - (moveKeys[3] ? 1 : 0)) * multiplier;
+                            holdingArrowsElapsed -= (1/60);
+                            changedOffset = true;
+                        }
+                        if (changedOffset) config.animations.set(curAnim, animConf);
                     }
                 }
+                else holdingArrowsTime = 0;
             }
             else holdingArrowsTime = 0;
 
@@ -855,7 +864,7 @@ class NoteSplashEditorState extends MusicBeatState
         NoteSplash.configs.clear();
         super.destroy();
 
-        FlxG.sound.music.volume = 1;
+        if (FlxG.sound.music != null) FlxG.sound.music.volume = 1;
         FlxG.sound.muteKeys = [FlxKey.ZERO];
         FlxG.sound.volumeDownKeys = [FlxKey.NUMPADMINUS, FlxKey.MINUS];
         FlxG.sound.volumeUpKeys = [FlxKey.NUMPADPLUS, FlxKey.PLUS];

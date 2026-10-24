@@ -3,8 +3,9 @@ package funkin.states.editors.data;
 import funkin.play.Song;
 import funkin.data.objects.Bar;
 import funkin.data.objects.HealthIcon;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData;
+import funkin.data.objects.CharactersData as Character;
+import funkin.data.objects.game.note.data.Note;
 
 import funkin.states.editors.components.Prompt;
 import funkin.utils.engines.psych.PsychJsonPrinter;
@@ -414,17 +415,25 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					newAnim('singLEFT', 'BF NOTE LEFT0'),
 					newAnim('singDOWN', 'BF NOTE DOWN0'),
 					newAnim('singUP', 'BF NOTE UP0'),
-					newAnim('singRIGHT', 'BF NOTE RIGHT0')
+					newAnim('singRIGHT', 'BF NOTE RIGHT0'),
+					newAnim('singLEFT-Miss', 'BF NOTE LEFT MISS'),
+					newAnim('singDOWN-Miss', 'BF NOTE DOWN MISS'),
+					newAnim('singUP-Miss', 'BF NOTE UP MISS'),
+					newAnim('singRIGHT-Miss', 'BF NOTE RIGHT MISS')
 				],
 				isPixel: false,
-				flip_x: false,
-				healthicon: 'face',
-				assetPath: 'characters/bf/Boyfriend',
+				flip_x: true,
+				healthIcon: 'bf',
+				healthicon: 'bf',
+				assetPath: 'characters/bf',
 				sing_duration: 4,
 				scale: 1,
-				healthbar_colors: [161, 161, 161],
+				healthBar: [49, 176, 209],
+				healthbar_colors: [49, 176, 209],
+				offsets: [0, 0],
 				positionOffsets: [0, 0],
 				cameraOffsets: [0, 0],
+				renderType: 'sparrow',
 				vocals_file: null
 			};
 
@@ -523,7 +532,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		animationLoopCheckBox = new PsychUICheckBox(animationNameInputText.x + 170, animationNameInputText.y - 1, "Is Loop?", 100);
 
 		animationDropDown = new PsychUIDropDownMenu(15, animationInputText.y - 55, [''], function(selectedAnimation:Int, pressed:String) {
-			var anim:AnimArray = character.animationsArray[selectedAnimation];
+			var anim:Dynamic = character.animationsArray[selectedAnimation];
 			animationInputText.text = anim.anim;
 			animationNameInputText.text = anim.name;
 			animationAssetPathInputText.text = Character.getAnimationAssetPathInput(anim.assetPath);
@@ -544,65 +553,113 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				{
 					for (ind in indicesStr)
 					{
-						if(ind.contains('-'))
+						var raw:String = ind.trim();
+						if(raw.length < 1) continue;
+						if(raw.indexOf('-') >= 0)
 						{
-							var splitIndices:Array<String> = ind.split('-');
-							var indexStart:Int = Std.parseInt(splitIndices[0]);
-							if(Math.isNaN(indexStart) || indexStart < 0) indexStart = 0;
-	
-							var indexEnd:Int = Std.parseInt(splitIndices[1]);
-							if(Math.isNaN(indexEnd) || indexEnd < indexStart) indexEnd = indexStart;
-	
+							var splitIndices:Array<String> = raw.split('-');
+							var indexStart:Null<Int> = Std.parseInt(splitIndices[0]);
+							if(indexStart == null || indexStart < 0) indexStart = 0;
+
+							var indexEnd:Null<Int> = Std.parseInt(splitIndices.length > 1 ? splitIndices[1] : splitIndices[0]);
+							if(indexEnd == null || indexEnd < indexStart) indexEnd = indexStart;
+
 							for (index in indexStart...indexEnd+1)
 								indices.push(index);
 						}
 						else
 						{
-							var index:Int = Std.parseInt(ind);
-							if(!Math.isNaN(index) && index > -1)
+							var index:Null<Int> = Std.parseInt(raw);
+							if(index != null && index > -1)
 								indices.push(index);
 						}
 					}
 				}
 			}
 
-			var lastOffsets:Array<Int> = [0, 0];
-			var lastPlayerOffsets:Array<Float> = [0, 0];
-			for (anim in character.animationsArray)
-				if(animationInputText.text == anim.anim) {
-					lastOffsets = anim.offsets;
-					if(anim.playerOffsets != null && anim.playerOffsets.length > 1)
-						lastPlayerOffsets = [anim.playerOffsets[0], anim.playerOffsets[1]];
-					else if(anim.offsets != null)
-						lastPlayerOffsets = [anim.offsets[0] * 1.0, anim.offsets[1] * 1.0];
-					if(character.hasAnimation(animationInputText.text))
-					{
-						if(!character.isAnimateAtlas) character.animation.remove(animationInputText.text);
-						else @:privateAccess character.atlas.anim.animsMap.remove(animationInputText.text);
-					}
-					character.animationsArray.remove(anim);
-					character.animOffsets.remove(animationInputText.text);
-					if(character.animPlayerOffsets != null)
-						character.animPlayerOffsets.remove(animationInputText.text);
-				}
+			var animName:String = animationInputText.text.trim();
+			if(animName.length < 1) return;
 
-			var addedAnim:AnimArray = newAnim(animationInputText.text, animationNameInputText.text);
-			addedAnim.fps = Math.round(animationFramerate.value);
-			addedAnim.loop = animationLoopCheckBox.checked;
-			addedAnim.indices = indices;
-			addedAnim.offsets = lastOffsets;
-			addedAnim.playerOffsets = lastPlayerOffsets;
-			addedAnim.assetPath = Character.getAnimationAssetPathInput(animationAssetPathInputText.text);
-			character.animationsArray.push(addedAnim);
-			character.addOffset(addedAnim.anim, lastOffsets[0], lastOffsets[1]);
-			character.addPlayerOffset(addedAnim.anim, lastPlayerOffsets[0], lastPlayerOffsets[1]);
+			var prefixName:String = animationNameInputText.text.trim();
+			if(prefixName.length < 1) prefixName = animName;
+
+			// Find existing animation index (Update keeps position — no move to end)
+			var existingIndex:Int = -1;
+			for (i in 0...character.animationsArray.length)
+			{
+				if(character.animationsArray[i] != null && character.animationsArray[i].anim == animName)
+				{
+					existingIndex = i;
+					break;
+				}
+			}
+
+			var lastOffsets:Array<Int> = [0, 0];
+			var lastPlayerOffsets:Array<Float> = [0.0, 0.0];
+			if(existingIndex >= 0)
+			{
+				var oldAnim:Dynamic = character.animationsArray[existingIndex];
+				if(oldAnim.offsets != null && oldAnim.offsets.length > 1)
+					lastOffsets = [oldAnim.offsets[0], oldAnim.offsets[1]];
+				if(oldAnim.playerOffsets != null && oldAnim.playerOffsets.length > 1)
+					lastPlayerOffsets = [oldAnim.playerOffsets[0], oldAnim.playerOffsets[1]];
+				else if(oldAnim.offsets != null)
+					lastPlayerOffsets = [oldAnim.offsets[0] * 1.0, oldAnim.offsets[1] * 1.0];
+
+				// Rebind animation on sprite without reshuffling list order
+				if(character.hasAnimation(animName))
+				{
+					if(!character.isAnimateAtlas) character.animation.remove(animName);
+					else @:privateAccess character.atlas.anim.animsMap.remove(animName);
+				}
+			}
+
+			var targetAnim:Dynamic = (existingIndex >= 0)
+				? character.animationsArray[existingIndex]
+				: newAnim(animName, prefixName);
+
+			targetAnim.anim = animName;
+			targetAnim.name = prefixName;
+			targetAnim.fps = Math.round(animationFramerate.value);
+			targetAnim.loop = animationLoopCheckBox.checked;
+			targetAnim.indices = indices;
+			if(existingIndex < 0)
+			{
+				targetAnim.offsets = lastOffsets;
+				targetAnim.playerOffsets = lastPlayerOffsets;
+			}
+			else
+			{
+				// Keep existing offsets unless empty
+				if(targetAnim.offsets == null) targetAnim.offsets = lastOffsets;
+				if(targetAnim.playerOffsets == null) targetAnim.playerOffsets = lastPlayerOffsets;
+			}
+
+			var animAsset:String = Character.getAnimationAssetPathInput(animationAssetPathInputText.text);
+			if(animAsset != null && animAsset.trim().length > 0)
+				targetAnim.assetPath = Character.resolveAnimationAssetPath(animAsset);
+			else
+				targetAnim.assetPath = '';
+
+			if(existingIndex < 0)
+				character.animationsArray.push(targetAnim);
+			// else: already in place at existingIndex — do not push
+
+			addAnimation(targetAnim.anim, targetAnim.name, targetAnim.fps, targetAnim.loop, targetAnim.indices);
+			character.addOffset(targetAnim.anim, targetAnim.offsets[0], targetAnim.offsets[1]);
+			character.addPlayerOffset(targetAnim.anim,
+				targetAnim.playerOffsets != null ? targetAnim.playerOffsets[0] : targetAnim.offsets[0],
+				targetAnim.playerOffsets != null ? targetAnim.playerOffsets[1] : targetAnim.offsets[1]);
 
 			reloadCharacterImage();
-			reloadAnimList();
-			@:arrayAccess curAnim = Std.int(Math.max(0, character.animationsArray.indexOf(addedAnim)));
-			character.playAnim(addedAnim.anim, true);
-			trace('Added/Updated animation: ' + animationInputText.text);
+			reloadAnimList(targetAnim.anim);
+			if(animationDropDown != null)
+				animationDropDown.selectedLabel = targetAnim.anim;
+			character.playAnim(targetAnim.anim, true);
+			unsavedProgress = true;
+			trace((existingIndex >= 0 ? 'Updated' : 'Added') + ' animation: ' + animName + ' @ index ' + curAnim);
 		});
+
 
 		var removeButton:PsychUIButton = new PsychUIButton(180, animationAssetPathInputText.y + 45, "Remove", function() {
 			for (anim in character.animationsArray)
@@ -1336,11 +1393,16 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 	inline function updateHealthBar()
 	{
-		healthColorStepperR.value = character.healthColorArray[0];
-		healthColorStepperG.value = character.healthColorArray[1];
-		healthColorStepperB.value = character.healthColorArray[2];
-		healthBar.leftBar.color = healthBar.rightBar.color = FlxColor.fromRGB(character.healthColorArray[0], character.healthColorArray[1], character.healthColorArray[2]);
-		healthIcon.changeIcon(character.healthIcon, false);
+		if(character == null) return;
+		if(character.healthColorArray == null || character.healthColorArray.length < 3)
+			character.healthColorArray = [161, 161, 161];
+		if(healthColorStepperR != null) healthColorStepperR.value = character.healthColorArray[0];
+		if(healthColorStepperG != null) healthColorStepperG.value = character.healthColorArray[1];
+		if(healthColorStepperB != null) healthColorStepperB.value = character.healthColorArray[2];
+		if(healthBar != null)
+			healthBar.leftBar.color = healthBar.rightBar.color = FlxColor.fromRGB(character.healthColorArray[0], character.healthColorArray[1], character.healthColorArray[2]);
+		if(healthIcon != null)
+			healthIcon.changeIcon(character.healthIcon != null ? character.healthIcon : 'face', false);
 		updatePresence();
 	}
 
@@ -1351,11 +1413,28 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		#end
 	}
 
-	inline function reloadAnimList()
+	inline function reloadAnimList(?preferAnim:String = null)
 	{
 		anims = character.animationsArray;
-		if(anims.length > 0) character.playAnim(anims[0].anim, true);
-		curAnim = 0;
+		var playName:String = null;
+		var playIndex:Int = 0;
+		if(preferAnim != null && preferAnim.length > 0)
+		{
+			for (i in 0...anims.length)
+			{
+				if(anims[i] != null && anims[i].anim == preferAnim)
+				{
+					playIndex = i;
+					playName = preferAnim;
+					break;
+				}
+			}
+		}
+		if(playName == null && anims.length > 0 && anims[0] != null)
+			playName = anims[0].anim;
+		if(playName != null)
+			character.playAnim(playName, true);
+		curAnim = playIndex;
 
 		updateText();
 		if(animationDropDown != null) reloadAnimationDropDown();
@@ -1504,7 +1583,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			character.addOffset(anim, 0, 0);
 	}
 
-	inline function newAnim(anim:String, name:String):AnimArray
+	inline function newAnim(anim:String, name:String):Dynamic
 	{
 		return {
 			assetPath: '',
@@ -1554,16 +1633,40 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		gameOverCharDropDown.selectedLabel = character != null && character.gameOverChar != null ? character.gameOverChar : '';
 	}
 
+
+	/** Fill missing default anims (singUP, singUP-Miss, etc.) into the list for the editor. */
+	function ensureDefaultAnimationsListed():Void
+	{
+		if(character == null || character.animationsArray == null) return;
+		var existing:Map<String, Bool> = new Map();
+		for (a in character.animationsArray)
+			if(a != null && a.anim != null)
+				existing.set(a.anim, true);
+
+		for (name in Character.DEFAULT_ANIMATIONS_LIST)
+		{
+			if(existing.exists(name)) continue;
+			// Only suggest — do not auto-add empty anims to the array (user clicks Add/Update)
+		}
+	}
+
 	function reloadAnimationDropDown() {
 		var animList:Array<String> = [];
 		for (anim in anims)
 		{
+			if(anim == null) continue;
 			// BETADCIU: se não tem playerOffsets, copia dos offsets
 			if(anim.playerOffsets == null && anim.offsets != null)
 				anim.playerOffsets = [anim.offsets[0] * 1.0, anim.offsets[1] * 1.0];
 			animList.push(anim.anim);
 		}
-		if(animList.length < 1) animList.push('NO ANIMATIONS'); //Prevents crash
+		// Append default names not yet present (editor convenience list)
+		for (defName in Character.DEFAULT_ANIMATIONS_LIST)
+		{
+			if(!animList.contains(defName))
+				animList.push(defName);
+		}
+		if(animList.length < 1) animList.push('NO ANIMATIONS');
 
 		animationDropDown.list = animList;
 	}
@@ -1646,50 +1749,44 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	function saveCharacter() {
 		if(_file != null) return;
 
-		// New Pico Character JSON Format
-		var typeSave:String = getCharacterType();
-		// Map editor types to short Type tags used by the new format
-		var typeTag:String = switch(typeSave) {
-			case 'Player': 'BF';
-			case 'Additional': 'GF';
-			default: 'DAD';
-		};
-
+		// Exact Pico character JSON format (user-defined)
 		var assetOut:String = character.imageFile != null ? character.imageFile : '';
 		while(assetOut.indexOf('//') >= 0) assetOut = assetOut.replace('//', '/');
 
+		var rtSave:String = Character.normalizeRenderType(character.renderType);
+		if(rtSave.length < 1) rtSave = 'sparrow';
+
+		// Base-game style: icon defaults to character file name
+		var iconOut:String = character.healthIcon;
+		if(iconOut == null || iconOut.trim().length < 1)
+			iconOut = _char != null ? _char : 'face';
+
 		var json:Dynamic = {
-			"character_animations_data": getCharacterFileAnimations(),
+			"renderType": rtSave,
 			"assetPath": assetOut,
-			"characterNoteStyle": (character.noteStyle != null) ? character.noteStyle : '',
-			"characterPositionOffsets": character.positionArray,
-			"cameraPosition": character.cameraPosition,
-			"renderType": 'sparrow',
-			"characterIcon": character.healthIcon != null ? character.healthIcon : '',
 			"flip_x": character.originalFlipX,
-			"characterHealthBarColor": character.healthColorArray,
-			"Type": typeTag,
-			"isPixel": character.noAntialiasing,
-			"characterSingDuration": character.singDuration,
-			"characterScale": character.jsonScale
+			"sing_duration": character.singDuration,
+			"scale": character.jsonScale,
+			"healthBar": character.healthColorArray,
+			"healthIcon": iconOut,
+			"offsets": character.positionArray,
+			"cameraOffsets": character.cameraPosition,
+			"animations": getCharacterFileAnimationsNew()
 		};
 
-		// Optional fields — only if filled
+		if(character.noteStyle != null && character.noteStyle.trim().length > 0)
+			Reflect.setField(json, "noteStyle", character.noteStyle.trim());
 		setOptionalString(json, "gameOverChar", character.gameOverChar);
 		setOptionalString(json, "gameOverSound", character.gameOverSound);
 		setOptionalString(json, "gameOverLoop", character.gameOverLoop);
 		setOptionalString(json, "gameOverEnd", character.gameOverEnd);
-
 		if(character.vocalsFile != null && character.vocalsFile.trim().length > 0)
 			Reflect.setField(json, "vocals_file", character.vocalsFile.trim());
-
-		var rtSave:String = Character.normalizeRenderType(character.renderType);
-		if(rtSave.length < 1) rtSave = 'sparrow';
-		Reflect.setField(json, "renderType", rtSave);
+		if(character.noAntialiasing)
+			Reflect.setField(json, "isPixel", true);
 
 		var data:String = PsychJsonPrinter.print(json, [
-			'characterPositionOffsets', 'cameraPosition', 'characterHealthBarColor',
-			'Offsets-Playable', 'offsets', 'indices'
+			'healthBar', 'offsets', 'cameraOffsets', 'frameIndices', 'indices'
 		]);
 
 		if (data.length > 0)
@@ -1700,6 +1797,39 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, '$_char.json');
 		}
+	}
+
+	/** Animations in the exact new format: name, prefix, offsets, frameIndices, frameRate, optional assetPath */
+	function getCharacterFileAnimationsNew():Array<Dynamic>
+	{
+		var animations:Array<Dynamic> = [];
+		for (anim in character.animationsArray)
+		{
+			if(anim == null) continue;
+			var entry:Dynamic = {
+				"name": anim.anim,
+				"prefix": anim.name,
+				"offsets": (anim.offsets != null && anim.offsets.length > 1) ? [anim.offsets[0], anim.offsets[1]] : [0, 0],
+				"frameIndices": (anim.indices != null) ? anim.indices : [],
+				"frameRate": (anim.fps > 0) ? anim.fps : 24
+			};
+
+			var animAsset:String = Character.getAnimationAssetPathInput(anim.assetPath);
+			if(animAsset != null && animAsset.trim().length > 0)
+				Reflect.setField(entry, "assetPath", animAsset.trim());
+
+			if(anim.playerOffsets != null && anim.playerOffsets.length > 1)
+			{
+				if(anim.playerOffsets[0] != 0 || anim.playerOffsets[1] != 0)
+					Reflect.setField(entry, "playerOffsets", [anim.playerOffsets[0], anim.playerOffsets[1]]);
+			}
+
+			if(anim.loop == true)
+				Reflect.setField(entry, "looped", true);
+
+			animations.push(entry);
+		}
+		return animations;
 	}
 
 	function setOptionalString(json:Dynamic, field:String, value:String):Void

@@ -483,6 +483,8 @@ class MenuCharacterEditorState extends MusicBeatState implements PsychUIEventHan
 			var shiftMult:Int = 1;
 			if(FlxG.keys.pressed.SHIFT) shiftMult = 10;
 
+			if(characterFile.propPosition == null || characterFile.propPosition.length < 2)
+				characterFile.propPosition = [0, 0];
 			if(FlxG.keys.justPressed.LEFT)
 			{
 				characterFile.propPosition[0] += shiftMult;
