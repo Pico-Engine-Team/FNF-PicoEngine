@@ -78,7 +78,7 @@ class ControlsSubState extends MusicBeatSubstate
 		super();
 
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("In Controls Menu", null);
+		DiscordClient.changePresence("In Controls Menu");
 		#end
 
 		options.push([true]);
@@ -191,13 +191,23 @@ class ControlsSubState extends MusicBeatSubstate
 	}
 	function addKeyText(text:Alphabet, option:Array<Dynamic>, id:Int)
 	{
-		var keys:Array<Null<FlxKey>> = Preferences.keyBinds.get(option[2]);
+		var keys:Array<Null<FlxKey>> = Preferences.keyBinds != null ? Preferences.keyBinds.get(option[2]) : null;
 		if(keys == null && onKeyboardMode)
-			keys = Preferences.defaultKeys.get(option[2]).copy();
+		{
+			if(Preferences.defaultKeys != null && Preferences.defaultKeys.exists(option[2]))
+				keys = Preferences.defaultKeys.get(option[2]).copy();
+			else
+				keys = [NONE, NONE];
+		}
 
-		var gmpds:Array<Null<FlxGamepadInputID>> = Preferences.gamepadBinds.get(option[2]);
+		var gmpds:Array<Null<FlxGamepadInputID>> = Preferences.gamepadBinds != null ? Preferences.gamepadBinds.get(option[2]) : null;
 		if(gmpds == null && !onKeyboardMode)
-			gmpds = Preferences.defaultButtons.get(option[2]).copy();
+		{
+			if(Preferences.defaultButtons != null && Preferences.defaultButtons.exists(option[2]))
+				gmpds = Preferences.defaultButtons.get(option[2]).copy();
+			else
+				gmpds = [NONE, NONE];
+		}
 
 		for (n in 0...2)
 		{
@@ -238,7 +248,9 @@ class ControlsSubState extends MusicBeatSubstate
 
 		var gamepad:FlxGamepad = FlxG.gamepads.firstActive;
 		var model:FlxGamepadModel = gamepad != null ? gamepad.detectedModel : UNKNOWN;
+		if(alpha == null || alpha.letters == null || alpha.letters.length < 1) return;
 		var letter = alpha.letters[0];
+		if(letter == null) return;
 		if(model == PS4)
 		{
 			switch(alpha.text)
@@ -246,7 +258,7 @@ class ControlsSubState extends MusicBeatSubstate
 				case '[', ']': //Square and Triangle respectively
 					letter.image = 'alphabet_playstation';
 					letter.updateHitbox();
-					
+
 					letter.offset.x += 4;
 					letter.offset.y -= 5;
 			}
@@ -256,7 +268,9 @@ class ControlsSubState extends MusicBeatSubstate
 
 	function updateBind(num:Int, text:String)
 	{
+		if(grpBinds == null || num < 0 || num >= grpBinds.length) return;
 		var bind:Alphabet = grpBinds.members[num];
+		if(bind == null) return;
 		var attach:Alphabet = new Alphabet(350 + (num % 2) * 300, 248, text, false);
 		attach.isMenuItem = true;
 		attach.changeX = false;
@@ -364,9 +378,15 @@ class ControlsSubState extends MusicBeatSubstate
 				if(holdingEsc > 0.5)
 				{
 					if (onKeyboardMode)
-						Preferences.keyBinds.get(curOption[2])[altNum] = NONE;
+					{
+						var arr = Preferences.keyBinds.get(curOption[2]);
+						if(arr != null && altNum >= 0 && altNum < arr.length) arr[altNum] = NONE;
+					}
 					else
-						Preferences.gamepadBinds.get(curOption[2])[altNum] = NONE;
+					{
+						var arr = Preferences.gamepadBinds.get(curOption[2]);
+						if(arr != null && altNum >= 0 && altNum < arr.length) arr[altNum] = NONE;
+					}
 					Preferences.clearInvalidKeys(curOption[2]);
 					updateBind(Math.floor(curSelected * 2) + altNum, onKeyboardMode ? InputFormatter.getKeyName(NONE) : InputFormatter.getGamepadName(NONE));
 					FlxG.sound.play(Paths.sound('cancelMenu'));
@@ -379,6 +399,8 @@ class ControlsSubState extends MusicBeatSubstate
 				var changed:Bool = false;
 				var curKeys:Array<FlxKey> = Preferences.keyBinds.get(curOption[2]);
 				var curButtons:Array<FlxGamepadInputID> = Preferences.gamepadBinds.get(curOption[2]);
+				if(onKeyboardMode && curKeys == null) return;
+				if(!onKeyboardMode && curButtons == null) return;
 
 				if(onKeyboardMode)
 				{
@@ -474,19 +496,30 @@ class ControlsSubState extends MusicBeatSubstate
 	function closeBinding()
 	{
 		binding = false;
-		bindingBlack.destroy();
-		remove(bindingBlack);
-
-		bindingText.destroy();
-		remove(bindingText);
-
-		bindingText2.destroy();
-		remove(bindingText2);
-		Preferences.reloadVolumeKeys();
+		if(bindingBlack != null)
+		{
+			remove(bindingBlack);
+			bindingBlack.destroy();
+			bindingBlack = null;
+		}
+		if(bindingText != null)
+		{
+			remove(bindingText);
+			bindingText.destroy();
+			bindingText = null;
+		}
+		if(bindingText2 != null)
+		{
+			remove(bindingText2);
+			bindingText2.destroy();
+			bindingText2 = null;
+		}
+		try Preferences.reloadVolumeKeys() catch(e:Dynamic) {}
 	}
 
 	function updateText(?change:Int = 0)
 	{
+		if(curOptions == null || curOptions.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, curOptions.length - 1);
 
 		var num:Int = curOptionsValid[curSelected];

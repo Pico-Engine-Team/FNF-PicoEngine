@@ -10,33 +10,33 @@ class PicoEngineSubState extends BaseOptionsMenu
 		rpcTitle = "Pico Engine Settings Menu";
 
 		var option:Option = new Option('Characters Note Skins',
-			"If checked, \nEnables NoteSkins In Songs (Character Specific)",
-			'noteskinsCharacters',
+			"If checked, Enables NoteSkins In Songs (Character Specific)",
+			'useNoteSkins',
 			STRING,
 			['Disabled', 'Both', 'Player', 'Opponent']);
 		addOption(option);
 
 		var option:Option = new Option('Max Combo',
-			'If checked,\nMax Combo on the game screen.',
-			'comboEnabled',
+			'Enable/Disable,\nMax Combo on the game screen.',
+			'useCombo',
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('VSlice Hub',
-			'If checked, \nuses the V-Slice styled HUD and health bar.',
+		var option:Option = new Option('V Slice Hub',
+			'If checked, uses the V-Slice styled HUD and health bar.',
 			'SliceHub',
 			BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Hold Note Covers',
 			'If checked,\nThe Hold Note Covers did not appear.',
-			'HoldCover',
+			'useHoldCover',
 			BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Hold Note Animation',
 			'If checked,\nDuring a sustained note the character will not play an animation for it.',
-			'HoldAnimation',
+			'useHoldAnimation',
 			BOOL);
 		addOption(option);
 
@@ -80,6 +80,7 @@ class PicoEngineSubState extends BaseOptionsMenu
 		option.changeValue = 15;
 		option.displayFormat = '%vs';
 		addOption(option);
+
 		super();
 	}
 }

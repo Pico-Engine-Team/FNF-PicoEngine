@@ -1,7 +1,7 @@
 package funkin.states.options.data;
 
-import funkin.data.objects.game.characters.Character;
 import funkin.states.options.config.*;
+import funkin.data.objects.CharactersData as Character;
 
 class GraphicsSettingsSubState extends BaseOptionsMenu
 {
@@ -12,12 +12,20 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('graphics_menu', 'Graphics Settings');
 		rpcTitle = 'Graphics Settings Menu';
 
-		boyfriend = new Character(840, 170, 'bf', true);
-		boyfriend.setGraphicSize(Std.int(boyfriend.width * 0.9));
-		boyfriend.updateHitbox();
-		boyfriend.dance();
-		boyfriend.animation.finishCallback = function (name:String) boyfriend.dance();
-		boyfriend.visible = false;
+		try
+		{
+			boyfriend = new Character(840, 170, 'bf', true);
+			boyfriend.setGraphicSize(Std.int(boyfriend.width * 0.9));
+			boyfriend.updateHitbox();
+			boyfriend.dance();
+			boyfriend.animation.finishCallback = function (name:String) if(boyfriend != null) boyfriend.dance();
+			boyfriend.visible = false;
+		}
+		catch(e:Dynamic)
+		{
+			trace('[GraphicsSettings] bf preview failed: ' + e);
+			boyfriend = null;
+		}
 
 		var option:Option = new Option('Quality',
 			'If checked, disables some background details,\ndecreases loading times and improves performance.',
@@ -72,12 +80,13 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			"Synchronizes the game's frame rate with your monitor's refresh rate.\nOn = Always on\nOff = Always off\nAdaptive = Turns on only when FPS is high enough.",
 			'vsync',
 			STRING,
-			['Adaptive', 'ON', 'OFF']);
+			['Adaptive', 'On', 'Off']);
 		option.onChange = onChangeVSync;
 		addOption(option);
 
 		super();
-		insert(1, boyfriend);
+		if(boyfriend != null)
+			insert(1, boyfriend);
 	}
 
 	function onChangeAntiAliasing()
@@ -100,13 +109,14 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			try {
 				if (FlxG.stage.application.window.displayMode != null)
 					displayRefresh = FlxG.stage.application.window.displayMode.refreshRate;
-				switch (Preferences.data.vsync)
+				var vs:String = Preferences.data.vsync != null ? Preferences.data.vsync.toLowerCase() : 'off';
+				switch (vs)
 				{
-					case 'On' | 'ON':
+					case 'on':
 						FlxG.stage.application.window.frameRate = displayRefresh;
-					case 'Adaptive':
+					case 'adaptive':
 						FlxG.stage.application.window.frameRate = Std.int(Math.max(Preferences.data.framerate, displayRefresh));
-					default:
+					default: // off
 						FlxG.stage.application.window.frameRate = Preferences.data.framerate;
 				}
 			} catch (e:Dynamic) {
@@ -133,6 +143,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 	override function changeSelection(change:Int = 0)
 	{
 		super.changeSelection(change);
-		boyfriend.visible = (antialiasingOption == curSelected);
+		if(boyfriend != null)
+			boyfriend.visible = (antialiasingOption == curSelected);
 	}
 }

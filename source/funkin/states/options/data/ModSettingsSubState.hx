@@ -1,6 +1,6 @@
 package funkin.states.options.data;
 
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData as Character;
 import funkin.states.options.config.*;
 import funkin.states.options.config.Option.OptionType;
 
@@ -19,11 +19,17 @@ class ModSettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Mod Settings ($name)'; //for Discord Rich Presence
 
 		if(FlxG.save.data.modSettings == null) FlxG.save.data.modSettings = new Map<String, Dynamic>();
-		else
+		var saveMap:Map<String, Dynamic> = FlxG.save.data.modSettings;
+		if(saveMap.exists(folder) && saveMap.get(folder) != null)
 		{
-			var saveMap:Map<String, Dynamic> = FlxG.save.data.modSettings;
-			save = saveMap[folder] != null ? saveMap[folder] : [];
+			var existing:Dynamic = saveMap.get(folder);
+			if(Std.isOfType(existing, Map))
+				save = cast existing;
+			else
+				save = new Map<String, Dynamic>();
 		}
+		else
+			save = new Map<String, Dynamic>();
 
 		//save = []; //reset for debug purposes
 		try
@@ -38,7 +44,6 @@ class ModSettingsSubState extends BaseOptionsMenu
 					option.options,
 					option.translation_key
 				);
-
 				switch(newOption.type)
 				{
 					case KEYBIND:
@@ -73,7 +78,7 @@ class ModSettingsSubState extends BaseOptionsMenu
 								var data = save.get(newOption.variable);
 								if(data == null) data = {keyboard: 'NONE', gamepad: 'NONE'};
 
-								if(!controls.controllerMode) data.keyboard = value;
+								if(!(Controls.instance != null && Controls.instance.controllerMode)) data.keyboard = value;
 								else data.gamepad = value;
 								save.set(newOption.variable, data);
 							};
@@ -182,8 +187,13 @@ class ModSettingsSubState extends BaseOptionsMenu
 
 	override public function close()
 	{
-		FlxG.save.data.modSettings.set(folder, save);
-		FlxG.save.flush();
+		if(!_crashed && folder != null && save != null)
+		{
+			if(FlxG.save.data.modSettings == null)
+				FlxG.save.data.modSettings = new Map<String, Dynamic>();
+			FlxG.save.data.modSettings.set(folder, save);
+			FlxG.save.flush();
+		}
 		super.close();
 	}
 }

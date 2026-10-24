@@ -2,8 +2,8 @@ package funkin.states.options.data;
 
 import funkin.data.shaders.RGBPalette;
 import funkin.data.shaders.RGBPalette.RGBShaderReference;
-import funkin.data.objects.game.notes.data.Note;
-import funkin.data.objects.game.notes.config.StrumNote;
+import funkin.data.objects.game.note.data.Note;
+import funkin.data.objects.game.note.config.StrumNote;
 
 import flixel.addons.display.FlxBackdrop;
 import flixel.addons.display.FlxGridOverlay;
@@ -406,11 +406,16 @@ class NotesColorSubState extends MusicBeatSubstate
 				holdingOnObj = colorGradient;
 			}
 			else if (pointerOverlaps(colorPalette)) {
-				setShaderColor(colorPalette.pixels.getPixel32(
-					Std.int((pointerX() - colorPalette.x) / colorPalette.scale.x), 
-					Std.int((pointerY() - colorPalette.y) / colorPalette.scale.y)));
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
-				updateColors();
+				if(colorPalette.pixels != null)
+				{
+					var px:Int = Std.int((pointerX() - colorPalette.x) / colorPalette.scale.x);
+					var py:Int = Std.int((pointerY() - colorPalette.y) / colorPalette.scale.y);
+					px = Std.int(FlxMath.bound(px, 0, colorPalette.pixels.width - 1));
+					py = Std.int(FlxMath.bound(py, 0, colorPalette.pixels.height - 1));
+					setShaderColor(colorPalette.pixels.getPixel32(px, py));
+					FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+					updateColors();
+				}
 			}
 			else if (pointerOverlaps(skinNote))
 			{
@@ -522,17 +527,16 @@ class NotesColorSubState extends MusicBeatSubstate
 
 	function centerHexTypeLine()
 	{
-		//trace(hexTypeNum);
+		if(alphabetHex == null || alphabetHex.letters == null || alphabetHex.letters.length < 1) return;
+		var idx:Int = hexTypeNum > 0 ? hexTypeNum - 1 : 0;
+		if(idx < 0) idx = 0;
+		if(idx >= alphabetHex.letters.length) idx = alphabetHex.letters.length - 1;
+		var letter = alphabetHex.letters[idx];
+		if(letter == null) return;
 		if(hexTypeNum > 0)
-		{
-			var letter = alphabetHex.letters[hexTypeNum-1];
 			hexTypeLine.x = letter.x - letter.offset.x + letter.width;
-		}
 		else
-		{
-			var letter = alphabetHex.letters[0];
 			hexTypeLine.x = letter.x - letter.offset.x;
-		}
 		hexTypeLine.x += hexTypeLine.width;
 		hexTypeVisibleTimer = 0;
 	}
@@ -614,7 +618,7 @@ class NotesColorSubState extends MusicBeatSubstate
 
 		// Respawn Stuff
 		var res:Int = onPixel ? 160 : 17;
-		skinNote = new FlxSprite(48, 24).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/' + (onPixel ? 'default-note' : 'pixel-note')), true, res, res);
+		skinNote = new FlxSprite(48, 24).loadGraphic(Paths.image('menus/options_menu/menu_options_notesColors/' + (onPixel ? 'pixel-note' : 'default-note')), true, res, res);
 		skinNote.antialiasing = Preferences.data.antialiasing;
 		skinNote.setGraphicSize(68);
 		skinNote.updateHitbox();
@@ -680,7 +684,8 @@ class NotesColorSubState extends MusicBeatSubstate
 			if(note.animation.curAnim == null || note.animation.curAnim.name != newAnim) note.playAnim(newAnim, true);
 			if(instant) note.animation.curAnim.finish();
 		}
-		bigNote.animation.play('note$curSelectedNote', true);
+		if(bigNote != null && bigNote.animation != null)
+			bigNote.animation.play('note$curSelectedNote', true);
 		updateColors();
 	}
 

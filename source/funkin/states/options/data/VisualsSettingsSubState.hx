@@ -1,11 +1,7 @@
 package funkin.states.options.data;
 
-import funkin.states.PauseMenuState;
-import funkin.data.objects.Alphabet;
 import funkin.states.options.config.*;
-
 import funkin.utils.windows.Main;
-import funkin.substates.MusicBeatSubstate;
 
 class VisualsSettingsSubState extends BaseOptionsMenu
 {
@@ -15,7 +11,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Visuals Settings Menu';
 
 		// Migrate legacy time bar prefs
-		var tb:String = Preferences.data.timeBarType;
+		var tb:String = Preferences.data.timeBarType != null ? Preferences.data.timeBarType : 'Default';
 		if(tb == 'Time Left' || tb == 'Time Elapsed')
 			Preferences.data.timeBarType = 'Combined';
 
@@ -37,7 +33,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		// Migrate legacy comboCam values
-		var cc:String = Std.string(Preferences.data.comboCam);
+		var cc:String = Preferences.data.comboCam != null ? Std.string(Preferences.data.comboCam) : '';
 		switch(cc)
 		{
 			case 'camHUD', 'CamHUD', 'HUD', 'hud':

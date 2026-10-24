@@ -40,6 +40,83 @@ class Option
 	public var defaultKeys:Keybind = null; //Only used in keybind type
 	public var keys:Keybind = null; //Only used in keybind type
 
+	/** Resolve Preferences (new) or ClientPrefs (legacy) static data bag */
+	static function prefsData():Dynamic
+	{
+		try
+		{
+			var p:Dynamic = Type.resolveClass('funkin.data.Preferences');
+			if(p == null) p = Type.resolveClass('Preferences');
+			if(p != null && Reflect.hasField(p, 'data'))
+				return Reflect.field(p, 'data');
+		}
+		catch(e:Dynamic) {}
+		try
+		{
+			var c:Dynamic = Type.resolveClass('funkin.data.ClientPrefs');
+			if(c == null) c = Type.resolveClass('ClientPrefs');
+			if(c != null && Reflect.hasField(c, 'data'))
+				return Reflect.field(c, 'data');
+		}
+		catch(e:Dynamic) {}
+		// Compile-time direct access (preferred when class is imported)
+		try return Preferences.data catch(e:Dynamic) {}
+		try return ClientPrefs.data catch(e:Dynamic) {}
+		return null;
+	}
+
+	static function prefsDefaultData():Dynamic
+	{
+		try
+		{
+			var p:Dynamic = Type.resolveClass('funkin.data.Preferences');
+			if(p == null) p = Type.resolveClass('Preferences');
+			if(p != null && Reflect.hasField(p, 'defaultData'))
+				return Reflect.field(p, 'defaultData');
+		}
+		catch(e:Dynamic) {}
+		try
+		{
+			var c:Dynamic = Type.resolveClass('funkin.data.ClientPrefs');
+			if(c == null) c = Type.resolveClass('ClientPrefs');
+			if(c != null && Reflect.hasField(c, 'defaultData'))
+				return Reflect.field(c, 'defaultData');
+		}
+		catch(e:Dynamic) {}
+		try return Preferences.defaultData catch(e:Dynamic) {}
+		try return ClientPrefs.defaultData catch(e:Dynamic) {}
+		return null;
+	}
+
+	static function hasPrefField(obj:Dynamic, field:String):Bool
+	{
+		if(obj == null || field == null || field.length < 1) return false;
+		try
+		{
+			if(Reflect.hasField(obj, field)) return true;
+		}
+		catch(e:Dynamic) {}
+		// @:structInit / anonymous: hasField can be false even when property exists
+		try
+		{
+			var fields = Reflect.fields(obj);
+			if(fields != null && fields.indexOf(field) >= 0) return true;
+		}
+		catch(e:Dynamic) {}
+		// Last resort: Type.getInstanceFields for class instances
+		try
+		{
+			var cls = Type.getClass(obj);
+			if(cls != null)
+			{
+				var inst = Type.getInstanceFields(cls);
+				if(inst != null && inst.indexOf(field) >= 0) return true;
+			}
+		}
+		catch(e:Dynamic) {}
+		return false;
+	}
+
 	public function new(name:String, description:String = '', variable:String, type:OptionType = BOOL, ?options:Array<String> = null, ?translation:String = null)
 	{
 		_name = name;
@@ -52,8 +129,9 @@ class Option
 
 		if(this.type != KEYBIND)
 		{
-			if(variable != null && Reflect.hasField(Preferences.defaultData, variable))
-				this.defaultValue = Reflect.getProperty(Preferences.defaultData, variable);
+			var defs = prefsDefaultData();
+			if(variable != null && defs != null && hasPrefField(defs, variable))
+				this.defaultValue = Reflect.getProperty(defs, variable);
 		}
 		switch(type)
 		{
@@ -70,7 +148,7 @@ class Option
 				scrollSpeed = 0.5;
 				decimals = 2;
 			case STRING:
-				if(options.length > 0)
+				if(options != null && options.length > 0)
 					defaultValue = options[0];
 				if(defaultValue == null)
 					defaultValue = '';
@@ -89,8 +167,11 @@ class Option
 			switch(type)
 			{
 				case STRING:
-					var num:Int = options.indexOf(getValue());
-					if(num > -1) curOption = num;
+					if(options != null)
+					{
+						var num:Int = options.indexOf(getValue());
+						if(num > -1) curOption = num;
+					}
 
 				default:
 			}
@@ -108,13 +189,17 @@ class Option
 	dynamic public function getValue():Dynamic
 	{
 		if(variable == null || variable.length < 1) return defaultValue;
-		if(!Reflect.hasField(Preferences.data, variable))
+		var data = prefsData();
+		if(data == null) return defaultValue;
+		if(!hasPrefField(data, variable))
 			return defaultValue;
-		var value = Reflect.getProperty(Preferences.data, variable);
+		var value = Reflect.getProperty(data, variable);
 		if(type == KEYBIND)
 		{
 			if(value == null) return 'NONE';
-			return !Controls.instance.controllerMode ? value.keyboard : value.gamepad;
+			var usePad:Bool = Controls.instance != null && Controls.instance.controllerMode;
+			var key:Dynamic = usePad ? Reflect.field(value, 'gamepad') : Reflect.field(value, 'keyboard');
+			return key != null ? key : 'NONE';
 		}
 		return value;
 	}
@@ -122,21 +207,41 @@ class Option
 	dynamic public function setValue(value:Dynamic)
 	{
 		if(variable == null || variable.length < 1) return value;
-		if(!Reflect.hasField(Preferences.data, variable))
+		var data = prefsData();
+		if(data == null)
 		{
-			// Unknown preference field — don't crash the options menu
-			trace('[Option] Missing Preferences.data field: ' + variable);
+			trace('[Option] Preferences/ClientPrefs data is null — cannot set ' + variable);
 			return value;
+		}
+		if(!hasPrefField(data, variable))
+		{
+			// Try to create the field so the menu still works after renames / new options
+			try
+			{
+				Reflect.setProperty(data, variable, value);
+				return value;
+			}
+			catch(e:Dynamic)
+			{
+				trace('[Option] Missing Preferences.data field: ' + variable);
+				return value;
+			}
 		}
 		if(type == KEYBIND)
 		{
-			var keys = Reflect.getProperty(Preferences.data, variable);
-			if(keys == null) return value;
-			if(!Controls.instance.controllerMode) keys.keyboard = value;
-			else keys.gamepad = value;
+			var keys:Dynamic = Reflect.getProperty(data, variable);
+			if(keys == null)
+			{
+				keys = {keyboard: 'NONE', gamepad: 'NONE'};
+				try Reflect.setProperty(data, variable, keys) catch(e:Dynamic) {}
+			}
+			if(Controls.instance != null && Controls.instance.controllerMode)
+				Reflect.setField(keys, 'gamepad', value);
+			else
+				Reflect.setField(keys, 'keyboard', value);
 			return value;
 		}
-		return Reflect.setProperty(Preferences.data, variable, value);
+		return Reflect.setProperty(data, variable, value);
 	}
 
 	var _name:String = null;

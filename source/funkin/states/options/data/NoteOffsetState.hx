@@ -1,7 +1,7 @@
 package funkin.states.options.data;
 
 import funkin.data.objects.Bar;
-import funkin.data.objects.game.characters.Character;
+import funkin.data.objects.CharactersData as Character;
 
 import funkin.stages.StageData;
 import funkin.states.options.OptionsMenuState;
@@ -60,21 +60,33 @@ class NoteOffsetState extends MusicBeatState
 		Paths.setCurrentLevel(stageDirectory);
 		new BackgroundStage();
 
-		gf = new Character(400, 130, 'gf');
-		gf.x += gf.positionArray[0];
-		gf.y += gf.positionArray[1];
-		gf.scrollFactor.set(0.95, 0.95);
-		add(gf);
+		function applyPos(c:Character):Void
+		{
+			if(c == null) return;
+			if(c.positionArray != null && c.positionArray.length >= 2)
+			{
+				c.x += c.positionArray[0];
+				c.y += c.positionArray[1];
+			}
+		}
+		try {
+			gf = new Character(400, 130, 'gf');
+			applyPos(gf);
+			gf.scrollFactor.set(0.95, 0.95);
+			add(gf);
+		} catch(e:Dynamic) { gf = null; trace('[NoteOffset] gf failed: ' + e); }
 
-		boyfriend = new Character(770.0, 100.0, 'bf', true);
-		boyfriend.x += boyfriend.positionArray[0];
-		boyfriend.y += boyfriend.positionArray[1];
-		add(boyfriend);
+		try {
+			boyfriend = new Character(770.0, 100.0, 'bf', true);
+			applyPos(boyfriend);
+			add(boyfriend);
+		} catch(e:Dynamic) { boyfriend = null; trace('[NoteOffset] bf failed: ' + e); }
 
-		dad = new Character(100, 100, 'dad');
-		dad.x += dad.positionArray[0];
-		dad.y += dad.positionArray[1];
-		add(dad);
+		try {
+			dad = new Character(100, 100, 'dad');
+			applyPos(dad);
+			add(dad);
+		} catch(e:Dynamic) { dad = null; trace('[NoteOffset] dad failed: ' + e); }
 
 		// Combo stuff
 		coolText = new FlxText(0, 0, 0, '', 32);
@@ -180,6 +192,8 @@ class NoteOffsetState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
+		if(Preferences.data.comboOffset == null || Preferences.data.comboOffset.length < 4)
+			Preferences.data.comboOffset = [0, 0, 0, 0];
 		var addNum:Int = 1;
 		if(FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
 		{
@@ -406,16 +420,21 @@ class NoteOffsetState extends MusicBeatState
 			MusicBeatState.switchState(new OptionsMenuState());
 			if(OptionsMenuState.onPlayState)
 			{
-				if(Preferences.data.pauseMusic != 'None')
-					FlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(Preferences.data.pauseMusic)));
-				else
+				if(Preferences.data.pauseMusic != null && Preferences.data.pauseMusic != 'None')
+				{
+					var pk = funkin.states.PauseMenuState.resolvePauseMusicKey(Preferences.data.pauseMusic);
+					try FlxG.sound.playMusic(Paths.music(pk)) catch(e:Dynamic) {}
+				}
+				else if(FlxG.sound.music != null)
 					FlxG.sound.music.volume = 0;
 			}
-			else FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
+			else
+				try FlxG.sound.playMusic(Paths.music('menu/freakyMenu')) catch(e:Dynamic) {}
 			FlxG.mouse.visible = false;
 		}
 
-		Conductor.songPosition = FlxG.sound.music.time;
+		if(FlxG.sound.music != null)
+			Conductor.songPosition = FlxG.sound.music.time;
 		super.update(elapsed);
 	}
 
@@ -432,9 +451,9 @@ class NoteOffsetState extends MusicBeatState
 
 		if(curBeat % 2 == 0)
 		{
-			gf.dance();
-			boyfriend.dance();
-			dad.dance();
+			if(gf != null) gf.dance();
+			if(boyfriend != null) boyfriend.dance();
+			if(dad != null) dad.dance();
 		}
 		
 		if(curBeat % 4 == 2)

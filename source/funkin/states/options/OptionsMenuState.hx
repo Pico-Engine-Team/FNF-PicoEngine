@@ -3,14 +3,14 @@ package funkin.states.options;
 class OptionsMenuState extends MusicBeatState
 {
 	var options:Array<String> = [
-	'Note Colors',
-	'Controls',
-	'Adjust Delay and Combo',
-	'Graphics',
-	'Visuals',
-	'Gameplay', 
-	#if PICO_ALLOWED 'Pico Engine', #end
-	#if TRANSLATIONS_ALLOWED  'Language' #end
+		'Note Colors',
+		'Controls',
+		'Adjust Delay and Combo',
+		'Graphics',
+		'Visuals',
+		'Gameplay'
+		#if PICO_ALLOWED , 'Pico Engine' #end
+		#if TRANSLATIONS_ALLOWED , 'Language' #end
 	];
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;
@@ -61,9 +61,9 @@ class OptionsMenuState extends MusicBeatState
 		selectorLeft = new Alphabet(0, 0, '>', true);
 		add(selectorLeft);
 
-		changeSelection();
+		changeSelection(0, false);
 		Preferences.saveSettings();
-		FlxG.sound.playMusic(Paths.music('options/OptionSongMenu'));
+		try FlxG.sound.playMusic(Paths.music('options/OptionSongMenu')) catch(e:Dynamic) {}
 		super.create();
 	}
 
@@ -91,22 +91,25 @@ class OptionsMenuState extends MusicBeatState
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			if(onPlayState)
 			{
-				funkin.stages.StageData.loadDirectory(PlayState.SONG);
+				if(PlayState.SONG != null)
+					funkin.stages.StageData.loadDirectory(PlayState.SONG);
 				LoadingScreenMenuState.loadAndSwitchState(new PlayState());
-				FlxG.sound.music.volume = 0;
+				if(FlxG.sound.music != null)
+					FlxG.sound.music.volume = 0;
 			}
 			else
 			{
-				// Stop current menu (options) music and play the main menu music
-				FlxG.sound.playMusic(Paths.music('menu/freakyMenu'));
+				try FlxG.sound.playMusic(Paths.music('menu/freakyMenu')) catch(e:Dynamic) {}
 				MusicBeatState.switchState(new funkin.states.menus.MainMenuState());
 			}
 		}
-		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
+		else if (controls.ACCEPT && options.length > 0)
+			openSelectedSubstate(options[curSelected]);
 	}
 	
-	function changeSelection(change:Int = 0)
+	function changeSelection(change:Int = 0, playSound:Bool = true)
 	{
+		if(options == null || options.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
 
 		for (num => item in grpOptions.members)
@@ -116,11 +119,14 @@ class OptionsMenuState extends MusicBeatState
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				selectorLeft.x = item.x - 63;
-				selectorLeft.y = item.y;
+				if(selectorLeft != null)
+				{
+					selectorLeft.x = item.x - 63;
+					selectorLeft.y = item.y;
+				}
 			}
 		}
-		FlxG.sound.play(Paths.sound('scrollMenu'));
+		if(playSound) FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
 
 	override function destroy() {

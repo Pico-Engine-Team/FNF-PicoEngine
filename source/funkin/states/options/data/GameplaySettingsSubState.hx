@@ -55,7 +55,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 
 		var option:Option = new Option('Characters Note Skins',
 			"If checked,\nUse NoteStyle To Characters",
-			'useCharacterNoteStyle',
+			'useNoteSkins',
 			STRING,
 			['Both', 'Player', 'Opponent', 'Disabled']);
 		addOption(option);
@@ -63,8 +63,8 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Accuracy Style',
 			"Choose what the Score Text shows next to Score and Misses.\nAccuracy = percent | Rank = letter (P+, S, A...).",
 			'ScoreTextAccuracy',
-			STRING);
-		option.options = ['Accuracy', 'Rank'];
+			STRING,
+			['Accuracy', 'Rank']);
 		addOption(option);
 
 		var option:Option = new Option('Use Epic Ratings',
@@ -153,7 +153,10 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 	}
 
 	function onChangeHitsoundVolume()
-		FlxG.sound.play(Paths.sound('hitsound'), Preferences.data.hitsoundVolume);
+	{
+		var vol:Float = Preferences.data != null ? Preferences.data.hitsoundVolume : 1;
+		try FlxG.sound.play(Paths.sound('hitsound'), vol) catch(e:Dynamic) {}
+	}
 
 	function onChangeAutoPause()
 		FlxG.autoPause = Preferences.data.autoPause;

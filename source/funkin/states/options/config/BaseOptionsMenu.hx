@@ -69,6 +69,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		descText.borderSize = 2.4;
 		add(descText);
 
+		if(optionsArray == null) optionsArray = [];
 		for (i in 0...optionsArray.length)
 		{
 			var optionText:Alphabet = new Alphabet(220, 260, optionsArray[i].name, false);
@@ -144,7 +145,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 		}
 
-		if(nextAccept <= 0)
+		if(nextAccept <= 0 && curOption != null)
 		{
 			switch(curOption.type)
 			{
@@ -241,8 +242,8 @@ class BaseOptionsMenu extends MusicBeatSubstate
 								{
 									case INT:
 										curOption.setValue(Math.round(holdValue));
-									
-									case PERCENT:
+
+									case FLOAT, PERCENT:
 										curOption.setValue(FlxMath.roundDecimal(holdValue, curOption.decimals));
 
 									default:
@@ -306,8 +307,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			holdingEsc += elapsed;
 			if(holdingEsc > 0.5)
 			{
-				if (!controls.controllerMode) curOption.keys.keyboard = NONE;
-				else curOption.keys.gamepad = NONE;
+				if(curOption.keys == null) curOption.keys = {keyboard: 'NONE', gamepad: 'NONE'};
+				if (!controls.controllerMode) curOption.keys.keyboard = 'NONE';
+				else curOption.keys.gamepad = 'NONE';
 				updateBind(!controls.controllerMode ? InputFormatter.getKeyName(NONE) : InputFormatter.getGamepadName(NONE));
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				closeBinding();
@@ -407,20 +409,32 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				text = InputFormatter.getGamepadName(FlxGamepadInputID.fromString(text));
 		}
 
-		var bind:AttachedText = cast option.child;
-		var attach:AttachedText = new AttachedText(text, bind.offsetX);
-		attach.sprTracker = bind.sprTracker;
-		attach.copyAlpha = true;
-		attach.ID = bind.ID;
+		var bind:AttachedText = option.child != null ? cast option.child : null;
+		var offX:Float = bind != null ? bind.offsetX : 0;
+		var attach:AttachedText = new AttachedText(text, offX);
+		if(bind != null)
+		{
+			attach.sprTracker = bind.sprTracker;
+			attach.copyAlpha = true;
+			attach.ID = bind.ID;
+			attach.x = bind.x;
+			attach.y = bind.y;
+		}
 		playstationCheck(attach);
-		attach.scaleX = Math.min(1, MAX_KEYBIND_WIDTH / attach.width);
-		attach.x = bind.x;
-		attach.y = bind.y;
+		if(attach.width > 0)
+			attach.scaleX = Math.min(1, MAX_KEYBIND_WIDTH / attach.width);
 
 		option.child = attach;
-		grpTexts.insert(grpTexts.members.indexOf(bind), attach);
-		grpTexts.remove(bind);
-		bind.destroy();
+		if(bind != null)
+		{
+			var idx:Int = grpTexts.members.indexOf(bind);
+			if(idx >= 0) grpTexts.insert(idx, attach);
+			else grpTexts.add(attach);
+			grpTexts.remove(bind);
+			bind.destroy();
+		}
+		else
+			grpTexts.add(attach);
 	}
 
 	function playstationCheck(alpha:Alphabet)
@@ -429,7 +443,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		var gamepad:FlxGamepad = FlxG.gamepads.firstActive;
 		var model:FlxGamepadModel = gamepad != null ? gamepad.detectedModel : UNKNOWN;
+		if(alpha.letters == null || alpha.letters.length < 1) return;
 		var letter = alpha.letters[0];
+		if(letter == null) return;
 		if(model == PS4)
 		{
 			switch(alpha.text)
@@ -437,7 +453,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				case '[', ']': //Square and Triangle respectively
 					letter.image = 'alphabet_playstation';
 					letter.updateHitbox();
-					
+
 					letter.offset.x += 4;
 					letter.offset.y -= 5;
 			}
@@ -447,15 +463,25 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	function closeBinding()
 	{
 		bindingKey = false;
-		bindingBlack.destroy();
-		remove(bindingBlack);
-
-		bindingText.destroy();
-		remove(bindingText);
-
-		bindingText2.destroy();
-		remove(bindingText2);
-		Preferences.toggleVolumeKeys(true);
+		if(bindingBlack != null)
+		{
+			remove(bindingBlack);
+			bindingBlack.destroy();
+			bindingBlack = null;
+		}
+		if(bindingText != null)
+		{
+			remove(bindingText);
+			bindingText.destroy();
+			bindingText = null;
+		}
+		if(bindingText2 != null)
+		{
+			remove(bindingText2);
+			bindingText2.destroy();
+			bindingText2 = null;
+		}
+		try Preferences.toggleVolumeKeys(true) catch(e:Dynamic) {}
 	}
 
 	function updateTextFrom(option:Option) {
@@ -474,6 +500,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	
 	function changeSelection(change:Int = 0)
 	{
+		if(optionsArray == null || optionsArray.length < 1) return;
 		curSelected = FlxMath.wrap(curSelected + change, 0, optionsArray.length - 1);
 
 		descText.text = optionsArray[curSelected].description;
@@ -501,6 +528,12 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	}
 
 	function reloadCheckboxes()
+	{
+		if(checkboxGroup == null || optionsArray == null) return;
 		for (checkbox in checkboxGroup)
+		{
+			if(checkbox == null || checkbox.ID < 0 || checkbox.ID >= optionsArray.length) continue;
 			checkbox.daValue = Std.string(optionsArray[checkbox.ID].getValue()) == 'true'; //Do not take off the Std.string() from this, it will break a thing in Mod Settings Menu
+		}
+	}
 }
