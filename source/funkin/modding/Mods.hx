@@ -12,7 +12,8 @@ typedef ModsList = {
 /**
  * Normalized mod metadata.
  * Supports:
- *   - Pico Engine meta_mod.json (preferred)
+ *   - Pico Engine meta_mod.json (preferred) — modData / ScriptsData / modCredits / modAssetsData
+ *   - Legacy Pico meta_mod.json — mod_assts / mod_scripts / mod_Credits / mod_data
  *   - Psych pack.json
  *   - V-Slice mod.json / meta.json
  *   - Polymod _polymod_meta.json
@@ -72,6 +73,16 @@ class Mods
 
 	/** If true, enabled list order is top-first (index 0 wins). */
 	public static var topModHighestPriority:Bool = true;
+
+	/**
+	 * Pico Engine API version for mod compatibility (V-Slice style).
+	 * Mods declare modEngineAPI / apiVersion in meta_mod.json.
+	 * Empty apiVersion on a mod = always compatible.
+	 */
+	public static final ENGINE_API_VERSION:String = '2.26.8';
+
+	/** Semantic range the engine accepts (optional display / strict check). */
+	public static final ENGINE_API_RULE:String = '>=2.0.0 <3.0.0';
 
 	public static final ignoreModFolders:Array<String> = [
 		'characters',
@@ -546,12 +557,19 @@ class Mods
 		else if(StringTools.endsWith(lowerPath, 'meta.json')) format = 'vslice';
 		else if(StringTools.endsWith(lowerPath, 'config.json') || StringTools.endsWith(lowerPath, 'modpack.json')) format = 'codename';
 
-		// Nested Pico sections (objects or arrays-of-pairs tolerated via helpers)
-		var assts:Dynamic = Reflect.field(data, 'mod_assts');
+		// Nested Pico sections — supports both:
+		//   NEW:  modData / ScriptsData / modCredits / modAssetsData
+		//   OLD:  mod_assts / mod_scripts / mod_Credits / mod_data
+		var assts:Dynamic = Reflect.field(data, 'modData'); // new
+		if(assts == null) assts = Reflect.field(data, 'mod_assts'); // legacy
 		if(assts == null) assts = Reflect.field(data, 'mod_assets');
-		var modData:Dynamic = Reflect.field(data, 'mod_data');
-		var scriptsRaw:Dynamic = Reflect.field(data, 'mod_scripts');
-		var creditsRaw:Dynamic = Reflect.field(data, 'mod_Credits');
+		var modAssets:Dynamic = Reflect.field(data, 'modAssetsData'); // new
+		if(modAssets == null) modAssets = Reflect.field(data, 'mod_data'); // legacy
+		var modData:Dynamic = modAssets; // alias used below
+		var scriptsRaw:Dynamic = Reflect.field(data, 'ScriptsData'); // new
+		if(scriptsRaw == null) scriptsRaw = Reflect.field(data, 'mod_scripts'); // legacy
+		var creditsRaw:Dynamic = Reflect.field(data, 'modCredits'); // new
+		if(creditsRaw == null) creditsRaw = Reflect.field(data, 'mod_Credits');
 		if(creditsRaw == null) creditsRaw = Reflect.field(data, 'mod_credits');
 
 		var name:String = null;
@@ -569,25 +587,27 @@ class Mods
 		var scripts:Array<String> = null;
 		var credits:Array<String> = null;
 
-		// --- Pico meta_mod.json ---
-		if(format == 'pico' || assts != null || modData != null)
+		// --- Pico meta_mod.json (new + legacy keys) ---
+		if(format == 'pico' || assts != null || modData != null || Reflect.hasField(data, 'ScriptsData'))
 		{
 			if(format == 'unknown') format = 'pico';
 
-			name = nestedStr(assts, ['mod_Name', 'name', 'title']);
-			description = nestedStr(assts, ['mod_Description', 'description', 'desc']);
-			mainScript = nestedStr(assts, ['mod_Scripts', 'mod_Script', 'mainScript']);
+			// Name / description from modData (new) or mod_assts (old)
+			name = nestedStr(assts, ['ModName', 'mod_Name', 'name', 'title', 'modName']);
+			description = nestedStr(assts, ['modDescription', 'mod_Description', 'description', 'desc']);
+			mainScript = nestedStr(assts, ['mod_Scripts', 'mod_Script', 'mainScript', 'ModScripts']);
 
-			version = nestedStr(modData, ['mod_Version', 'version']);
-			apiVersion = nestedStr(modData, ['modAPI', 'apiVersion', 'api_version']);
-			icon = nestedStr(modData, ['mod_Icon', 'icon']);
-			category = nestedStr(modData, ['mod_Category', 'category', 'modCategory', 'type']);
+			// Assets / flags from modAssetsData (new) or mod_data (old)
+			version = nestedStr(modData, ['version', 'mod_Version', 'Version']);
+			apiVersion = nestedStr(modData, ['modEngineAPI', 'modAPI', 'apiVersion', 'api_version']);
+			icon = nestedStr(modData, ['icon_mod', 'mod_Icon', 'icon', 'iconName']);
+			category = nestedStr(modData, ['Category', 'mod_Category', 'category', 'modCategory', 'type']);
 			runsGlobally = nestedBool(modData, ['runsGlobally', 'runs_globally', 'global', 'alwaysActive'], false);
 			restart = nestedBool(modData, ['restart', 'requiresRestart'], false);
 			discordRP = nestedBool(modData, ['Discord_rich_Presence', 'discordRichPresence', 'discord_rich_presence'], false);
 			discordAppId = nestedStr(modData, ['Discord_App_ID', 'discordAppId', 'discord_app_id', 'discordID']);
 
-			var colorRaw:Dynamic = nestedField(modData, ['mod_Color', 'color', 'badgeColor']);
+			var colorRaw:Dynamic = nestedField(modData, ['backgroundColor', 'mod_Color', 'color', 'badgeColor']);
 			color = parseColor(colorRaw);
 
 			scripts = parseStringList(scriptsRaw);
@@ -648,22 +668,32 @@ class Mods
 			mainScript = strField(data, ['mod_Scripts', 'mainScript', 'script']);
 
 		if(scripts == null)
-			scripts = parseStringList(Reflect.field(data, 'mod_scripts'));
+		{
+			scripts = parseStringList(Reflect.field(data, 'ScriptsData'));
+			if(scripts == null) scripts = parseStringList(Reflect.field(data, 'mod_scripts'));
+		}
 		if(credits == null)
-			credits = parseStringList(Reflect.field(data, 'mod_Credits'));
+		{
+			credits = parseStringList(Reflect.field(data, 'modCredits'));
+			if(credits == null) credits = parseStringList(Reflect.field(data, 'mod_Credits'));
+		}
 
 		var license:String = null;
 		var downloadUrl:String = null;
 		var homepage:String = null;
-		var modData:Dynamic = Reflect.field(data, 'mod_data');
-		var assts:Dynamic = Reflect.field(data, 'mod_assts');
-		if(assts == null) assts = Reflect.field(data, 'mod_assets');
-		license = nestedStr(modData, ['mod_License', 'license', 'licence']);
-		if(license == null) license = strField(data, ['mod_License', 'license', 'licence']);
-		downloadUrl = nestedStr(modData, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
-		if(downloadUrl == null) downloadUrl = nestedStr(assts, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
-		if(downloadUrl == null) downloadUrl = strField(data, ['mod_Download', 'downloadUrl', 'download', 'sourceUrl', 'url']);
-		homepage = nestedStr(modData, ['homepage', 'website']);
+		// Re-resolve sections for license/download (new + legacy)
+		var assetsBlock:Dynamic = Reflect.field(data, 'modAssetsData');
+		if(assetsBlock == null) assetsBlock = Reflect.field(data, 'mod_data');
+		var nameBlock:Dynamic = Reflect.field(data, 'modData');
+		if(nameBlock == null) nameBlock = Reflect.field(data, 'mod_assts');
+		if(nameBlock == null) nameBlock = Reflect.field(data, 'mod_assets');
+
+		license = nestedStr(assetsBlock, ['License', 'mod_License', 'license', 'licence']);
+		if(license == null) license = strField(data, ['License', 'mod_License', 'license', 'licence']);
+		downloadUrl = nestedStr(assetsBlock, ['Download', 'mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
+		if(downloadUrl == null) downloadUrl = nestedStr(nameBlock, ['Download', 'mod_Download', 'downloadUrl', 'download', 'sourceUrl']);
+		if(downloadUrl == null) downloadUrl = strField(data, ['Download', 'mod_Download', 'downloadUrl', 'download', 'sourceUrl', 'url']);
+		homepage = nestedStr(assetsBlock, ['homepage', 'website']);
 		if(homepage == null) homepage = strField(data, ['homepage', 'website', 'url']);
 		if((downloadUrl == null || downloadUrl.length < 1) && homepage != null)
 			downloadUrl = homepage;
@@ -799,6 +829,142 @@ class Mods
 			}
 		}
 		return def;
+	}
+
+
+	// ---------- API version (V-Slice style) ----------
+
+	/** True if mod has no apiVersion or it matches ENGINE_API loosely. */
+	public static function isApiCompatible(folderOrInfo:Dynamic):Bool
+	{
+		var api:String = '';
+		if(Std.isOfType(folderOrInfo, String))
+		{
+			var info:ModPackInfo = getPackInfo(Std.string(folderOrInfo));
+			if(info != null) api = info.apiVersion != null ? info.apiVersion : '';
+		}
+		else if(folderOrInfo != null)
+		{
+			try api = Reflect.hasField(folderOrInfo, 'apiVersion') ? Std.string(Reflect.field(folderOrInfo, 'apiVersion')) : '' catch(e:Dynamic) api = '';
+		}
+		if(api == null || api.trim().length < 1) return true; // no requirement
+		return compareApiVersion(api.trim(), ENGINE_API_VERSION);
+	}
+
+	/**
+	 * Loose semver-ish compare: modApi is required max or exact.
+	 * Supports: "2.26.8", ">=2.0.0", "<3.0.0", ">=2.0.0 <3.0.0"
+	 */
+	public static function compareApiVersion(modApi:String, engineApi:String):Bool
+	{
+		if(modApi == null || modApi.trim().length < 1) return true;
+		var s:String = modApi.trim();
+		// Range with space
+		if(s.indexOf(' ') >= 0)
+		{
+			for (part in s.split(' '))
+			{
+				var p:String = part.trim();
+				if(p.length < 1) continue;
+				if(!compareApiVersion(p, engineApi)) return false;
+			}
+			return true;
+		}
+		if(StringTools.startsWith(s, '>='))
+			return versionCmp(engineApi, s.substr(2).trim()) >= 0;
+		if(StringTools.startsWith(s, '<='))
+			return versionCmp(engineApi, s.substr(2).trim()) <= 0;
+		if(StringTools.startsWith(s, '>'))
+			return versionCmp(engineApi, s.substr(1).trim()) > 0;
+		if(StringTools.startsWith(s, '<'))
+			return versionCmp(engineApi, s.substr(1).trim()) < 0;
+		if(StringTools.startsWith(s, '='))
+			return versionCmp(engineApi, s.substr(1).trim()) == 0;
+		// exact or major.minor match
+		return versionCmp(engineApi, s) == 0 || engineApi.indexOf(s) == 0 || s.indexOf(engineApi.split('.')[0]) == 0;
+	}
+
+	static function versionCmp(a:String, b:String):Int
+	{
+		var pa = parseVerParts(a);
+		var pb = parseVerParts(b);
+		var n = Std.int(Math.max(pa.length, pb.length));
+		for (i in 0...n)
+		{
+			var va = i < pa.length ? pa[i] : 0;
+			var vb = i < pb.length ? pb[i] : 0;
+			if(va > vb) return 1;
+			if(va < vb) return -1;
+		}
+		return 0;
+	}
+
+	static function parseVerParts(v:String):Array<Int>
+	{
+		var out:Array<Int> = [];
+		if(v == null) return [0];
+		var clean:String = v.trim();
+		// strip non-numeric prefix
+		while(clean.length > 0 && (clean.charAt(0) < '0' || clean.charAt(0) > '9'))
+			clean = clean.substr(1);
+		for (p in clean.split('.'))
+		{
+			var n:Int = Std.parseInt(p);
+			out.push(n != null ? n : 0);
+		}
+		if(out.length < 1) out.push(0);
+		return out;
+	}
+
+	/** Status label for UI: OK | WARN | INCOMPATIBLE */
+	public static function getApiStatus(folder:String):String
+	{
+		var info:ModPackInfo = getPackInfo(folder);
+		if(info == null) return 'OK';
+		var api:String = info.apiVersion != null ? info.apiVersion.trim() : '';
+		if(api.length < 1) return 'OK';
+		return isApiCompatible(info) ? 'OK' : 'INCOMPATIBLE';
+	}
+
+	/** Persist enabled/disabled/order to modsList.txt (V-Slice apply equivalent). */
+	public static function saveList(list:ModsList):Void
+	{
+		#if MODS_ALLOWED
+		if(list == null) return;
+		var fileStr:String = '';
+		var seen:Array<String> = [];
+		for (mod in list.all)
+		{
+			if(mod == null || mod.trim().length < 1) continue;
+			if(seen.contains(mod)) continue;
+			seen.push(mod);
+			if(fileStr.length > 0) fileStr += '\n';
+			var on:String = list.disabled.contains(mod) ? '0' : '1';
+			// If not in disabled and not in enabled, treat as enabled when in all
+			if(!list.disabled.contains(mod) && !list.enabled.contains(mod))
+				on = '1';
+			fileStr += mod + '|' + on;
+		}
+		File.saveContent(Paths.modsListFile(), fileStr);
+		updatedOnState = false;
+		clearPackCache();
+		parseList();
+		loadTopMod();
+		#end
+	}
+
+	/** Move mod folder within list.all (and keep enabled membership). Returns new index. */
+	public static function moveMod(list:ModsList, folder:String, newIndex:Int):Int
+	{
+		if(list == null || folder == null) return -1;
+		var id:Int = list.all.indexOf(folder);
+		if(id < 0) return -1;
+		if(newIndex < 0) newIndex = 0;
+		if(newIndex >= list.all.length) newIndex = list.all.length - 1;
+		if(newIndex == id) return id;
+		list.all.remove(folder);
+		list.all.insert(newIndex, folder);
+		return newIndex;
 	}
 
 	// ---------- modsList.txt ----------
