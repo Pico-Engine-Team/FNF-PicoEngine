@@ -2,6 +2,11 @@ package funkin.data.dialogue;
 
 import haxe.Json;
 import lime.utils.Assets;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 typedef DialogueAnimArray = {
 	var anim:String;
@@ -48,6 +53,9 @@ class DialogueCharacter extends FlxSprite
 
 	public function new(x:Float = 0, y:Float = 0, character:String = null)
 	{
+		// FlxSprite MUST call super before using frames/animation
+		super(x, y);
+
 		if(character == null) character = DEFAULT_CHARACTER;
 		this.curCharacter = character;
 
@@ -57,42 +65,75 @@ class DialogueCharacter extends FlxSprite
 		loadDialogueFrames();
 		reloadAnimations();
 
-		antialiasing = Preferences.data.antialiasing;
-		if(jsonFile.no_antialiasing == true) antialiasing = false;
+		try
+		{
+			if(Preferences.data != null)
+				antialiasing = Preferences.data.antialiasing;
+		}
+		catch(e:Dynamic) {}
+		if(jsonFile != null && jsonFile.no_antialiasing == true) antialiasing = false;
 
 		if(flipXFromJson)
 			flipX = true;
-
-		super(x, y);
 	}
 
 	/** Resolve sprite frames from assetPath / image via Paths (supports mods). */
 	public function loadDialogueFrames():Void
 	{
 		var img:String = resolveImagePath();
+		var loaded:Bool = false;
 		try
 		{
-			// Prefer sparrow atlas (animated dialogue portraits)
-			frames = Paths.getSparrowAtlas(img);
+			var atlas = Paths.getSparrowAtlas(img);
+			if(atlas != null)
+			{
+				frames = atlas;
+				loaded = true;
+			}
 		}
-		catch(e:Dynamic)
+		catch(e:Dynamic) {}
+
+		if(!loaded)
 		{
 			try
 			{
-				// Fallback: plain image
-				loadGraphic(Paths.image(img));
+				var graphic = Paths.image(img);
+				if(graphic != null)
+				{
+					loadGraphic(graphic);
+					loaded = true;
+				}
 			}
-			catch(e2:Dynamic)
+			catch(e2:Dynamic) {}
+		}
+
+		if(!loaded)
+		{
+			try
 			{
-				try
+				var atlas2 = Paths.getSparrowAtlas('dialogue/characters/' + DEFAULT_CHARACTER);
+				if(atlas2 != null)
 				{
-					frames = Paths.getSparrowAtlas('dialogue/characters/' + DEFAULT_CHARACTER);
+					frames = atlas2;
+					loaded = true;
 				}
-				catch(e3:Dynamic)
-				{
-					try { loadGraphic(Paths.image('dialogue/characters/' + DEFAULT_CHARACTER)); }
-					catch(e4:Dynamic) {}
-				}
+			}
+			catch(e3:Dynamic) {}
+		}
+
+		if(!loaded)
+		{
+			try
+			{
+				var graphic2 = Paths.image('dialogue/characters/' + DEFAULT_CHARACTER);
+				if(graphic2 != null)
+					loadGraphic(graphic2);
+				else
+					makeGraphic(100, 100, 0x33FFFFFF); // last-resort placeholder
+			}
+			catch(e4:Dynamic)
+			{
+				makeGraphic(100, 100, 0x33FFFFFF);
 			}
 		}
 	}
@@ -283,6 +324,9 @@ class DialogueCharacter extends FlxSprite
 		dialogueAnimations.clear();
 		if(jsonFile == null || jsonFile.animations == null || jsonFile.animations.length < 1)
 			return;
+		// Without frames, addByPrefix throws Null Object Reference
+		if(frames == null)
+			return;
 
 		for (anim in jsonFile.animations)
 		{
@@ -295,14 +339,22 @@ class DialogueCharacter extends FlxSprite
 			}
 			var looped:Bool = isGhost || (Reflect.hasField(anim, 'loop') ? Reflect.field(anim, 'loop') == true : true);
 
-			if(anim.loop_name != null && anim.loop_name.length > 0)
-				animation.addByPrefix(anim.anim, anim.loop_name, fps, looped);
+			try
+			{
+				if(anim.loop_name != null && anim.loop_name.length > 0 && anim.anim != null)
+					animation.addByPrefix(anim.anim, anim.loop_name, fps, looped);
 
-			var idleName:String = (anim.idle_name != null && anim.idle_name.length > 0) ? anim.idle_name : anim.loop_name;
-			if(idleName != null && idleName.length > 0)
-				animation.addByPrefix(anim.anim + IDLE_POSTFIX, idleName, fps, true);
+				var idleName:String = (anim.idle_name != null && anim.idle_name.length > 0) ? anim.idle_name : anim.loop_name;
+				if(idleName != null && idleName.length > 0 && anim.anim != null)
+					animation.addByPrefix(anim.anim + IDLE_POSTFIX, idleName, fps, true);
+			}
+			catch(e:Dynamic)
+			{
+				trace('[DialogueCharacter] Failed to add anim for ' + curCharacter + ': ' + e);
+			}
 
-			dialogueAnimations.set(anim.anim, anim);
+			if(anim.anim != null)
+				dialogueAnimations.set(anim.anim, anim);
 		}
 	}
 
@@ -325,16 +377,28 @@ class DialogueCharacter extends FlxSprite
 				playIdle = true;
 		}
 
-		if(leAnim != null && leAnim.length > 0)
-			animation.play(playIdle ? leAnim + IDLE_POSTFIX : leAnim, false);
+		if(leAnim != null && leAnim.length > 0 && frames != null && animation != null)
+		{
+			try animation.play(playIdle ? leAnim + IDLE_POSTFIX : leAnim, false) catch(e:Dynamic) {}
+		}
 
 		if(dialogueAnimations.exists(leAnim))
 		{
 			var anim:DialogueAnimArray = dialogueAnimations.get(leAnim);
 			if(playIdle)
-				offset.set(anim.idle_offsets[0], anim.idle_offsets[1]);
+			{
+				if(anim.idle_offsets != null && anim.idle_offsets.length >= 2)
+					offset.set(anim.idle_offsets[0], anim.idle_offsets[1]);
+				else
+					offset.set(0, 0);
+			}
 			else
-				offset.set(anim.loop_offsets[0], anim.loop_offsets[1]);
+			{
+				if(anim.loop_offsets != null && anim.loop_offsets.length >= 2)
+					offset.set(anim.loop_offsets[0], anim.loop_offsets[1]);
+				else
+					offset.set(0, 0);
+			}
 		}
 		else
 		{
@@ -353,7 +417,7 @@ class DialogueCharacter extends FlxSprite
 
 	static function tryLoadText(relativePath:String):String
 	{
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		var modPath:String = Paths.modFolders(relativePath);
 		if(FileSystem.exists(modPath) && !FileSystem.isDirectory(modPath))
 		{
@@ -362,7 +426,7 @@ class DialogueCharacter extends FlxSprite
 		#end
 
 		var shared:String = Paths.getSharedPath(relativePath);
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		if(FileSystem.exists(shared) && !FileSystem.isDirectory(shared))
 		{
 			try { return File.getContent(shared); } catch(e:Dynamic) {}

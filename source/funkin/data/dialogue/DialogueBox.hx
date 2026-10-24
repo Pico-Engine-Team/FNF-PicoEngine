@@ -21,7 +21,7 @@ class DialogueBox extends FlxSpriteGroup
 	var bgFade:FlxSprite;
 	var skipText:FlxText;
 
-	var songName:String = Paths.formatToSongPath(Song.loadedSongName);
+	var songName:String = Paths.formatToSongPath(Song.loadedSongName != null ? Song.loadedSongName : '');
 	public function new(talkingRight:Bool = true, ?dialogueList:Array<String>)
 	{
 		super();
@@ -63,7 +63,7 @@ class DialogueBox extends FlxSpriteGroup
 				hasDialog = false;
 		}
 
-		this.dialogueList = dialogueList;
+		this.dialogueList = (dialogueList != null) ? dialogueList : [];
 		
 		if (!hasDialog)
 			return;
@@ -121,20 +121,24 @@ class DialogueBox extends FlxSpriteGroup
 
 	override function update(elapsed:Float)
 	{
-		// HARD CODING CUZ IM STUPDI
 		super.update(elapsed);
+
+		// Early-out when this song has no pixel dialogue box
+		if (box == null || swagDialogue == null)
+			return;
 
 		switch(songName)
 		{
 			case 'roses':
-				portraitLeft.visible = false;
+				if (portraitLeft != null) portraitLeft.visible = false;
 			case 'thorns':
-				portraitLeft.visible = false;
+				if (portraitLeft != null) portraitLeft.visible = false;
 				swagDialogue.color = FlxColor.WHITE;
 				swagDialogue.borderStyle = NONE;
 		}
 
-		if (box.animation.curAnim != null && box.animation.curAnim.name == 'normalOpen' && box.animation.curAnim.finished)
+		if (box.animation != null && box.animation.curAnim != null
+			&& box.animation.curAnim.name == 'normalOpen' && box.animation.curAnim.finished)
 		{
 			box.animation.play('normal');
 			dialogueOpened = true;
@@ -146,38 +150,52 @@ class DialogueBox extends FlxSpriteGroup
 			dialogueStarted = true;
 		}
 
-		if(Controls.instance.BACK)
+		var pressedBack:Bool = false;
+		var pressedAccept:Bool = false;
+		try
+		{
+			if (Controls.instance != null)
+			{
+				pressedBack = Controls.instance.BACK;
+				pressedAccept = Controls.instance.ACCEPT;
+			}
+		}
+		catch (e:Dynamic) {}
+
+		if (pressedBack)
 		{
 			if (dialogueStarted && !isEnding)
 			{
 				dialogueCompleted();
-				FlxG.sound.play(Paths.sound('clickText'), 0.8);
+				try FlxG.sound.play(Paths.sound('clickText'), 0.8) catch (e:Dynamic) {}
 			}
 		}
-		else if(Controls.instance.ACCEPT)
+		else if (pressedAccept)
 		{
 			if (dialogueEnded)
 			{
-				if (dialogueList[1] == null && dialogueList[0] != null)
+				if (dialogueList == null || dialogueList.length < 1)
+				{
+					if (!isEnding) dialogueCompleted();
+				}
+				else if (dialogueList.length <= 1)
 				{
 					if (!isEnding)
 						dialogueCompleted();
 				}
 				else
 				{
-					dialogueList.remove(dialogueList[0]);
+					dialogueList.shift();
 					startDialogue();
-					FlxG.sound.play(Paths.sound('clickText'), 0.8);
+					try FlxG.sound.play(Paths.sound('clickText'), 0.8) catch (e:Dynamic) {}
 				}
 			}
 			else if (dialogueStarted)
 			{
-				FlxG.sound.play(Paths.sound('clickText'), 0.8);
+				try FlxG.sound.play(Paths.sound('clickText'), 0.8) catch (e:Dynamic) {}
 				swagDialogue.skip();
-				
-				if(skipDialogueThing != null) {
+				if (skipDialogueThing != null)
 					skipDialogueThing();
-				}
 			}
 		}
 	}
@@ -188,70 +206,95 @@ class DialogueBox extends FlxSpriteGroup
 		isEnding = true;
 		FlxG.sound.play(Paths.sound('clickText'), 0.8);	
 
-		if (songName == 'senpai' || songName == 'thorns')
-			FlxG.sound.music.fadeOut(1.5, 0, (_) -> FlxG.sound.music.stop());
+		if ((songName == 'senpai' || songName == 'thorns') && FlxG.sound.music != null)
+		{
+			try FlxG.sound.music.fadeOut(1.5, 0, function(_) {
+				if (FlxG.sound.music != null) FlxG.sound.music.stop();
+			}) catch (e:Dynamic) {}
+		}
 
 		new FlxTimer().start(0.2, function(tmr:FlxTimer)
 		{
-			box.alpha -= 1 / 5;
-			bgFade.alpha -= 1 / 5 * 0.7;
-			portraitLeft.visible = false;
-			portraitRight.visible = false;
-			swagDialogue.alpha -= 1 / 5;
-			handSelect.alpha -= 1 / 5;
+			if (box != null) box.alpha -= 1 / 5;
+			if (bgFade != null) bgFade.alpha -= 1 / 5 * 0.7;
+			if (portraitLeft != null) portraitLeft.visible = false;
+			if (portraitRight != null) portraitRight.visible = false;
+			if (swagDialogue != null) swagDialogue.alpha -= 1 / 5;
+			if (handSelect != null) handSelect.alpha -= 1 / 5;
 		}, 5);
 
-		swagDialogue.skip();
-		skipText.visible = false;
+		if (swagDialogue != null) swagDialogue.skip();
+		if (skipText != null) skipText.visible = false;
 		new FlxTimer().start(1.5, function(tmr:FlxTimer)
 		{
-			finishThing();
+			if (finishThing != null)
+			{
+				try finishThing() catch (e:Dynamic) {}
+			}
 			kill();
 		});
 	}
 
 	function startDialogue():Void
 	{
-		cleanDialog();
-		// var theDialog:Alphabet = new Alphabet(0, 70, dialogueList[0], false, true);
-		// dialogue = theDialog;
-		// add(theDialog);
+		if (dialogueList == null || dialogueList.length < 1 || swagDialogue == null)
+		{
+			if (!isEnding) dialogueCompleted();
+			return;
+		}
 
-		// swagDialogue.text = ;
-		swagDialogue.resetText(dialogueList[0]);
+		cleanDialog();
+
+		swagDialogue.resetText(dialogueList[0] != null ? dialogueList[0] : ' ');
 		swagDialogue.start(0.04, true);
 		swagDialogue.completeCallback = function() {
-			handSelect.visible = true;
+			if (handSelect != null) handSelect.visible = true;
 			dialogueEnded = true;
 		};
 
-		handSelect.visible = false;
+		if (handSelect != null) handSelect.visible = false;
 		dialogueEnded = false;
 		switch (curCharacter)
 		{
 			case 'dad':
-				portraitRight.visible = false;
-				if (!portraitLeft.visible)
+				if (portraitRight != null) portraitRight.visible = false;
+				if (portraitLeft != null && !portraitLeft.visible)
 				{
 					if (songName == 'senpai') portraitLeft.visible = true;
 					portraitLeft.animation.play('enter');
 				}
 			case 'bf':
-				portraitLeft.visible = false;
-				if (!portraitRight.visible)
+				if (portraitLeft != null) portraitLeft.visible = false;
+				if (portraitRight != null && !portraitRight.visible)
 				{
 					portraitRight.visible = true;
 					portraitRight.animation.play('enter');
 				}
 		}
-		if(nextDialogueThing != null)
+		if (nextDialogueThing != null)
 			nextDialogueThing();
 	}
 
 	function cleanDialog():Void
 	{
-		var splitName:Array<String> = dialogueList[0].split(':');
-		curCharacter = splitName[1];
-		dialogueList[0] = dialogueList[0].substr(splitName[1].length + 2).trim();
+		if (dialogueList == null || dialogueList.length < 1 || dialogueList[0] == null)
+		{
+			curCharacter = '';
+			return;
+		}
+
+		var line:String = dialogueList[0];
+		var splitName:Array<String> = line.split(':');
+		if (splitName.length >= 2 && splitName[1] != null)
+		{
+			curCharacter = splitName[1];
+			var cut:Int = splitName[1].length + 2; // ":name:"
+			dialogueList[0] = (line.length > cut) ? line.substr(cut).trim() : '';
+		}
+		else
+		{
+			curCharacter = '';
+			dialogueList[0] = line.trim();
+		}
 	}
 }
