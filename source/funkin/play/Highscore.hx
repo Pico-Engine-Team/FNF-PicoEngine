@@ -102,7 +102,8 @@ class Highscore
 	{
 		loadDifficultyListForMode(week, freeplay);
 
-		var daSong:String = Paths.formatToSongPath(song);
+		var daSong:String = Paths.formatToSongPath(song != null ? song : '');
+		if(daSong.length < 1) daSong = 'unknown';
 		var difficultyVariation:String = Difficulty.getDifficultyVariationName(diff);
 		if(difficultyVariation.length > 0)
 			daSong = appendSuffix(daSong, Difficulty.getVariationFilePath(difficultyVariation));
@@ -197,17 +198,22 @@ class Highscore
 	{
 		if (FlxG.save.data.weekScores != null)
 			weekScores = FlxG.save.data.weekScores;
+		if (weekScores == null) weekScores = new Map();
 
 		if (FlxG.save.data.songScores != null)
 			songScores = FlxG.save.data.songScores;
+		if (songScores == null) songScores = new Map();
 
 		if (FlxG.save.data.songRating != null)
 			songRating = FlxG.save.data.songRating;
+		if (songRating == null) songRating = new Map();
 
 		if (FlxG.save.data.songMisses != null)
 			songMisses = FlxG.save.data.songMisses;
+		if (songMisses == null) songMisses = new Map();
 
 		if (FlxG.save.data.songDeaths != null)
 			songDeaths = FlxG.save.data.songDeaths;
+		if (songDeaths == null) songDeaths = new Map();
 	}
 }

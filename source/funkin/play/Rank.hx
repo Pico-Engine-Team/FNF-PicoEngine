@@ -46,11 +46,12 @@ class Rank
 			return 'N/A';
 
 		var clamped:Float = Math.max(0, Math.min(1, accuracy));
-		var rank:String = 'E';
+		var rank:String = 'L';
 
 		for (i in 0...ratingStuff.length)
 		{
 			var entry:Dynamic = ratingStuff[i];
+			if(entry == null) continue;
 			var name:String = Std.string(entry[0]);
 			var minAcc:Float = Std.parseFloat(Std.string(entry[1]));
 			if (Math.isNaN(minAcc)) minAcc = 0;

@@ -8,8 +8,8 @@ import funkin.play.Difficulty;
  * Highscores stay Psych (Highscore) — meta never saves scores.
  *
  * Preferred location (new layout):
- *   assets/songs/<song>/meta.json
- *   assets/songs/<song>/meta.txt
+ *   assets/songs/<songFileName>/meta.json
+ *   assets/songs/<songFileName>/meta.txt
  *
  * Extra freeplay:
  *   assets/data/extra-songs/<song>/meta.json
@@ -26,10 +26,16 @@ import funkin.play.Difficulty;
  *   "opponent": "dad",
  *   "stage": "mainStage",
  *   "noteStyle": "funkin",
- *   "songName": "bopeebo",
+ *   "songFileName": "bopeebo",
  *   "displayName": "Bopeebo",
+ *   // songFileName = folder: assets/songs/<songFileName>/
+ *   //   song/  charts/  meta.json  events.json  events-global.json
+ *   // legacy "songName" still accepted on load
  *   "chart_Difficulties": ["easy", "normal", "hard"],
  *   "chart_Variations": ["pico", "remix"],
+ *   // Charts per variation: <songFileName>-<variation>-<difficulty>.json
+ *   //   e.g. dad-battle-pico-normal.json / dad-battle-pico-hard.json
+ *   // Meta per variation: meta-pico.json (overlay on meta.json)
  *   // legacy also accepted: difficulties / songVariations
  *   "charter": [],
  *   "composers": [],
@@ -51,7 +57,17 @@ class SongMeta
 	public static inline var FORMAT_JSON:String = 'json';
 	public static inline var FORMAT_TXT:String = 'txt';
 
-	public var songName:String = null;
+	/**
+	 * Folder id under assets/songs/<songFileName>/
+	 *   song/*.ogg | charts/*.json | meta.json | events.json | events-global.json
+	 * Legacy JSON key "songName" is still accepted when reading.
+	 */
+	public var songFileName:String = null;
+	/** @deprecated use songFileName */
+	public var songName(get, set):String;
+	function get_songName():String return songFileName;
+	function set_songName(v:String):String return songFileName = v;
+
 	public var displayName:String = null;
 	public var artist:String = null;
 	public var charter:String = null;
@@ -125,6 +141,8 @@ class SongMeta
 			return null;
 
 		var folder:String = Paths.formatToSongPath(songFolder);
+		if(folder == null || folder.length < 1)
+			return null;
 		var preferred:String = formatOverride != null ? formatOverride.trim().toLowerCase() : getPreferredFormat();
 		if(preferred != FORMAT_JSON && preferred != FORMAT_TXT)
 			preferred = FORMAT_AUTO;
@@ -173,7 +191,7 @@ class SongMeta
 	static function overlayMeta(base:SongMeta, overlay:SongMeta):Void
 	{
 		if(base == null || overlay == null) return;
-		if(overlay.songName != null) base.songName = overlay.songName;
+		if(overlay.songFileName != null) base.songFileName = overlay.songFileName;
 		if(overlay.displayName != null) base.displayName = overlay.displayName;
 		if(overlay.artist != null) base.artist = overlay.artist;
 		if(overlay.charter != null) base.charter = overlay.charter;
@@ -352,7 +370,7 @@ class SongMeta
 		if(data == null) return null;
 		var meta:SongMeta = new SongMeta();
 
-		meta.songName = strField(data, ['songName', 'song', 'name']);
+		meta.songFileName = strField(data, ['songFileName', 'songName', 'song', 'name']);
 		meta.displayName = strField(data, ['displayName', 'display', 'title']);
 		meta.artist = joinStringOrArray(data, ['artist', 'composer', 'composers']);
 		meta.charter = joinStringOrArray(data, ['charter', 'chartAuthor', 'author']);
@@ -449,7 +467,7 @@ class SongMeta
 			return null;
 
 		var meta:SongMeta = new SongMeta();
-		meta.songName = mapGet(map, ['songname', 'song', 'name']);
+		meta.songFileName = mapGet(map, ['songfilename', 'songname', 'song', 'name']);
 		meta.displayName = mapGet(map, ['displayname', 'display', 'title']);
 		meta.artist = mapGet(map, ['artist', 'composer', 'composers']);
 		meta.charter = mapGet(map, ['charter', 'chartauthor', 'author']);
@@ -496,7 +514,8 @@ class SongMeta
 	{
 		if(song == null) return new SongMeta();
 		var meta:SongMeta = new SongMeta();
-		meta.songName = strVal(Reflect.field(song, 'song'));
+		meta.songFileName = strVal(Reflect.field(song, 'songFileName'));
+		if(meta.songFileName == null) meta.songFileName = strVal(Reflect.field(song, 'song'));
 		meta.displayName = strVal(Reflect.field(song, 'displayName'));
 		meta.artist = strVal(Reflect.field(song, 'artist'));
 		meta.charter = strVal(Reflect.field(song, 'charter'));
@@ -532,6 +551,15 @@ class SongMeta
 	{
 		if(song == null || meta == null) return;
 
+		// songFileName drives folder paths; mirror onto SONG.song for Psych loaders
+		if(meta.songFileName != null && meta.songFileName.length > 0)
+		{
+			var folderId:String = Paths.formatToSongPath(meta.songFileName);
+			if(overwriteExisting || emptyField(Reflect.field(song, 'songFileName')))
+				Reflect.setField(song, 'songFileName', folderId);
+			if(overwriteExisting || emptyField(Reflect.field(song, 'song')))
+				Reflect.setField(song, 'song', folderId);
+		}
 		setIf(song, 'displayName', meta.displayName, overwriteExisting);
 		setIf(song, 'artist', meta.artist, overwriteExisting);
 		setIf(song, 'charter', meta.charter, overwriteExisting);
@@ -638,8 +666,8 @@ class SongMeta
 	{
 		if(displayName != null && displayName.trim().length > 0)
 			return displayName.trim();
-		if(songName != null && songName.trim().length > 0)
-			return songName.trim();
+		if(songFileName != null && songFileName.trim().length > 0)
+			return songFileName.trim();
 		if(fallback != null) return fallback;
 		return '';
 	}
@@ -667,7 +695,7 @@ class SongMeta
 		if(opponent != null) Reflect.setField(root, 'opponent', opponent);
 		if(stage != null) Reflect.setField(root, 'stage', stage);
 		if(noteStyle != null) Reflect.setField(root, 'noteStyle', noteStyle);
-		if(songName != null) Reflect.setField(root, 'songName', songName);
+		if(songFileName != null) Reflect.setField(root, 'songFileName', songFileName);
 		if(displayName != null) Reflect.setField(root, 'displayName', displayName);
 		if(difficulties != null) Reflect.setField(root, 'chart_Difficulties', difficulties);
 		if(variations != null) Reflect.setField(root, 'chart_Variations', variations);
@@ -709,7 +737,7 @@ class SongMeta
 			if(value != null && value.trim().length > 0)
 				lines.push(key + '=' + value.trim());
 		}
-		add('songName', songName);
+		add('songFileName', songFileName);
 		add('displayName', displayName);
 		add('artist', artist);
 		add('charter', charter);

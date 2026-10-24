@@ -19,17 +19,20 @@ class Rating
 		var window:String = name == 'marvelous' ? 'epicRankings' : name + 'Window';
 		try
 		{
-			var rawWindow:Dynamic = Reflect.field(Preferences.data, window);
-			if(rawWindow == null && name == 'marvelous')
-				rawWindow = Reflect.field(Preferences.data, 'marvelousWindow');
-			if(rawWindow != null)
+			if(Preferences.data != null)
 			{
-				var parsedWindow:Float = Std.parseFloat(Std.string(rawWindow));
-				if(!Math.isNaN(parsedWindow))
-					this.hitWindow = parsedWindow;
+				var rawWindow:Dynamic = Reflect.field(Preferences.data, window);
+				if(rawWindow == null && name == 'marvelous')
+					rawWindow = Reflect.field(Preferences.data, 'marvelousWindow');
+				if(rawWindow != null)
+				{
+					var parsedWindow:Float = Std.parseFloat(Std.string(rawWindow));
+					if(!Math.isNaN(parsedWindow) && parsedWindow > 0)
+						this.hitWindow = parsedWindow;
+				}
 			}
 		}
-		catch(e) FlxG.log.error(e);
+		catch(e) try FlxG.log.error(e) catch(_:Dynamic) {}
 	}
 
 	public static function loadDefault():Array<Rating>
@@ -37,7 +40,7 @@ class Rating
 		var ratingsData:Array<Rating> = [];
 		var rating:Rating;
 
-		if(Preferences.data.useEpicRankings)
+		if(Preferences.data != null && Preferences.data.useEpicRankings)
 		{
 			rating = new Rating('marvelous');
 			rating.ratingMod = 1;

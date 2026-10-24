@@ -25,8 +25,11 @@ class Difficulty
 	{
 		if (value == null)
 			return '';
+		var trimmed:String = value.trim();
+		if(trimmed.length < 1)
+			return '';
 
-		var clean:String = Paths.formatToSongPath(value.trim());
+		var clean:String = Paths.formatToSongPath(trimmed);
 		while (clean.startsWith('-'))
 			clean = clean.substr(1);
 		while (clean.endsWith('-'))
@@ -41,15 +44,42 @@ class Difficulty
 		return clean.length > 0 ? '-$clean' : '';
 	}
 
+	/**
+	 * Chart variation suffix only (e.g. "pico" → "-pico").
+	 * Does NOT strip character-named variations (Pico/BF/…) — valid chart_Variations ids.
+	 */
 	inline public static function getVariationFilePath(?variation:String):String
 	{
-		return getSuffixFilePath(getChartSuffixName(variation));
+		return getSuffixFilePath(variation);
 	}
 
-	inline public static function getVariationAndDifficultyFilePath(?variation:String, ?num:Null<Int>):String
+	/**
+	 * Combined chart file suffix for variation + difficulty.
+	 *
+	 * With variation "pico" + difficulty Normal/Easy/Hard:
+	 *   → "-pico-normal" / "-pico-easy" / "-pico-hard"
+	 *   charts: dad-battle-pico-normal.json, dad-battle-pico-easy.json, …
+	 *
+	 * Without variation: same as getFilePath (Normal → "", Easy → "-easy", …).
+	 */
+	public static function getVariationAndDifficultyFilePath(?variation:String, ?num:Null<Int>):String
 	{
-		var variationSuffix:String = getVariationFilePath(variation);
-		return variationSuffix.length > 0 ? variationSuffix : getFilePath(num);
+		var varPart:String = getSuffixName(variation);
+		if(varPart == 'default' || varPart == 'none')
+			varPart = '';
+
+		if(varPart.length > 0)
+		{
+			// Always include difficulty name when a variation is active
+			var diffPart:String = getSuffixName(getRaw(num));
+			if(diffPart.length < 1)
+				diffPart = getSuffixName(defaultDifficulty); // "normal"
+			if(diffPart.length < 1)
+				diffPart = 'normal';
+			return '-' + varPart + '-' + diffPart;
+		}
+
+		return getFilePath(num);
 	}
 
 	public static function getChartSuffixName(?value:String):String
@@ -128,7 +158,10 @@ class Difficulty
 
 	inline public static function copyFrom(diffs:Array<String>):Void
 	{
-		list = diffs == null ? defaultList.copy() : diffs.copy();
+		if(diffs == null || diffs.length < 1)
+			list = defaultList.copy();
+		else
+			list = diffs.copy();
 	}
 
 	inline public static function getDifficultyVariationName(?num:Null<Int>):String
@@ -149,10 +182,14 @@ class Difficulty
 
 	inline private static function getRaw(?num:Null<Int>):String
 	{
+		if(list == null || list.length < 1)
+			return defaultDifficulty;
 		var index:Int = num == null ? PlayState.storyDifficulty : num;
+		if(index < 0) index = 0;
+		if(index >= list.length) index = list.length - 1;
 		var diff:String = list[index];
 
-		return diff == null ? defaultDifficulty : diff;
+		return diff == null || diff.length < 1 ? defaultDifficulty : diff;
 	}
 
 	inline private static function sameDifficulty(a:String, b:String):Bool

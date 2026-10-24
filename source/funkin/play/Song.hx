@@ -3,15 +3,21 @@ package funkin.play;
 import funkin.modding.Mods;
 import funkin.stages.StageData;
 import funkin.states.menus.MainMenuState;
-import funkin.data.objects.game.notes.data.Note;
+import funkin.data.objects.game.note.data.Note;
 import funkin.utils.engines.pico.AntiPiracy;
 
 import haxe.Json;
 import lime.utils.Assets;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
 using StringTools;
 
 typedef SwagSong = {
 	var song:String;
+	/** Folder id: assets/songs/<songFileName>/ (same value as song when set from meta) */
+	@:optional var songFileName:String;
 	@:optional var displayName:String;
 	@:optional var opponentMode:String;
 	@:optional var artist:String;
@@ -113,9 +119,11 @@ class Song {
 		if(songJson.events == null)
 		{
 			songJson.events = [];
+			if(songJson.notes != null)
 			for (secNum in 0...songJson.notes.length)
 			{
 				var sec:SwagSection = songJson.notes[secNum];
+				if(sec == null || sec.sectionNotes == null) continue;
 
 				var i:Int = 0;
 				var notes:Array<Dynamic> = sec.sectionNotes;
@@ -139,6 +147,7 @@ class Song {
 
 		for (section in sectionsData)
 		{
+			if(section == null) continue;
 			var beats:Null<Float> = cast section.sectionBeats;
 			if (beats == null || Math.isNaN(beats))
 			{
@@ -146,13 +155,23 @@ class Song {
 				if(Reflect.hasField(section, 'lengthInSteps')) Reflect.deleteField(section, 'lengthInSteps');
 			}
 
+			if(section.sectionNotes != null)
 			for (note in section.sectionNotes)
 			{
-				var gottaHitNote:Bool = (note[1] < 4) ? section.mustHitSection : !section.mustHitSection;
-				note[1] = (note[1] % 4) + (gottaHitNote ? 0 : 4);
+				if(note == null || !Std.isOfType(note, Array)) continue;
+				var noteArr:Array<Dynamic> = cast note;
+				if(noteArr.length < 2) continue;
+				var gottaHitNote:Bool = (noteArr[1] < 4) ? section.mustHitSection : !section.mustHitSection;
+				noteArr[1] = (Std.int(noteArr[1]) % 4) + (gottaHitNote ? 0 : 4);
 
-				if(note[3] != null && !Std.isOfType(note[3], String))
-					note[3] = Note.defaultNoteTypes[note[3]]; //compatibility with Week 7 and 0.1-0.3 psych charts
+				if(noteArr.length > 3 && noteArr[3] != null && !Std.isOfType(noteArr[3], String))
+				{
+					try {
+						var idx:Int = Std.int(noteArr[3]);
+						if(Note.defaultNoteTypes != null && idx >= 0 && idx < Note.defaultNoteTypes.length)
+							noteArr[3] = Note.defaultNoteTypes[idx];
+					} catch(e:Dynamic) {}
+				}
 			}
 		}
 	}
@@ -240,7 +259,9 @@ class Song {
 	static var _lastPath:String;
 	public static function getChart(jsonInput:String, ?folder:String):SwagSong
 	{
-		if(folder == null) folder = jsonInput;
+		if(jsonInput == null || jsonInput.trim().length < 1)
+			return null;
+		if(folder == null || folder.trim().length < 1) folder = jsonInput;
 		var rawData:String = null;
 
 		var formattedFolder:String = Paths.formatToSongPath(folder);
@@ -249,7 +270,7 @@ class Song {
 		// FALLBACK: assets/shared/data/songs/<song>/<file>.json
 		_lastPath = resolveChartPath(formattedFolder, formattedSong);
 
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		if(FileSystem.exists(_lastPath))
 			rawData = File.getContent(_lastPath);
 		else
@@ -276,7 +297,7 @@ class Song {
 	}
 
 	/**
-	 * Fill empty chart fields from assets/songs/<folder>/meta.json
+	 * Fill empty chart fields from assets/songs/<songFileName>/meta.json
 	 * (displayName, pauseSong, stage, noteStyle, characters, variations, etc.)
 	 */
 	public static function applySongMeta(song:SwagSong, songFolder:String, ?extraFreeplay:Bool = false, ?variation:String = null):Void
@@ -305,24 +326,35 @@ class Song {
 				catch (e:Dynamic) {}
 			}
 
-			// Also detect from chart filename: bopeebo-pico-hard → pico
+			// Chart filename: dad-battle-pico-normal.json → variation "pico"
+			// Pattern: <songFileName>-<variation>-<difficulty>.json
 			if (variationKey == null || variationKey.trim().length < 1)
 			{
 				try
 				{
 					var chartFile:String = Paths.formatToSongPath(Song.chartPath != null ? Song.chartPath : '');
 					var base:String = Paths.formatToSongPath(songFolder);
-					// path may end with .../bopeebo-pico-hard.json
 					var slash:Int = chartFile.lastIndexOf('/');
 					var name:String = slash >= 0 ? chartFile.substr(slash + 1) : chartFile;
 					if (StringTools.endsWith(name, '.json'))
 						name = name.substr(0, name.length - 5);
 					if (StringTools.startsWith(name, base + '-'))
 					{
-						var rest:String = name.substr(base.length + 1); // pico-hard or pico
-						// strip trailing difficulty-ish tokens is handled by freeplay; keep first segment
-						var dash:Int = rest.indexOf('-');
-						variationKey = dash > 0 ? rest.substr(0, dash) : rest;
+						var rest:String = name.substr(base.length + 1); // pico-normal | pico-hard | pico
+						var parts:Array<String> = rest.split('-');
+						if (parts.length >= 2)
+						{
+							// last token may be difficulty (easy/normal/hard/…)
+							var last:String = parts[parts.length - 1];
+							var knownDiffs:Array<String> = ['easy', 'normal', 'hard', 'erect', 'nightmare'];
+							var lastIsDiff:Bool = knownDiffs.indexOf(last) >= 0;
+							if (lastIsDiff)
+								variationKey = parts.slice(0, parts.length - 1).join('-');
+							else
+								variationKey = rest;
+						}
+						else
+							variationKey = rest;
 					}
 				}
 				catch (e:Dynamic) {}
@@ -331,6 +363,14 @@ class Song {
 			var meta = SongMeta.load(songFolder, null, isExtra, variationKey);
 			if (meta == null) return;
 			SongMeta.applyToSong(song, meta, false);
+			// Ensure active variation is stored on the chart for suffix lookups
+			if (variationKey != null && variationKey.trim().length > 0)
+			{
+				if (song.songVariation == null || Std.string(song.songVariation).trim().length < 1)
+					song.songVariation = variationKey;
+				if (song.variation == null || Std.string(song.variation).trim().length < 1)
+					song.variation = variationKey;
+			}
 			// Keep meta on the song so PlayState.SONG.meta.player etc. work
 			Reflect.setField(song, 'meta', meta);
 			try Paths.applyAudioSuffixesFromSong(song) catch (e:Dynamic) {}
@@ -368,7 +408,7 @@ class Song {
 	{
 		if (path == null || path.length < 1)
 			return false;
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		if (FileSystem.exists(path))
 			return true;
 		#end
@@ -401,7 +441,13 @@ class Song {
 
 	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1'):SwagSong
 	{
-		var parsed:Dynamic = Json.parse(rawData);
+		if(rawData == null || rawData.trim().length < 1) return null;
+		var parsed:Dynamic = null;
+		try { parsed = Json.parse(rawData); } catch(e:Dynamic) {
+			trace('[Song] JSON parse failed' + (nameForError != null ? ' ($nameForError)' : '') + ': ' + e);
+			return null;
+		}
+		if(parsed == null) return null;
 
 		// Pico chart: chartSong_Data (new) or song_Data (legacy)
 		if(parsed != null && (Reflect.hasField(parsed, 'chartSong_Data') || Reflect.hasField(parsed, 'song_Data')))
@@ -537,8 +583,10 @@ class Song {
 	/**
 	 * Convert Pico Engine Chart v2 (song_Data) → runtime SwagSong.
 	 *
-	 * songName  = folder / load id of the song (assets/songs/<songName>/)
-	 * displayName = label in Story Mode, Freeplay, PauseState
+	 * songFileName = folder id (assets/songs/<songFileName>/)
+	 *   song/  charts/  meta.json  events.json  events-global.json
+	 * displayName  = label in Story Mode, Freeplay, PauseState
+	 * legacy chart key "songName" still accepted
 	 *
 	 * song_Data.scrollSpeed  → speed
 	 * song_Data.chart_notes  → notes (sections)
@@ -560,14 +608,19 @@ class Song {
 		else
 			song.generatedBy = defaultGeneratedBy();
 
-		var songName:String = '';
-		if(Reflect.hasField(root, 'songName') && root.songName != null)
-			songName = Std.string(root.songName).trim();
+		// songFileName = folder under assets/songs/<id>/
+		var songFileName:String = '';
+		if(Reflect.hasField(root, 'songFileName') && root.songFileName != null)
+			songFileName = Std.string(root.songFileName).trim();
+		else if(Reflect.hasField(root, 'songName') && root.songName != null)
+			songFileName = Std.string(root.songName).trim();
 		else if(Reflect.hasField(root, 'song') && root.song != null && Type.typeof(root.song) != TObject)
-			songName = Std.string(root.song).trim();
-		if(songName.length < 1 && nameForError != null)
-			songName = Paths.formatToSongPath(nameForError);
-		song.song = songName;
+			songFileName = Std.string(root.song).trim();
+		if(songFileName.length < 1 && nameForError != null)
+			songFileName = Paths.formatToSongPath(nameForError);
+		songFileName = Paths.formatToSongPath(songFileName);
+		song.song = songFileName;
+		song.songFileName = songFileName;
 
 		if(Reflect.hasField(root, 'displayName') && root.displayName != null)
 			song.displayName = Std.string(root.displayName).trim();
@@ -808,12 +861,44 @@ class Song {
 		return out;
 	}
 
-	/** assets/songs/<songFolder>/events.json */
+
+	/**
+	 * Folder id for assets/songs/<id>/...
+	 * Prefers songFileName → song → loadedSongName → fallback.
+	 */
+	public static function resolveSongFolder(?song:SwagSong = null, ?fallback:String = null):String
+	{
+		if(song != null)
+		{
+			try
+			{
+				var sf:Dynamic = Reflect.field(song, 'songFileName');
+				if(sf != null && Std.string(sf).trim().length > 0)
+					return Paths.formatToSongPath(Std.string(sf));
+			}
+			catch(e:Dynamic) {}
+			if(song.song != null && Std.string(song.song).trim().length > 0)
+				return Paths.formatToSongPath(Std.string(song.song));
+		}
+		if(fallback != null && fallback.trim().length > 0)
+			return Paths.formatToSongPath(fallback);
+		if(loadedSongName != null && loadedSongName.trim().length > 0)
+			return Paths.formatToSongPath(loadedSongName);
+		return 'unknown';
+	}
+
+	/** assets/songs/<songFileName>/events.json */
 	public static function eventsJsonPath(songFolder:String):String
 	{
-		var folder:String = Paths.formatToSongPath(songFolder != null ? songFolder : '');
-		if(folder.length < 1) folder = 'unknown';
+		var folder:String = resolveSongFolder(null, songFolder);
 		return Paths.getPath(folder + '/events.json', TEXT, 'songs', true);
+	}
+
+	/** assets/songs/<songFileName>/events-global.json */
+	public static function globalEventsJsonPath(songFolder:String):String
+	{
+		var folder:String = resolveSongFolder(null, songFolder);
+		return Paths.getPath(folder + '/events-global.json', TEXT, 'songs', true);
 	}
 
 	/**
@@ -828,7 +913,7 @@ class Song {
 		if(song == null || songFolder == null) return;
 		var path:String = eventsJsonPath(songFolder);
 		var raw:String = null;
-		#if MODS_ALLOWED
+		#if (MODS_ALLOWED && sys)
 		try
 		{
 			if(FileSystem.exists(path))

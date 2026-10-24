@@ -2,7 +2,7 @@ package funkin.play;
 
 import funkin.play.Song;
 import funkin.play.Rating;
-import funkin.data.objects.game.notes.data.Note;
+import funkin.data.objects.game.note.data.Note;
 
 typedef BPMChangeEvent ={
 	var stepTime:Int;
@@ -49,11 +49,17 @@ class Conductor
 			bpm: bpm,
 			stepCrochet: stepCrochet
 		}
-		for (i in 0...Conductor.bpmChangeMap.length)
+		if(bpmChangeMap != null)
 		{
-			if (time >= Conductor.bpmChangeMap[i].songTime)
-				lastChange = Conductor.bpmChangeMap[i];
+			for (i in 0...bpmChangeMap.length)
+			{
+				var ev = bpmChangeMap[i];
+				if(ev != null && time >= ev.songTime)
+					lastChange = ev;
+			}
 		}
+		if(lastChange.stepCrochet == null || Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
+			lastChange.stepCrochet = calculateCrochet(lastChange.bpm > 0 ? lastChange.bpm : bpm) / 4;
 
 		return lastChange;
 	}
@@ -65,11 +71,17 @@ class Conductor
 			bpm: bpm,
 			stepCrochet: stepCrochet
 		}
-		for (i in 0...Conductor.bpmChangeMap.length)
+		if(bpmChangeMap != null)
 		{
-			if (Conductor.bpmChangeMap[i].stepTime<=step)
-				lastChange = Conductor.bpmChangeMap[i];
+			for (i in 0...bpmChangeMap.length)
+			{
+				var ev = bpmChangeMap[i];
+				if(ev != null && ev.stepTime <= step)
+					lastChange = ev;
+			}
 		}
+		if(lastChange.stepCrochet == null || Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
+			lastChange.stepCrochet = calculateCrochet(lastChange.bpm > 0 ? lastChange.bpm : bpm) / 4;
 
 		return lastChange;
 	}
@@ -77,17 +89,23 @@ class Conductor
 	public static function beatToSeconds(beat:Float): Float{
 		var step = beat * 4;
 		var lastChange = getBPMFromStep(step);
-		return lastChange.songTime + ((step - lastChange.stepTime) / (lastChange.bpm / 60)/4) * 1000; // TODO: make less shit and take BPM into account PROPERLY
+		var b:Float = lastChange.bpm;
+		if(b == null || Math.isNaN(b) || b <= 0) b = bpm > 0 ? bpm : 100;
+		return lastChange.songTime + ((step - lastChange.stepTime) / (b / 60)/4) * 1000;
 	}
 
 	public static function getStep(time:Float){
 		var lastChange = getBPMFromSeconds(time);
-		return lastChange.stepTime + (time - lastChange.songTime) / lastChange.stepCrochet;
+		var sc:Float = lastChange.stepCrochet;
+		if(sc == null || Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
+		return lastChange.stepTime + (time - lastChange.songTime) / sc;
 	}
 
 	public static function getStepRounded(time:Float){
 		var lastChange = getBPMFromSeconds(time);
-		return lastChange.stepTime + Math.floor(time - lastChange.songTime) / lastChange.stepCrochet;
+		var sc:Float = lastChange.stepCrochet;
+		if(sc == null || Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
+		return lastChange.stepTime + Math.floor(time - lastChange.songTime) / sc;
 	}
 
 	public static function getBeat(time:Float){
@@ -101,13 +119,16 @@ class Conductor
 	public static function mapBPMChanges(song:SwagSong)
 	{
 		bpmChangeMap = [];
+		if(song == null || song.notes == null) return;
 
-		var curBPM:Float = song.bpm;
+		var curBPM:Float = (song.bpm == null || Math.isNaN(song.bpm) || song.bpm <= 0) ? bpm : song.bpm;
+		if(curBPM <= 0) curBPM = 100;
 		var totalSteps:Int = 0;
 		var totalPos:Float = 0;
 		for (i in 0...song.notes.length)
 		{
-			if(song.notes[i].changeBPM && song.notes[i].bpm != curBPM)
+			if(song.notes[i] == null) continue;
+			if(song.notes[i].changeBPM && song.notes[i].bpm != null && song.notes[i].bpm > 0 && song.notes[i].bpm != curBPM)
 			{
 				curBPM = song.notes[i].bpm;
 				var event:BPMChangeEvent = {
@@ -138,10 +159,10 @@ class Conductor
 	}
 
 	public static function set_bpm(newBPM:Float):Float {
-		bpm = newBPM;
-		crochet = calculateCrochet(bpm);
+		var safe:Float = (newBPM == null || Math.isNaN(newBPM) || newBPM <= 0) ? 100 : newBPM;
+		crochet = calculateCrochet(safe);
 		stepCrochet = crochet / 4;
-
-		return bpm = newBPM;
+		// Assign once — Haxe stores without re-entering the setter from inside set_bpm
+		return bpm = safe;
 	}
 }
