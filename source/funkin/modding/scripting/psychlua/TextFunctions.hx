@@ -1,11 +1,14 @@
 package funkin.modding.scripting.psychlua;
 
+using StringTools;
+
 class TextFunctions
 {
 	public static function implement(funk:FunkinLuaProgramming)
 	{
 		var lua = funk.lua;
 		Lua_helper.add_callback(lua, "makeLuaText", function(tag:String, ?text:String = '', ?width:Int = 0, ?x:Float = 0, ?y:Float = 0) {
+			if(tag == null) return;
 			tag = tag.replace('.', '');
 
 			LuaUtils.destroyObject(tag);
@@ -126,6 +129,7 @@ class TextFunctions
 			if(obj != null)
 			{
 				obj.alignment = LEFT;
+				if(alignment == null) alignment = 'left';
 				switch(alignment.trim().toLowerCase())
 				{
 					case 'right':

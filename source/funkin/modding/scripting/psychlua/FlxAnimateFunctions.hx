@@ -1,6 +1,7 @@
 package funkin.modding.scripting.psychlua;
 
 import openfl.utils.Assets;
+using StringTools;
 
 #if (LUA_ALLOWED && flxanimate)
 class FlxAnimateFunctions
@@ -9,12 +10,14 @@ class FlxAnimateFunctions
 	{
 		var lua:State = funk.lua;
 		Lua_helper.add_callback(lua, "makeFlxAnimateSprite", function(tag:String, ?x:Float = 0, ?y:Float = 0, ?loadFolder:String = null) {
+			if(tag == null) return;
 			tag = tag.replace('.', '');
 			var lastSprite = MusicBeatState.getVariables().get(tag);
 			if(lastSprite != null)
 			{
 				lastSprite.kill();
-				PlayState.instance.remove(lastSprite);
+				if(PlayState.instance != null)
+					PlayState.instance.remove(lastSprite);
 				lastSprite.destroy();
 			}
 

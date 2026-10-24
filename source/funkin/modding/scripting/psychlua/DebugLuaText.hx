@@ -6,7 +6,14 @@ class DebugLuaText extends FlxText
 	public function new() {
 		super(10, 10, FlxG.width - 20, '', 16);
 
-		setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		try
+		{
+			setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		}
+		catch (e:Dynamic)
+		{
+			setFormat(null, 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		}
 		scrollFactor.set();
 		borderSize = 1;
 	}
@@ -14,9 +21,9 @@ class DebugLuaText extends FlxText
 	override function update(elapsed:Float) {
 		super.update(elapsed);
 		disableTime -= elapsed;
-		if(disableTime < 0) disableTime = 0;
-		if(disableTime < 1) alpha = disableTime;
+		if (disableTime < 0) disableTime = 0;
+		if (disableTime < 1) alpha = disableTime;
 
-		if(alpha == 0 || y >= FlxG.height) kill();
+		if (alpha == 0 || y >= FlxG.height) kill();
 	}
 }

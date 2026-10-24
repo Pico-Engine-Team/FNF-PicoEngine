@@ -6,6 +6,11 @@ import flixel.util.FlxSave;
 import funkin.utils.Controls;
 import funkin.utils.InputFormatter;
 import openfl.utils.Assets;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 class ExtraFunctions
 {
@@ -59,34 +64,37 @@ class ExtraFunctions
 		});
 
 		Lua_helper.add_callback(lua, "keyJustPressed", function(name:String = '') {
-			name = name.toLowerCase().trim();
+			name = name != null ? name.toLowerCase().trim() : '';
+			var ctrls = controlsInstance();
 			switch(name) {
-				case 'left': return PlayState.instance.controls.NOTE_LEFT_P;
-				case 'down': return PlayState.instance.controls.NOTE_DOWN_P;
-				case 'up': return PlayState.instance.controls.NOTE_UP_P;
-				case 'right': return PlayState.instance.controls.NOTE_RIGHT_P;
+				case 'left': return ctrls != null ? ctrls.NOTE_LEFT_P : false;
+				case 'down': return ctrls != null ? ctrls.NOTE_DOWN_P : false;
+				case 'up': return ctrls != null ? ctrls.NOTE_UP_P : false;
+				case 'right': return ctrls != null ? ctrls.NOTE_RIGHT_P : false;
 				default: return controlJustPressed(name);
 			}
 			return false;
 		});
 		Lua_helper.add_callback(lua, "keyPressed", function(name:String = '') {
-			name = name.toLowerCase().trim();
+			name = name != null ? name.toLowerCase().trim() : '';
+			var ctrls = controlsInstance();
 			switch(name) {
-				case 'left': return PlayState.instance.controls.NOTE_LEFT;
-				case 'down': return PlayState.instance.controls.NOTE_DOWN;
-				case 'up': return PlayState.instance.controls.NOTE_UP;
-				case 'right': return PlayState.instance.controls.NOTE_RIGHT;
+				case 'left': return ctrls != null ? ctrls.NOTE_LEFT : false;
+				case 'down': return ctrls != null ? ctrls.NOTE_DOWN : false;
+				case 'up': return ctrls != null ? ctrls.NOTE_UP : false;
+				case 'right': return ctrls != null ? ctrls.NOTE_RIGHT : false;
 				default: return controlPressed(name);
 			}
 			return false;
 		});
 		Lua_helper.add_callback(lua, "keyReleased", function(name:String = '') {
-			name = name.toLowerCase().trim();
+			name = name != null ? name.toLowerCase().trim() : '';
+			var ctrls = controlsInstance();
 			switch(name) {
-				case 'left': return PlayState.instance.controls.NOTE_LEFT_R;
-				case 'down': return PlayState.instance.controls.NOTE_DOWN_R;
-				case 'up': return PlayState.instance.controls.NOTE_UP_R;
-				case 'right': return PlayState.instance.controls.NOTE_RIGHT_R;
+				case 'left': return ctrls != null ? ctrls.NOTE_LEFT_R : false;
+				case 'down': return ctrls != null ? ctrls.NOTE_DOWN_R : false;
+				case 'up': return ctrls != null ? ctrls.NOTE_UP_R : false;
+				case 'right': return ctrls != null ? ctrls.NOTE_RIGHT_R : false;
 				default: return controlJustReleased(name);
 			}
 			return false;
@@ -223,16 +231,16 @@ class ExtraFunctions
 
 		// String tools
 		Lua_helper.add_callback(lua, "stringStartsWith", function(str:String, start:String) {
-			return str.startsWith(start);
+			return str != null && start != null && str.startsWith(start);
 		});
 		Lua_helper.add_callback(lua, "stringEndsWith", function(str:String, end:String) {
-			return str.endsWith(end);
+			return str != null && end != null && str.endsWith(end);
 		});
 		Lua_helper.add_callback(lua, "stringSplit", function(str:String, split:String) {
-			return str.split(split);
+			return str != null ? str.split(split != null ? split : '') : [];
 		});
 		Lua_helper.add_callback(lua, "stringTrim", function(str:String) {
-			return str.trim();
+			return str != null ? str.trim() : '';
 		});
 
 		// Randomization
@@ -277,7 +285,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
+		if(controls != null && Preferences.keyBinds != null && Preferences.gamepadBinds != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.justPressed(name);
 		return rawKeyboardInput(name, 'justPressed') || FlxG.gamepads.anyJustPressed(name);
 	}
@@ -286,7 +294,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
+		if(controls != null && Preferences.keyBinds != null && Preferences.gamepadBinds != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.pressed(name);
 		return rawKeyboardInput(name, 'pressed') || FlxG.gamepads.anyPressed(name);
 	}
@@ -295,7 +303,7 @@ class ExtraFunctions
 	{
 		name = normalizeControlName(name);
 		var controls:Controls = controlsInstance();
-		if(controls != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
+		if(controls != null && Preferences.keyBinds != null && Preferences.gamepadBinds != null && (Preferences.keyBinds.exists(name) || Preferences.gamepadBinds.exists(name)))
 			return controls.justReleased(name);
 		return rawKeyboardInput(name, 'justReleased') || FlxG.gamepads.anyJustReleased(name);
 	}
@@ -312,7 +320,7 @@ class ExtraFunctions
 	static function getControlKeyName(name:String, alt:Int = 0):String
 	{
 		name = normalizeControlName(name);
-		var keys:Array<Null<FlxKey>> = Preferences.keyBinds.get(name);
+		var keys:Array<Null<FlxKey>> = Preferences.keyBinds != null ? Preferences.keyBinds.get(name) : null;
 		if(keys == null || keys.length < 1)
 		{
 			var rawKey:FlxKey = FlxKey.fromString(name.toUpperCase());
@@ -326,7 +334,7 @@ class ExtraFunctions
 	static function getControlGamepadName(name:String, alt:Int = 0):String
 	{
 		name = normalizeControlName(name);
-		var buttons:Array<Null<FlxGamepadInputID>> = Preferences.gamepadBinds.get(name);
+		var buttons:Array<Null<FlxGamepadInputID>> = Preferences.gamepadBinds != null ? Preferences.gamepadBinds.get(name) : null;
 		if(buttons == null || buttons.length < 1)
 			return '';
 

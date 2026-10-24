@@ -3,6 +3,7 @@ package funkin.modding.scripting.psychlua;
 import funkin.states.GameOverState;
 import Type.ValueType;
 import haxe.Constraints;
+using StringTools;
 
 class ReflectionFunctions
 {
@@ -89,6 +90,11 @@ class ReflectionFunctions
 						FunkinLuaProgramming.luaTrace('getPropertyFromGroup: Object #$index from group: $group doesn\'t exist!', false, false, FlxColor.RED);
 
 					default: //Is Group
+						if(realObject.members == null || index < 0 || index >= realObject.members.length || realObject.members[index] == null)
+						{
+							FunkinLuaProgramming.luaTrace('getPropertyFromGroup: Object #$index from group: $group doesn\'t exist!', false, false, FlxColor.RED);
+							return null;
+						}
 						var result:Dynamic = LuaUtils.getGroupStuff(realObject.members[index], variable, allowMaps);
 						return result;
 				}
@@ -121,7 +127,8 @@ class ReflectionFunctions
 						}
 
 					default: //Is Group
-						LuaUtils.setGroupStuff(realObject.members[index], variable, allowInstances ? parseInstances(value) : value, allowMaps);
+						if(realObject.members != null && index >= 0 && index < realObject.members.length && realObject.members[index] != null)
+							LuaUtils.setGroupStuff(realObject.members[index], variable, allowInstances ? parseInstances(value) : value, allowMaps);
 				}
 			}
 			else FunkinLuaProgramming.luaTrace('setPropertyFromGroup: Group/Array $group doesn\'t exist!', false, false, FlxColor.RED);
@@ -185,13 +192,19 @@ class ReflectionFunctions
 					else groupOrArray.remove(groupOrArray[index]);
 
 				default: //Is Group
-					if(obj == null) obj = groupOrArray.members[index];
-					groupOrArray.remove(obj, true);
-					if(destroy) obj.destroy();
+					if(obj == null && groupOrArray.members != null && index >= 0 && index < groupOrArray.members.length)
+						obj = groupOrArray.members[index];
+					if(obj != null)
+					{
+						groupOrArray.remove(obj, true);
+						if(destroy) obj.destroy();
+					}
 			}
 		});
 		
 		Lua_helper.add_callback(lua, "callMethod", function(funcToRun:String, ?args:Array<Dynamic>) {
+			if(funcToRun == null) return null;
+			if(args == null) args = [];
 			var parent:Dynamic = PlayState.instance;
 			var split:Array<String> = funcToRun.split('.');
 			var varParent:Dynamic = MusicBeatState.getVariables().get(split[0].trim());
@@ -200,7 +213,7 @@ class ReflectionFunctions
 				funcToRun = split.join('.').trim();
 				parent = varParent;
 			}
-			
+
 			if(funcToRun.length > 0) {
 				return callMethodFromObject(parent, funcToRun, parseInstances(args));
 			}
@@ -242,12 +255,21 @@ class ReflectionFunctions
 				var obj:Dynamic = savedObj;
 				if (inFront)
 					LuaUtils.getTargetInstance().add(obj);
-				else
+				else if(PlayState.instance != null)
 				{
 					if(!PlayState.instance.isDead)
-						PlayState.instance.insert(PlayState.instance.members.indexOf(LuaUtils.getLowestCharacterGroup()), obj);
-					else
-						GameOverState.instance.insert(GameOverState.instance.members.indexOf(GameOverState.instance.boyfriend), obj);
+					{
+						var lowest = LuaUtils.getLowestCharacterGroup();
+						var idx:Int = lowest != null ? PlayState.instance.members.indexOf(lowest) : 0;
+						if(idx < 0) idx = 0;
+						PlayState.instance.insert(idx, obj);
+					}
+					else if(GameOverState.instance != null)
+					{
+						var idx:Int = GameOverState.instance.boyfriend != null ? GameOverState.instance.members.indexOf(GameOverState.instance.boyfriend) : 0;
+						if(idx < 0) idx = 0;
+						GameOverState.instance.insert(idx, obj);
+					}
 				}
 			}
 			else FunkinLuaProgramming.luaTrace('addInstance: Can\'t add what doesn\'t exist~ ($objectName)', false, false, FlxColor.RED);

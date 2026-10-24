@@ -11,7 +11,7 @@ class ShaderFunctions
 		var lua = funk.lua;
 		// shader shit
 		funk.addLocalCallback("initLuaShader", function(name:String) {
-			if(!Preferences.data.shaders) return false;
+			if(Preferences.data == null || !Preferences.data.shaders) return false;
 
 			#if (!flash && MODS_ALLOWED && sys)
 			return funk.initLuaShader(name);
@@ -22,7 +22,7 @@ class ShaderFunctions
 		});
 		
 		funk.addLocalCallback("setSpriteShader", function(obj:String, shader:String) {
-			if(!Preferences.data.shaders) return false;
+			if(Preferences.data == null || !Preferences.data.shaders) return false;
 
 			#if (!flash && sys)
 			if(!funk.runtimeShaders.exists(shader) && !funk.initLuaShader(shader))
@@ -39,6 +39,7 @@ class ShaderFunctions
 
 			if(leObj != null) {
 				var arr:Array<String> = funk.runtimeShaders.get(shader);
+				if(arr == null) return false;
 				leObj.shader = new funkin.data.shaders.ErrorHandledShader.ErrorHandledRuntimeShader(shader, arr[0], arr[1]);
 				return true;
 			}
@@ -236,7 +237,7 @@ class ShaderFunctions
 			return true;
 			#else
 			FunkinLuaProgramming.luaTrace("setShaderFloatArray: Platform unsupported for Runtime Shaders!", false, false, FlxColor.RED);
-			return true;
+			return false;
 			#end
 		});
 

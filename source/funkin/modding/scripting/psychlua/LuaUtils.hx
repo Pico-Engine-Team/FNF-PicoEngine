@@ -1,12 +1,17 @@
 package funkin.modding.scripting.psychlua;
 
 import funkin.data.WeekData;
+import funkin.data.objects.CharactersData as Character;
+
 import funkin.stages.StageData;
 import funkin.states.GameOverState;
-import funkin.data.objects.game.characters.Character;
-
 import openfl.display.BlendMode;
 import Type.ValueType;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
+using StringTools;
 
 typedef LuaTweenOptions = {
 	type:FlxTweenType,
@@ -275,20 +280,26 @@ class LuaUtils
 
 	public static inline function getLowestCharacterGroup():FlxSpriteGroup
 	{
-		var stageData:StageFile = StageData.getStageFile(PlayState.SONG.stage);
-		var group:FlxSpriteGroup = (stageData.hide_girlfriend ? PlayState.instance.boyfriendGroup : PlayState.instance.gfGroup);
+		if(PlayState.instance == null)
+			return null;
+
+		var stageName:String = (PlayState.SONG != null && PlayState.SONG.stage != null) ? PlayState.SONG.stage : 'stage';
+		var stageData:StageFile = StageData.getStageFile(stageName);
+		var hideGf:Bool = stageData != null && stageData.hide_girlfriend == true;
+		var group:FlxSpriteGroup = (hideGf ? PlayState.instance.boyfriendGroup : PlayState.instance.gfGroup);
+		if(group == null) group = PlayState.instance.boyfriendGroup;
 
 		var pos:Int = PlayState.instance.members.indexOf(group);
 
 		var newPos:Int = PlayState.instance.members.indexOf(PlayState.instance.boyfriendGroup);
-		if(newPos < pos)
+		if(newPos >= 0 && (pos < 0 || newPos < pos))
 		{
 			group = PlayState.instance.boyfriendGroup;
 			pos = newPos;
 		}
-		
+
 		newPos = PlayState.instance.members.indexOf(PlayState.instance.dadGroup);
-		if(newPos < pos)
+		if(newPos >= 0 && (pos < 0 || newPos < pos))
 		{
 			group = PlayState.instance.dadGroup;
 			pos = newPos;
@@ -329,6 +340,8 @@ class LuaUtils
 	
 	public static function loadFrames(spr:FlxSprite, image:String, spriteType:String)
 	{
+		if(spr == null || image == null) return;
+		if(spriteType == null) spriteType = '';
 		switch(spriteType.toLowerCase().replace(' ', ''))
 		{
 			//case "texture" | "textureatlas" | "tex":
@@ -387,7 +400,7 @@ class LuaUtils
 	}
 
 	public static function formatVariable(tag:String)
-		return tag.trim().replace(' ', '_').replace('.', '');
+		return tag != null ? tag.trim().replace(' ', '_').replace('.', '') : '';
 
 	public static function tweenPrepare(tag:String, vars:String) {
 		if(tag != null) cancelTween(tag);
@@ -422,6 +435,7 @@ class LuaUtils
 
 	//buncho string stuffs
 	public static function getTweenTypeByString(?type:String = '') {
+		if(type == null) type = '';
 		switch(type.toLowerCase().trim())
 		{
 			case 'backward': return FlxTweenType.BACKWARD;
@@ -433,6 +447,7 @@ class LuaUtils
 	}
 
 	public static function getTweenEaseByString(?ease:String = '') {
+		if(ease == null) ease = '';
 		switch(ease.toLowerCase().trim()) {
 			case 'backin': return FlxEase.backIn;
 			case 'backinout': return FlxEase.backInOut;
@@ -475,6 +490,7 @@ class LuaUtils
 	}
 
 	public static function blendModeFromString(blend:String):BlendMode {
+		if(blend == null) blend = '';
 		switch(blend.toLowerCase().trim()) {
 			case 'add': return ADD;
 			case 'alpha': return ALPHA;
@@ -509,13 +525,22 @@ class LuaUtils
 	}
 
 	public static function cameraFromString(cam:String):FlxCamera {
-		switch(cam.toLowerCase()) {
-			case 'camgame' | 'game': return PlayState.instance.camGame;
-			case 'camhud' | 'hud': return PlayState.instance.camHUD;
-			case 'camother' | 'other': return PlayState.instance.camOther;
+		if(cam == null) cam = '';
+		if(PlayState.instance != null)
+		{
+			switch(cam.toLowerCase()) {
+				case 'camgame' | 'game': return PlayState.instance.camGame;
+				case 'camhud' | 'hud': return PlayState.instance.camHUD;
+				case 'camother' | 'other': return PlayState.instance.camOther;
+			}
 		}
 		var camera:FlxCamera = MusicBeatState.getVariables().get(cam);
-		if (camera == null || !Std.isOfType(camera, FlxCamera)) camera = PlayState.instance.camGame;
+		if (camera == null || !Std.isOfType(camera, FlxCamera))
+		{
+			if(PlayState.instance != null) camera = PlayState.instance.camGame;
+			else if(FlxG.cameras != null && FlxG.cameras.list != null && FlxG.cameras.list.length > 0)
+				camera = FlxG.cameras.list[0];
+		}
 		return camera;
 	}
 }

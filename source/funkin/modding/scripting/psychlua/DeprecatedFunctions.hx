@@ -1,5 +1,7 @@
 package funkin.modding.scripting.psychlua;
 
+using StringTools;
+
 class DeprecatedFunctions
 {
 	public static function implement(funk:FunkinLuaProgramming)
@@ -13,13 +15,14 @@ class DeprecatedFunctions
 
 		Lua_helper.add_callback(lua, "objectPlayAnimation", function(obj:String, name:String, forced:Bool = false, ?startFrame:Int = 0) {
 			FunkinLuaProgramming.luaTrace("objectPlayAnimation is deprecated! Use playAnim instead", false, true);
-			if(PlayState.instance.getLuaObject(obj) != null) {
-				PlayState.instance.getLuaObject(obj).animation.play(name, forced, false, startFrame);
+			if(PlayState.instance != null && PlayState.instance.getLuaObject(obj) != null) {
+				var lo = PlayState.instance.getLuaObject(obj);
+				if(lo.animation != null) lo.animation.play(name, forced, false, startFrame);
 				return true;
 			}
 
 			var spr:FlxSprite = Reflect.getProperty(LuaUtils.getTargetInstance(), obj);
-			if(spr != null) {
+			if(spr != null && spr.animation != null) {
 				spr.animation.play(name, forced, false, startFrame);
 				return true;
 			}
@@ -27,15 +30,16 @@ class DeprecatedFunctions
 		});
 		Lua_helper.add_callback(lua, "characterPlayAnim", function(character:String, anim:String, ?forced:Bool = false) {
 			FunkinLuaProgramming.luaTrace("characterPlayAnim is deprecated! Use playAnim instead", false, true);
+			if(PlayState.instance == null || character == null || anim == null) return;
 			switch(character.toLowerCase()) {
 				case 'dad':
-					if(PlayState.instance.dad.hasAnimation(anim))
+					if(PlayState.instance.dad != null && PlayState.instance.dad.hasAnimation(anim))
 						PlayState.instance.dad.playAnim(anim, forced);
 				case 'gf' | 'girlfriend':
 					if(PlayState.instance.gf != null && PlayState.instance.gf.hasAnimation(anim))
 						PlayState.instance.gf.playAnim(anim, forced);
 				default:
-					if(PlayState.instance.boyfriend.hasAnimation(anim))
+					if(PlayState.instance.boyfriend != null && PlayState.instance.boyfriend.hasAnimation(anim))
 						PlayState.instance.boyfriend.playAnim(anim, forced);
 			}
 		});
@@ -56,16 +60,19 @@ class DeprecatedFunctions
 		});
 		Lua_helper.add_callback(lua, "luaSpriteAddAnimationByIndices", function(tag:String, name:String, prefix:String, indices:String, framerate:Int = 24) {
 			FunkinLuaProgramming.luaTrace("luaSpriteAddAnimationByIndices is deprecated! Use addAnimationByIndices instead", false, true);
-			if(MusicBeatState.getVariables().exists(tag)) {
+			if(MusicBeatState.getVariables().exists(tag) && indices != null) {
 				var strIndices:Array<String> = indices.trim().split(',');
 				var die:Array<Int> = [];
 				for (i in 0...strIndices.length) {
-					die.push(Std.parseInt(strIndices[i]));
+					var n:Null<Int> = Std.parseInt(strIndices[i]);
+					die.push(n != null ? n : 0);
 				}
-				var pussy:ModchartSprite = MusicBeatState.getVariables().get(tag);
-				pussy.animation.addByIndices(name, prefix, die, '', framerate, false);
-				if(pussy.animation.curAnim == null) {
-					pussy.animation.play(name, true);
+				var spr:ModchartSprite = MusicBeatState.getVariables().get(tag);
+				if(spr != null && spr.animation != null) {
+					spr.animation.addByIndices(name, prefix, die, '', framerate, false);
+					if(spr.animation.curAnim == null) {
+						spr.animation.play(name, true);
+					}
 				}
 			}
 		});
@@ -136,12 +143,13 @@ class DeprecatedFunctions
 			return false;
 		});
 		Lua_helper.add_callback(lua, "musicFadeIn", function(duration:Float, fromValue:Float = 0, toValue:Float = 1) {
-			FlxG.sound.music.fadeIn(duration, fromValue, toValue);
+			if(FlxG.sound.music != null)
+				FlxG.sound.music.fadeIn(duration, fromValue, toValue);
 			FunkinLuaProgramming.luaTrace('musicFadeIn is deprecated! Use soundFadeIn instead.', false, true);
-
 		});
 		Lua_helper.add_callback(lua, "musicFadeOut", function(duration:Float, toValue:Float = 0) {
-			FlxG.sound.music.fadeOut(duration, toValue);
+			if(FlxG.sound.music != null)
+				FlxG.sound.music.fadeOut(duration, toValue);
 			FunkinLuaProgramming.luaTrace('musicFadeOut is deprecated! Use soundFadeOut instead.', false, true);
 		});
 		Lua_helper.add_callback(lua, "updateHitboxFromGroup", function(group:String, index:Int) {
