@@ -15,70 +15,87 @@
       "name": "idle",
       "prefix": "",
       "offsets": [0, 0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singUP",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singDOWN",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singLEFT",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singRIGHT",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singUP-Miss",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singDOWN-Miss",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singLEFT-Miss",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
     },
     {
+	  "assetPath": "characters/",
       "name": "singRIGHT-Miss",
       "prefix": "",
       "offsets": [0,0],
+	  "renderAnimType": "sparrow",
       "frameIndices": [],
       "frameRate": 24,
       "looped": false
