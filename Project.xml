@@ -5,7 +5,7 @@
 	<app title="Friday Night Funkin': Pico Engine" file="PicoEngine"
 	packageName="com.lucas62944.picoengine" package="com.lucas62944.picoengine"
 	main="funkin.utils.windows.Main"
-	version="v2.26.8 (Pre Release)" company="Pico-Engine-Team" />
+	version="v2.26.7" company="Pico-Engine-Team" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
