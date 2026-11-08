@@ -1,5 +1,6 @@
 package funkin.stages.data.levels.weekspecial.engine.mods;
 
 class Safety extends BaseStage
-{ 
-    var bg
+{
+	override function create()
+}
