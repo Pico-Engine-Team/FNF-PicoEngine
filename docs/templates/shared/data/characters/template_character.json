@@ -1,0 +1,87 @@
+{
+  "renderType": "sparrow",
+  "assetPath": "characters/",
+  "noteStyle": "",
+  "gameOverChar": "",
+  "flip_x": false,
+  "sing_duration": 1,
+  "scale": 1,
+  "healthBar": [0,0,0],
+  "healthIcon": "face",
+  "offsets": [0,0],
+  "cameraOffsets": [0,0],
+  "animations": [
+    {
+      "name": "idle",
+      "prefix": "",
+      "offsets": [0, 0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singUP",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singDOWN",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singLEFT",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singRIGHT",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singUP-Miss",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singDOWN-Miss",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singLEFT-Miss",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+    },
+    {
+      "name": "singRIGHT-Miss",
+      "prefix": "",
+      "offsets": [0,0],
+      "frameIndices": [],
+      "frameRate": 24,
+      "looped": false
+	}
+  ]
+}
