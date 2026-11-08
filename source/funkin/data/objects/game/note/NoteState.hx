@@ -71,6 +71,14 @@ typedef PicoNoteStyleRuntime = {
 	var name:String;
 	var author:String;
 	var fallback:String;
+	/**
+	 * useNoteSkins from noteStyle JSON:
+	 *   "Player"   → only player (mustPress)
+	 *   "Opponent" → only opponent (!mustPress)
+	 *   "Both"     → player + opponent
+	 *   "Disabled" → ignore character style, use song/funkin
+	 */
+	var useNoteSkins:String;
 	var noteSprite:String;
 	var holdSprite:String;
 	var strumSprite:String;
@@ -179,7 +187,61 @@ class NoteStyleData
 			return null;
 		var raw:String = Std.string(rawStyle).trim();
 		var key:String = normalizeCharacterNoteStyleName(raw);
-		return (key != null && key.length > 0) ? key : raw;
+		if(key == null || key.length < 1)
+			key = raw;
+		if(key == null || key.length < 1)
+			return null;
+
+		// Per-style gate: useNoteSkins (Player / Opponent / Both / Disabled)
+		var mode:String = peekUseNoteSkins(key, true);
+		switch(mode)
+		{
+			case 'Disabled':
+				return null; // fall back to song / funkin.json
+			case 'Player':
+				if(!mustPress) return null;
+			case 'Opponent':
+				if(mustPress) return null;
+			default: // Both
+		}
+		return key;
+	}
+
+	/**
+	 * Read useNoteSkins from character noteStyle JSON without full merge.
+	 * Returns: Player | Opponent | Both | Disabled
+	 */
+	public function peekUseNoteSkins(style:String, fromCharacter:Bool = true):String
+	{
+		if(style == null || style.length < 1) return 'Both';
+		var cacheKey:String = noteStyleKey(style) + (fromCharacter ? '#char' : '#song');
+		if(runtimeCache.exists(cacheKey))
+		{
+			var cached = runtimeCache.get(cacheKey);
+			if(cached != null && cached.useNoteSkins != null && cached.useNoteSkins.length > 0)
+				return cached.useNoteSkins;
+		}
+		// Light header parse
+		var paths = findJsonPaths(noteStyleKey(style), fromCharacter);
+		for (p in paths)
+		{
+			var rawText:String = readText(p);
+			if(rawText == null || rawText.trim().length < 1) continue;
+			try
+			{
+				var data:Dynamic = Json.parse(rawText);
+				var uns:Dynamic = Reflect.field(data, 'useNoteSkins');
+				if(uns == null) uns = Reflect.field(data, 'useNoteSkin');
+				if(uns == null) continue;
+				var mode:String = Std.string(uns).trim().toLowerCase();
+				if(mode == 'player' || mode == 'bf' || mode == 'boyfriend') return 'Player';
+				if(mode == 'opponent' || mode == 'dad' || mode == 'enemy') return 'Opponent';
+				if(mode == 'disabled' || mode == 'off' || mode == 'false' || mode == '0' || mode == 'none') return 'Disabled';
+				return 'Both';
+			}
+			catch(e:Dynamic) {}
+		}
+		return 'Both';
 	}
 
 	public function songNoteStyle():String
@@ -264,48 +326,12 @@ class NoteStyleData
 			return runtimeCache.get(cacheKey);
 
 		var rt:PicoNoteStyleRuntime = loadRuntime(key, fromCharacter);
+		ensureDefaultPsychAnims(rt);
 		runtimeCache.set(cacheKey, rt);
 		return rt;
 	}
 
-	
-	/** Load style JSON without following fallback (used to break circular parents). */
-	function loadRuntimeNoFallback(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
-	{
-		var rt:PicoNoteStyleRuntime = emptyRuntime(style);
-		var paths = findJsonPaths(style, fromCharacter);
-		var rawText:String = null;
-		for (p in paths)
-		{
-			rawText = readText(p);
-			if(rawText != null && rawText.trim().length > 0)
-			{
-				rt.jsonPath = p;
-				break;
-			}
-		}
-		if(rawText != null)
-		{
-			try
-			{
-				var data:Dynamic = Json.parse(rawText);
-				// Temporarily clear fallback so applyJson does not re-trigger
-				if(data != null && Reflect.hasField(data, 'fallback'))
-					Reflect.setField(data, 'fallback', null);
-				applyJsonToRuntime(rt, data);
-				rt.fallback = null;
-			}
-			catch(e:Dynamic)
-			{
-				trace('[NoteData] parse failed (no-fallback) ' + style + ': ' + e);
-			}
-		}
-		rt.luaPath = findLuaPath(style, fromCharacter);
-		rt.psychConfig = toPsychConfig(rt);
-		return rt;
-	}
-
-function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
+	function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 	{
 		var rt:PicoNoteStyleRuntime = emptyRuntime(style);
 		var paths = findJsonPaths(style, fromCharacter);
@@ -333,24 +359,11 @@ function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 			}
 		}
 
-		// fallback merge (one level only — avoid circular fallback recursion)
+		// fallback merge
 		if(rt.fallback != null && rt.fallback.length > 0 && rt.fallback != style)
 		{
-			var parentKey:String = normalizeStyle(rt.fallback);
-			if(parentKey != style && parentKey.length > 0)
-			{
-				var parentCache:String = parentKey + '#song';
-				var parent:PicoNoteStyleRuntime;
-				if(runtimeCache.exists(parentCache))
-					parent = runtimeCache.get(parentCache);
-				else
-				{
-					// Load parent without following ITS fallback to break cycles
-					parent = loadRuntimeNoFallback(parentKey, false);
-					runtimeCache.set(parentCache, parent);
-				}
-				rt = mergeRuntime(parent, rt);
-			}
+			var parent:PicoNoteStyleRuntime = getRuntime(rt.fallback, false);
+			rt = mergeRuntime(parent, rt);
 		}
 
 		rt.luaPath = findLuaPath(style, fromCharacter);
@@ -373,6 +386,7 @@ function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 			name: style,
 			author: '',
 			fallback: null,
+			useNoteSkins: 'Both',
 			noteSprite: Note.defaultNoteSkin,
 			holdSprite: null,
 			strumSprite: null,
@@ -415,6 +429,23 @@ function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 		var fb:Dynamic = Reflect.field(data, 'fallback');
 		if(fb != null && Std.string(fb) != 'null' && Std.string(fb).trim().length > 0)
 			rt.fallback = Std.string(fb).trim();
+
+		// useNoteSkins: Player | Opponent | Both | Disabled
+		var uns:Dynamic = Reflect.field(data, 'useNoteSkins');
+		if(uns == null) uns = Reflect.field(data, 'useNoteSkin');
+		if(uns == null) uns = Reflect.field(data, 'noteSkins');
+		if(uns != null)
+		{
+			var mode:String = Std.string(uns).trim().toLowerCase();
+			if(mode == 'player' || mode == 'bf' || mode == 'boyfriend')
+				rt.useNoteSkins = 'Player';
+			else if(mode == 'opponent' || mode == 'dad' || mode == 'enemy')
+				rt.useNoteSkins = 'Opponent';
+			else if(mode == 'disabled' || mode == 'off' || mode == 'false' || mode == '0' || mode == 'none')
+				rt.useNoteSkins = 'Disabled';
+			else
+				rt.useNoteSkins = 'Both';
+		}
 
 		// 1) Pico format: data_Assets.noteStyle_data + noteSplash_data + UI_Assets
 		var dataAssets:Dynamic = Reflect.field(data, 'data_Assets');
@@ -1512,14 +1543,167 @@ function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 		return allowPixel(mustPress != null ? songStyle(mustPress) : null);
 	}
 
-	public function noteScale(?style:String, fallback:Float = 0.7):Float
+
+
+	/** Map "up end" / "up" → keys Note.hx looks up (greenholdend, up holdend, etc.). */
+	function normalizeHoldAnimKeys(rt:PicoNoteStyleRuntime):Void
 	{
-		// Prefer noteSkin_assets.note_scale, then strum_scale
-		var rt = getRuntime(style != null ? style : songStyle(true));
-		if(rt == null) return fallback;
-		if(rt.noteScale > 0) return rt.noteScale;
-		if(rt.strumScale > 0) return rt.strumScale;
-		return fallback;
+		if (rt == null || rt.holdAnims == null) return;
+		var color:Map<String, String> = [
+			'left' => 'purple', 'down' => 'blue', 'up' => 'green', 'right' => 'red',
+			'purple' => 'purple', 'blue' => 'blue', 'green' => 'green', 'red' => 'red'
+		];
+		var extra:Map<String, PicoNoteAnim> = new Map();
+		for (key => anim in rt.holdAnims)
+		{
+			if (anim == null) continue;
+			var k:String = key.toLowerCase().trim();
+			var isEnd:Bool = k.indexOf('end') >= 0;
+			var dir:String = null;
+			for (d in color.keys())
+			{
+				if (k == d || k.startsWith(d + ' ') || k.startsWith(d + 'hold') || k.startsWith(d + 'end'))
+				{
+					dir = d;
+					break;
+				}
+			}
+			if (dir == null) continue;
+			var col:String = color.get(dir);
+			if (isEnd)
+			{
+				extra.set(dir + ' holdend', anim);
+				extra.set(dir + 'holdend', anim);
+				extra.set(col + 'holdend', anim);
+				extra.set(dir + ' end', anim);
+			}
+			else
+			{
+				extra.set(dir + ' hold', anim);
+				extra.set(dir + 'hold', anim);
+				extra.set(col + 'hold', anim);
+				extra.set(dir, anim);
+			}
+		}
+		for (k => v in extra)
+			if (!rt.holdAnims.exists(k))
+				rt.holdAnims.set(k, v);
+	}
+
+	/** Clamp note/strum/hold scales to a sane Psych-like range. */
+	static function clampScale(value:Float, fallback:Float = 0.7):Float
+	{
+		if (value != value || value <= 0)
+			return fallback;
+		if (value < 0.25) return 0.25;
+		if (value > 1.5) return 1.5;
+		return value;
+	}
+
+	/**
+	 * When a noteStyle JSON omits animations, fill Psych NOTE_assets prefixes
+	 * so notes/strums never render as the full uncropped atlas (giant arrows).
+	 */
+	function ensureDefaultPsychAnims(rt:PicoNoteStyleRuntime):Void
+	{
+		if (rt == null) return;
+		if (rt.noteAnims == null) rt.noteAnims = new Map();
+		if (rt.holdAnims == null) rt.holdAnims = new Map();
+		if (rt.strumAnims == null) rt.strumAnims = new Map();
+
+		// Expand JSON hold keys (up end → greenholdend) before filling Psych gaps
+		normalizeHoldAnimKeys(rt);
+		normalizeNewStrumAnimKeys(rt);
+
+		function putNote(key:String, prefix:String, ?fps:Int = 24, ?loop:Bool = true)
+		{
+			if (!rt.noteAnims.exists(key))
+				rt.noteAnims.set(key, { prefix: prefix, fps: fps, loop: loop, name: key });
+		}
+		function putHold(key:String, prefix:String, ?fps:Int = 24, ?loop:Bool = true)
+		{
+			if (!rt.holdAnims.exists(key))
+				rt.holdAnims.set(key, { prefix: prefix, fps: fps, loop: loop, name: key });
+		}
+		function putStrum(key:String, prefix:String, ?fps:Int = 24, ?loop:Bool = false)
+		{
+			if (!rt.strumAnims.exists(key))
+				rt.strumAnims.set(key, { prefix: prefix, fps: fps, loop: loop, name: key });
+		}
+
+		putNote('left', 'arrowLEFT');
+		putNote('down', 'arrowDOWN');
+		putNote('up', 'arrowUP');
+		putNote('right', 'arrowRIGHT');
+		putNote('purple', 'arrowLEFT');
+		putNote('blue', 'arrowDOWN');
+		putNote('green', 'arrowUP');
+		putNote('red', 'arrowRIGHT');
+		putNote('purplescroll', 'arrowLEFT');
+		putNote('bluescroll', 'arrowDOWN');
+		putNote('greenscroll', 'arrowUP');
+		putNote('redscroll', 'arrowRIGHT');
+
+		putHold('left hold', 'purple hold piece');
+		putHold('down hold', 'blue hold piece');
+		putHold('up hold', 'green hold piece');
+		putHold('right hold', 'red hold piece');
+		putHold('left holdend', 'purple hold end');
+		putHold('down holdend', 'blue hold end');
+		putHold('up holdend', 'green hold end');
+		putHold('right holdend', 'red hold end');
+		putHold('lefthold', 'purple hold piece');
+		putHold('downhold', 'blue hold piece');
+		putHold('uphold', 'green hold piece');
+		putHold('righthold', 'red hold piece');
+		putHold('purplehold', 'purple hold piece');
+		putHold('bluehold', 'blue hold piece');
+		putHold('greenhold', 'green hold piece');
+		putHold('redhold', 'red hold piece');
+		putHold('purpleholdend', 'purple hold end');
+		putHold('blueholdend', 'blue hold end');
+		putHold('greenholdend', 'green hold end');
+		putHold('redholdend', 'red hold end');
+
+		putStrum('static0', 'arrowLEFT');
+		putStrum('static1', 'arrowDOWN');
+		putStrum('static2', 'arrowUP');
+		putStrum('static3', 'arrowRIGHT');
+		putStrum('pressed0', 'left press');
+		putStrum('pressed1', 'down press');
+		putStrum('pressed2', 'up press');
+		putStrum('pressed3', 'right press');
+		putStrum('confirm0', 'left confirm');
+		putStrum('confirm1', 'down confirm');
+		putStrum('confirm2', 'up confirm');
+		putStrum('confirm3', 'right confirm');
+		putStrum('leftstatic', 'arrowLEFT');
+		putStrum('downstatic', 'arrowDOWN');
+		putStrum('upstatic', 'arrowUP');
+		putStrum('rightstatic', 'arrowRIGHT');
+		putStrum('leftpress', 'left press');
+		putStrum('downpress', 'down press');
+		putStrum('uppress', 'up press');
+		putStrum('rightpress', 'right press');
+		putStrum('leftconfirm', 'left confirm');
+		putStrum('downconfirm', 'down confirm');
+		putStrum('upconfirm', 'up confirm');
+		putStrum('rightconfirm', 'right confirm');
+
+		rt.noteScale = clampScale(rt.noteScale, 0.7);
+		rt.holdScale = clampScale(rt.holdScale > 0 ? rt.holdScale : rt.noteScale, rt.noteScale);
+		rt.strumScale = clampScale(rt.strumScale > 0 ? rt.strumScale : rt.noteScale, rt.noteScale);
+		if (rt.splashScale <= 0) rt.splashScale = 1.0;
+	}
+
+	public function noteScale(?style:String, fallback:Float = 0.7, ?mustPress:Bool = true):Float
+	{
+		var rt = getRuntime(style != null ? style : songStyle(mustPress),
+			style == null && usesCharacterNoteStyle(mustPress));
+		if(rt == null) return clampScale(fallback, 0.7);
+		if(rt.noteScale > 0) return clampScale(rt.noteScale, fallback);
+		if(rt.strumScale > 0) return clampScale(rt.strumScale, fallback);
+		return clampScale(fallback, 0.7);
 	}
 
 	public function ui(assetName:String, fallback:String):String
@@ -1643,17 +1827,20 @@ function loadRuntime(style:String, fromCharacter:Bool):PicoNoteStyleRuntime
 		return null;
 	}
 
-	public function holdScale(?style:String, fallback:Float = 0.7):Float
+	public function holdScale(?style:String, fallback:Float = 0.7, ?mustPress:Bool = true):Float
 	{
-		var rt = getRuntime(style != null ? style : songStyle(true));
-		if(rt != null && rt.holdScale > 0) return rt.holdScale;
-		return noteScale(style, fallback);
+		var rt = getRuntime(style != null ? style : songStyle(mustPress),
+			style == null && usesCharacterNoteStyle(mustPress));
+		if(rt != null && rt.holdScale > 0) return clampScale(rt.holdScale, fallback);
+		return noteScale(style, fallback, mustPress);
 	}
 
-	public function strumScale(?style:String, fallback:Float = 0.7):Float
+	public function strumScale(?style:String, fallback:Float = 0.7, ?mustPress:Bool = true):Float
 	{
-		var rt = getRuntime(style != null ? style : songStyle(true));
-		return (rt != null && rt.strumScale > 0) ? rt.strumScale : fallback;
+		var rt = getRuntime(style != null ? style : songStyle(mustPress),
+			style == null && usesCharacterNoteStyle(mustPress));
+		if(rt != null && rt.strumScale > 0) return clampScale(rt.strumScale, fallback);
+		return clampScale(fallback, 0.7);
 	}
 
 	public function splashScale(?style:String, fallback:Float = 1.0):Float

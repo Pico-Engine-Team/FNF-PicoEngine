@@ -40,7 +40,7 @@ class StrumNote extends FlxSprite
 		if(Note.noteStyleUsesPixel())
 			arr = Preferences.data.arrowRGBPixel[leData];
 		
-		if(arr != null && leData > -1 && leData < arr.length)
+		if(arr != null && leData > -1 && leData <= arr.length)
 		{
 			@:bypassAccessor
 			{
@@ -98,8 +98,14 @@ class StrumNote extends FlxSprite
 			}
 
 			antialiasing = false;
-			var sc:Float = Note.noteSkinScale(noteSkinConfig, assetType);
-			try { sc = NoteData.noteStyle.strumScale(texture, sc); } catch(e:Dynamic) {}
+			// Pixel strums: Psych uses daPixelZoom
+			var sc:Float = PlayState.daPixelZoom;
+			try {
+				var isPlayer:Bool = (player > 0);
+				var fromStyle:Float = NoteData.noteStyle.strumScale(texture, sc, isPlayer);
+				if (fromStyle > 1.0) sc = fromStyle;
+			} catch(e:Dynamic) {}
+			if (sc != sc || sc <= 0) sc = PlayState.daPixelZoom;
 			setGraphicSize(Std.int(width * sc));
 
 			// Agora também respeita o allowRGB no pixel
@@ -118,34 +124,60 @@ class StrumNote extends FlxSprite
 			antialiasing = Preferences.data.antialiasing;
 			if(noteSkinConfig != null && !noteSkinConfig.allowRGB)
 				useRGBShader = false;
-			var sc2:Float = Note.noteSkinScale(noteSkinConfig, 'noteStrumline');
-			try { sc2 = NoteData.noteStyle.strumScale(texture, sc2); } catch(e:Dynamic) {}
+			// Psych StrumNote: setGraphicSize(Std.int(width * 0.7));
+			var sc2:Float = 0.7;
+			try {
+				var isPlayer2:Bool = (player > 0);
+				var fromStyle:Float = NoteData.noteStyle.strumScale(texture, 0.7, isPlayer2);
+				if (fromStyle > 0 && fromStyle <= 1.5) sc2 = fromStyle;
+			} catch(e:Dynamic) {}
+			if (sc2 != sc2 || sc2 <= 0) sc2 = 0.7;
 			setGraphicSize(Std.int(width * sc2));
+		}
+
+		// Psych Engine style (source/objects/StrumNote.hx)
+		// Prefer noteStyle JSON via addAnimationFromConfig; fall back to hardcoded Psych prefixes.
+		function psychStrum(name:String, prefix:String, fps:Int = 24, loop:Bool = false):Void
+		{
+			if (!Note.addAnimationFromConfig(animation, name, noteSkinConfig, name))
+			{
+				// Also try static0/pressed0 keys from noteStyle
+				var altKey:String = name;
+				if (name == 'static') altKey = 'static' + (Math.abs(noteData) % 4);
+				else if (name == 'pressed') altKey = 'pressed' + (Math.abs(noteData) % 4);
+				else if (name == 'confirm') altKey = 'confirm' + (Math.abs(noteData) % 4);
+				if (!Note.addAnimationFromConfig(animation, name, noteSkinConfig, altKey))
+					animation.addByPrefix(name, prefix, fps, loop);
+			}
 		}
 
 		Note.addAnimationFromConfig(animation, 'green', noteSkinConfig, 'green');
 		Note.addAnimationFromConfig(animation, 'blue', noteSkinConfig, 'blue');
 		Note.addAnimationFromConfig(animation, 'purple', noteSkinConfig, 'purple');
 		Note.addAnimationFromConfig(animation, 'red', noteSkinConfig, 'red');
+		if (!animation.exists('green')) animation.addByPrefix('green', 'arrowUP');
+		if (!animation.exists('blue')) animation.addByPrefix('blue', 'arrowDOWN');
+		if (!animation.exists('purple')) animation.addByPrefix('purple', 'arrowLEFT');
+		if (!animation.exists('red')) animation.addByPrefix('red', 'arrowRIGHT');
 
 		switch (Math.abs(noteData) % 4)
 		{
 			case 0:
-				Note.addAnimationFromConfig(animation, 'static', noteSkinConfig, 'static0');
-				Note.addAnimationFromConfig(animation, 'pressed', noteSkinConfig, 'pressed0');
-				Note.addAnimationFromConfig(animation, 'confirm', noteSkinConfig, 'confirm0');
+				psychStrum('static', 'arrowLEFT');
+				psychStrum('pressed', 'left press', 24, false);
+				psychStrum('confirm', 'left confirm', 24, false);
 			case 1:
-				Note.addAnimationFromConfig(animation, 'static', noteSkinConfig, 'static1');
-				Note.addAnimationFromConfig(animation, 'pressed', noteSkinConfig, 'pressed1');
-				Note.addAnimationFromConfig(animation, 'confirm', noteSkinConfig, 'confirm1');
+				psychStrum('static', 'arrowDOWN');
+				psychStrum('pressed', 'down press', 24, false);
+				psychStrum('confirm', 'down confirm', 24, false);
 			case 2:
-				Note.addAnimationFromConfig(animation, 'static', noteSkinConfig, 'static2');
-				Note.addAnimationFromConfig(animation, 'pressed', noteSkinConfig, 'pressed2');
-				Note.addAnimationFromConfig(animation, 'confirm', noteSkinConfig, 'confirm2');
+				psychStrum('static', 'arrowUP');
+				psychStrum('pressed', 'up press', 24, false);
+				psychStrum('confirm', 'up confirm', 24, false);
 			case 3:
-				Note.addAnimationFromConfig(animation, 'static', noteSkinConfig, 'static3');
-				Note.addAnimationFromConfig(animation, 'pressed', noteSkinConfig, 'pressed3');
-				Note.addAnimationFromConfig(animation, 'confirm', noteSkinConfig, 'confirm3');
+				psychStrum('static', 'arrowRIGHT');
+				psychStrum('pressed', 'right press', 24, false);
+				psychStrum('confirm', 'right confirm', 24, false);
 		}
 		updateHitbox();
 

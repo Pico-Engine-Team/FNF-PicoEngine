@@ -154,6 +154,8 @@ class Note extends FlxSprite
 
 	public var animSuffix:String = '';
 	public var gfNote:Bool = false;
+	/** -1 = normal player/opponent strums; 0+ = extraStrumlineGroups index */
+	public var extraStrumIndex:Int = -1;
 	public var earlyHitMult:Float = 1;
 	public var lateHitMult:Float = 1;
 	public var lowPriority:Bool = false;
@@ -241,7 +243,7 @@ class Note extends FlxSprite
 		var arr:Array<FlxColor> = Preferences.data.arrowRGB[noteData];
 		if(PlayState.isPixelStage) arr = Preferences.data.arrowRGBPixel[noteData];
 
-		if (arr != null && noteData > -1 && noteData < arr.length)
+		if (arr != null && noteData > -1 && noteData <= arr.length)
 		{
 			rgbShader.r = arr[0];
 			rgbShader.g = arr[1];
@@ -479,7 +481,7 @@ class Note extends FlxSprite
 			var newRGB:RGBPalette = new RGBPalette();
 			var arr:Array<FlxColor> = (!noteStyleUsesPixel()) ? Preferences.data.arrowRGB[noteData] : Preferences.data.arrowRGBPixel[noteData];
 			
-			if (arr != null && noteData > -1 && noteData < arr.length)
+			if (arr != null && noteData > -1 && noteData <= arr.length)
 			{
 				newRGB.r = arr[0];
 				newRGB.g = arr[1];
@@ -596,12 +598,21 @@ public function reloadNote(texture:String = '', postfix:String = '') {
 		}
 		loadNoteAnims(assetType);
 		antialiasing = false;
+		// Psych: pixel notes use daPixelZoom once (not noteStyle 0.7)
+		var pxZoom:Float = PlayState.daPixelZoom;
+		try {
+			var sc:Float = NoteData.noteStyle.noteScale(null, pxZoom, mustPress);
+			// only use noteStyle if it's clearly a pixel-sized scale (> 1), else daPixelZoom
+			if (sc > 1.0) pxZoom = sc;
+		} catch(e:Dynamic) {}
+		setGraphicSize(Std.int(width * pxZoom));
+		updateHitbox();
 		if(noteSkinConfig != null && !noteSkinConfig.allowRGB)
 			rgbShader.enabled = false;
 
 		if(isSustainNote) {
 			offsetX += _lastNoteOffX;
-			_lastNoteOffX = (width - 7) * (PlayState.daPixelZoom / 2);
+			_lastNoteOffX = (width - 7) * (pxZoom / 2);
 			offsetX -= _lastNoteOffX;
 		}
 	} else {
@@ -614,11 +625,10 @@ public function reloadNote(texture:String = '', postfix:String = '') {
 		frames = noteSkinAtlasExists(noteAsset) ? getNoteSkinAtlas(noteAsset) : null;
 		if(frames == null)
 			return;
-		var normalType:String = isSustainNote ? 'holdNote' : 'note';
-		loadNoteAnims(isSustainNote ? 'sustain' : 'note');
+		// Psych: scale is applied ONCE inside loadNoteAnims (setGraphicSize width * 0.7)
+		loadNoteAnims(isSustainNote ? 'holdNote' : 'note');
 		if(noteSkinConfig != null && !noteSkinConfig.allowRGB)
 			rgbShader.enabled = false;
-		setGraphicSize(Std.int(width * noteSkinScale(noteSkinConfig, normalType)));
 		if(!isSustainNote)
 		{
 			centerOffsets();
@@ -683,37 +693,85 @@ public function reloadNote(texture:String = '', postfix:String = '') {
 		return skin;
 	}
 
+
+	/** Psych Engine helper — only registers anim if prefix exists in the atlas. */
+	function attemptToAddAnimationByPrefix(name:String, prefix:String, framerate:Float = 24, doLoop:Bool = true)
+	{
+		var animFrames = [];
+		@:privateAccess
+		animation.findByPrefix(animFrames, prefix);
+		if (animFrames.length < 1) return;
+		animation.addByPrefix(name, prefix, framerate, doLoop);
+	}
+
 	function loadNoteAnims(assetType:String) {
 		if (colArray[noteData] == null)
 			return;
 
-		// noteSkin_assets.note_animations → left/down/up/right
+		// Psych Engine (source/objects/Note.hx) prefixes:
+		//   Scroll  → purple0 / blue0 / green0 / red0
+		//   hold    → "purple hold piece"
+		//   holdend → "purple hold end"
+		// Priority: noteStyle JSON → NoteSkinConfig → Psych hardcoded
 		var dirNames:Array<String> = ['left', 'down', 'up', 'right'];
 		var dirKey:String = dirNames[noteData % dirNames.length];
 		var colName:String = colArray[noteData];
 
 		if (isSustainNote)
 		{
-			if(!tryAddAnimFromNoteStyle(colName + 'holdend', [dirKey + ' holdend', dirKey + 'end', colName + 'holdend']))
-				addAnimationFromConfig(animation, colName + 'holdend', noteSkinConfig, colName + 'holdend');
-			if(!tryAddAnimFromNoteStyle(colName + 'hold', [dirKey + ' hold', dirKey + 'hold', colName + 'hold']))
-				addAnimationFromConfig(animation, colName + 'hold', noteSkinConfig, colName + 'hold');
+			// Same typo workaround as Psych for the original note FLA
+			attemptToAddAnimationByPrefix('purpleholdend', 'pruple end hold', 24, true);
+			if (!tryAddAnimFromNoteStyle(colName + 'holdend', [dirKey + ' holdend', dirKey + 'end', colName + 'holdend', colName + ' hold end']))
+			{
+				if (!addAnimationFromConfig(animation, colName + 'holdend', noteSkinConfig, colName + 'holdend', colName + ' hold end', 24, true))
+					animation.addByPrefix(colName + 'holdend', colName + ' hold end', 24, true);
+			}
+			if (!tryAddAnimFromNoteStyle(colName + 'hold', [dirKey + ' hold', dirKey + 'hold', colName + 'hold', colName + ' hold piece']))
+			{
+				if (!addAnimationFromConfig(animation, colName + 'hold', noteSkinConfig, colName + 'hold', colName + ' hold piece', 24, true))
+					animation.addByPrefix(colName + 'hold', colName + ' hold piece', 24, true);
+			}
 		}
 		else
 		{
-			if(!tryAddAnimFromNoteStyle(colName + 'Scroll', [dirKey, colName, colName + 'Scroll']))
-				addAnimationFromConfig(animation, colName + 'Scroll', noteSkinConfig, colName + 'Scroll');
+			if (!tryAddAnimFromNoteStyle(colName + 'Scroll', [dirKey, colName, colName + 'Scroll', colName + '0']))
+			{
+				if (!addAnimationFromConfig(animation, colName + 'Scroll', noteSkinConfig, colName + 'Scroll', colName + '0', 24, true))
+					animation.addByPrefix(colName + 'Scroll', colName + '0', 24, true);
+			}
 		}
 
-		var scaleMul:Float = noteSkinScale(noteSkinConfig, assetType);
-		try
+		// Psych Engine scale (source/objects/Note.hx loadNoteAnims):
+		//   Non-pixel → setGraphicSize(width * 0.7) exactly once
+		//   Pixel notes → scale is set in reloadNote via daPixelZoom, not here
+		var isPixelAsset:Bool = (assetType != null && assetType.toLowerCase().indexOf('pixel') >= 0);
+		if (!isPixelAsset)
 		{
-			var ns:Float = NoteData.noteStyle.noteScale(null, scaleMul);
-			if(ns > 0) scaleMul = ns;
+			var scaleMul:Float = 0.7;
+			try
+			{
+				// noteStyle can override, but keep Psych baseline when missing/invalid
+				var fromStyle:Float = NoteData.noteStyle.noteScale(null, 0.7, mustPress);
+				if (fromStyle > 0 && fromStyle <= 1.5)
+					scaleMul = fromStyle;
+				// holds use same width scale as notes in Psych (only scale.y stretches later)
+				if (isSustainNote)
+				{
+					var hs:Float = NoteData.noteStyle.holdScale(null, scaleMul, mustPress);
+					if (hs > 0 && hs <= 1.5)
+						scaleMul = hs;
+				}
+			}
+			catch (e:Dynamic) {}
+			if (scaleMul != scaleMul || scaleMul <= 0) scaleMul = 0.7;
+			setGraphicSize(Std.int(width * scaleMul));
+			updateHitbox();
 		}
-		catch(e:Dynamic) {}
-		setGraphicSize(Std.int(width * scaleMul));
-		updateHitbox();
+		if (animation == null || animation.numFrames < 1)
+		{
+			visible = false;
+			alpha = 0;
+		}
 	}
 
 	/** note_animations from notestyle JSON; true if added. */

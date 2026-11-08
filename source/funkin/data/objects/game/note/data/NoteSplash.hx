@@ -342,6 +342,16 @@ class NoteSplash extends FlxSprite
 			spawned = false;
 		}
 
+		// Scale from noteStyle JSON splash_scale
+		try
+		{
+			var isPlayerSc:Bool = note != null ? note.mustPress : true;
+			var sc:Float = NoteData.noteStyle.splashScale(null, 1.0);
+			if (sc > 0 && sc != 1.0)
+				scale.set(sc, sc);
+		}
+		catch (e:Dynamic) {}
+
 		alpha = Preferences.data.splashAlpha;
 		if (note != null) alpha = note.noteSplashData.a;
 
@@ -353,10 +363,12 @@ class NoteSplash extends FlxSprite
 		var maxFps:Int = 26;
 		if (conf != null && conf.fps != null && conf.fps.length > 0)
 		{
-			minFps = conf.fps[0] != null ? conf.fps[0] : 22;
+			var firstFps:Null<Int> = conf.fps[0];
+			minFps = firstFps != null ? firstFps : 22;
 			if (minFps < 0) minFps = 0;
 
-			maxFps = conf.fps.length > 1 && conf.fps[1] != null ? conf.fps[1] : minFps;
+			var secondFps:Null<Int> = conf.fps.length > 1 ? conf.fps[1] : null;
+			maxFps = secondFps != null ? secondFps : minFps;
 			if (maxFps < 0) maxFps = 0;
 			if (maxFps < minFps) maxFps = minFps;
 		}
@@ -370,10 +382,30 @@ class NoteSplash extends FlxSprite
 	public function playDefaultAnim()
 	{
 		var anim:String = noteDataMap.get(noteData);
+		// Fallback: try any mapped anim for this direction (noteData % 4)
+		if ((anim == null || !animation.exists(anim)) && noteDataMap != null)
+		{
+			var dir:Int = noteData % 4;
+			if (dir < 0) dir = 0;
+			for (data => name in noteDataMap)
+			{
+				if (data % 4 == dir && name != null && animation.exists(name))
+				{
+					anim = name;
+					break;
+				}
+			}
+		}
 		if (anim != null && animation.exists(anim))
+		{
 			animation.play(anim, true);
-
-		return anim;
+			return anim;
+		}
+		// No valid anim → remove splash so it never sticks on HUD
+		visible = false;
+		kill();
+		spawned = false;
+		return null;
 	}
 
 	function checkForAnim(anim:String)
@@ -525,9 +557,11 @@ class NoteSplash extends FlxSprite
 				var animFps:Int = 24;
 				if (i.fps != null && i.fps.length > 0)
 				{
-					var f0:Int = i.fps[0] != null ? i.fps[0] : 24;
-					var f1:Int = i.fps.length > 1 && i.fps[1] != null ? i.fps[1] : f0;
-					animFps = f1 > 0 ? f1 : f0;
+					var f0:Null<Int> = i.fps[0];
+					var f1:Null<Int> = i.fps.length > 1 ? i.fps[1] : null;
+					var baseFps:Int = f0 != null ? f0 : 24;
+					var maxFps:Int = f1 != null ? f1 : baseFps;
+					animFps = maxFps > 0 ? maxFps : baseFps;
 					if (animFps < 1) animFps = 24;
 				}
 				if (i.indices != null && i.indices.length > 0)
