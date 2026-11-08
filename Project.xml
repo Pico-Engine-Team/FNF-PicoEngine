@@ -2,10 +2,10 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Friday Night Funkin' Pico Engine" file="PicoEngine"
-	packageName="com.picoengineteam.fnfpicoengine" package="com.picoengineteam.fnfpicoengine"
+	<app title="Friday Night Funkin': Pico Engine" file="PicoEngine"
+	packageName="com.lucas62944.picoengine" package="com.lucas62944.picoengine"
 	main="funkin.utils.windows.Main"
-	version="v2.26.6" company="Pico-Engine-Team" />
+	version="v2.26.8 (Pre Release)" company="Pico-Engine-Team" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
@@ -42,15 +42,8 @@
 	<define name="VIDEOS_ALLOWED" if="windows || linux || android || mac" unless="32bits"/> <!-- IF YOU WANT TO USE VIDEOS ON YOUR SOURCE MOD, GET THIS LINE OUTSIDE OF THE SECTION -->
 
 	<section if="officialBuild">
+		<define name="BASE_GAME_FILES" />
 		<define name="TITLE_SCREEN_EASTER_EGG"/>
-		<define name="BASE_GAME_FILES" />
-	</section>
-
-	<!-- __________________________ Dev / Local Build ___________________________ -->
-	
-	<section if="dev_build">
-		<define name="BASE_GAME_FILES" />
-		<define name="TITLE_SCREEN_EASTER_EGG" />
 	</section>
 
 	<!-- ____________________________ Window Settings ___________________________ -->
@@ -95,7 +88,7 @@
 	<assets path="assets/week_assets"   rename="assets" exclude="*.ogg" if="web"/>
 	<assets path="assets/week_assets"   rename="assets" exclude="*.mp3" unless="web"/>
 	<assets path="assets/pico_assets" 	exclude="*.mp3" unless="web"/>
-	<assets path="assets/soundtray"/>
+	
 	<section if="TITLE_SCREEN_EASTER_EGG">
 		<assets path="assets/secrets" rename="assets/shared" exclude="*.ogg" if="web"/>
 		<assets path="assets/secrets" rename="assets/shared" exclude="*.mp3"  unless="web"/>
@@ -113,26 +106,23 @@
 
 	<section if="PICO_ALLOWED">
 		<assets path="example_content/gitChangelog.txt" rename="Changelog.md" type="text" if="windows"/>
+		<assets path="example_content/data/plugins/alsoft-plugins.txt" rename="plugins/alsoft-plugins.ini" type="text" if="windows"/>
 		<assets path="example_content/data/plugins/audio-config.txt" rename="content/plugins/audio-config.ini" type="text" if="windows"/>
-		<assets path="example_content/data/plugins/alsoft-plugins.txt" rename="plugins/plugins.dat" type="text" if="windows"/>
 	</section>
 
 	<section if="MODS_ALLOWED">
-		<assets path='list.txt' rename='modsList.txt' />
-		<assets path='example_mods' rename='mods' embed='false' type='template' unless="mac"/>
-		<assets path='example_mods' rename='mods' embed='false' if="mac"/>
+		<assets path='list.txt' rename='content/modsList.txt' />
+		<assets path='example_content/example_mods' rename='content/mods' embed='false' type='template' unless="mac"/>
+		<assets path='example_content/example_mods' rename='content/mods' embed='false' if="mac"/>
 	</section>
 
 	<!-- OpenAL config -->
 	<section if="desktop">
 		<assets path="alsoft.txt" rename="alsoft.ini" type="text" if="windows"/>
-		<assets path="alsoft.txt" rename="plugins/alsoft.dat" type="text" if="windows"/>
 	</section>
 
 	<!-- _______________________________ Libraries ______________________________ -->
 
-	<set name="lime-version" value="8.1.2"/>
-	<haxelib name="openfl" version="9.3.3"/>
 	<haxelib name="flixel" version="5.6.1"/>
 	<haxelib name="flixel-addons" version="3.2.2"/>
 	<haxelib name="tjson" version="1.4.0"/>
@@ -144,12 +134,9 @@
 	<haxelib name="hxdiscord_rpc" version="1.2.4" if="DISCORD_ALLOWED"/>
 	<haxelib name="flxanimate"/>
 
-	<haxelib name="grig.audio" if="BASE_GAME_FILES"/>
-	<haxelib name="funkin.vis" if="BASE_GAME_FILES"/>
-
 	<!-- Disable Discord IO Thread -->
 	<haxedef name="DISCORD_DISABLE_IO_THREAD" if="hxdiscord_rpc" />
-	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux || windows" />
+	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux" />
 
 	<!-- Enables a terminal log prompt on debug builds -->
 	<haxelib name="hxcpp-debug-server" if="debug"/>
