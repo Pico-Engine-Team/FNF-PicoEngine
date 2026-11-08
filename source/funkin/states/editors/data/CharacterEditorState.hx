@@ -234,6 +234,16 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		character = new Character(0, 0, _char, isPlayer);
 		if(!reload)
 		{
+			// Prefer JSON flip_x as Player/Opponent side (replaces characterType)
+			// flip_x true → Player | flip_x false → Opponent
+			// Keep Additional when name predicts GF/speaker
+			if(predictCharacterType(_char) == CHARACTER_TYPE_ADDITIONAL)
+				requestedType = CHARACTER_TYPE_ADDITIONAL;
+			else if(character.originalFlipX)
+				requestedType = CHARACTER_TYPE_PLAYER;
+			else
+				requestedType = CHARACTER_TYPE_OPPONENT;
+
 			if(character.editorCharacterType != null)
 				requestedType = normalizeCharacterType(character.editorCharacterType);
 			else if(character.editorIsPlayer != null)
@@ -765,6 +775,17 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if(character.isPlayer) flipXCheckBox.checked = !flipXCheckBox.checked;
 		flipXCheckBox.onClick = function() {
 			character.originalFlipX = !character.originalFlipX;
+			// flip_x true → Player side, false → Opponent side
+			if(getCharacterType() != CHARACTER_TYPE_ADDITIONAL)
+			{
+				var sideType:String = character.originalFlipX ? CHARACTER_TYPE_PLAYER : CHARACTER_TYPE_OPPONENT;
+				character.editorCharacterType = sideType;
+				character.editorIsPlayer = (sideType == CHARACTER_TYPE_PLAYER);
+				character.isPlayer = character.editorIsPlayer;
+				if(characterTypeDropDown != null)
+					characterTypeDropDown.selectedLabel = sideType;
+				updateCharacterPositions();
+			}
 			character.flipX = (character.originalFlipX != character.isPlayer);
 		};
 
@@ -1535,10 +1556,21 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		character.editorCharacterType = normalizedType;
 		character.editorIsPlayer = (normalizedType == CHARACTER_TYPE_PLAYER);
 		character.isPlayer = (normalizedType == CHARACTER_TYPE_PLAYER);
+		// flip_x (originalFlipX) replaces characterType in saved JSON:
+		//   true  → Player side
+		//   false → Opponent side
+		// Sprite facing still uses Psych rule: flipX = (originalFlipX != isPlayer)
+		if(normalizedType == CHARACTER_TYPE_PLAYER)
+			character.originalFlipX = true;
+		else if(normalizedType == CHARACTER_TYPE_OPPONENT)
+			character.originalFlipX = false;
+		// Additional keeps whatever originalFlipX the art needs
 		character.flipX = (character.originalFlipX != character.isPlayer);
 
 		if(characterTypeDropDown != null)
 			characterTypeDropDown.selectedLabel = normalizedType;
+		if(flipXCheckBox != null)
+			flipXCheckBox.checked = character.originalFlipX;
 
 		if(updateDisplay)
 			updateCharacterPositions();
@@ -1731,7 +1763,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				"name": anim.anim,
 				"prefix": anim.name,
 				"Framerate": anim.fps,
-				"loopd?": anim.loop
+				"looped": anim.loop == true
 			};
 
 			var animAsset:String = Character.getAnimationAssetPathInput(anim.assetPath);
@@ -1749,34 +1781,44 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	function saveCharacter() {
 		if(_file != null) return;
 
-		// Exact Pico character JSON format (user-defined)
+		// Exact character JSON format (new_format):
+		// renderType, assetPath, noteStyle?, gameOverChar?, flip_x, sing_duration, scale,
+		// healthBar, healthIcon, offsets, cameraOffsets, animations[]
+		// flip_x true  → Player side | flip_x false → Opponent side (replaces characterType in JSON)
 		var assetOut:String = character.imageFile != null ? character.imageFile : '';
 		while(assetOut.indexOf('//') >= 0) assetOut = assetOut.replace('//', '/');
+		if(assetOut.length > 0 && !StringTools.startsWith(assetOut, 'characters/') && assetOut.indexOf('/') < 0)
+			assetOut = 'characters/' + assetOut;
 
 		var rtSave:String = Character.normalizeRenderType(character.renderType);
 		if(rtSave.length < 1) rtSave = 'sparrow';
 
-		// Base-game style: icon defaults to character file name
 		var iconOut:String = character.healthIcon;
 		if(iconOut == null || iconOut.trim().length < 1)
 			iconOut = _char != null ? _char : 'face';
 
-		var json:Dynamic = {
-			"renderType": rtSave,
-			"assetPath": assetOut,
-			"flip_x": character.originalFlipX,
-			"sing_duration": character.singDuration,
-			"scale": character.jsonScale,
-			"healthBar": character.healthColorArray,
-			"healthIcon": iconOut,
-			"offsets": character.positionArray,
-			"cameraOffsets": character.cameraPosition,
-			"animations": getCharacterFileAnimationsNew()
-		};
+		// flip_x drives Player vs Opponent placement (no characterType field in JSON)
+		var flipSave:Bool = character.originalFlipX;
+		// Keep editor side in sync: Player → prefer true, Opponent → prefer false when user toggles type
+		// originalFlipX remains the sprite-facing flag saved as flip_x
 
+		var json:Dynamic = {};
+		Reflect.setField(json, "renderType", rtSave);
+		Reflect.setField(json, "assetPath", assetOut);
 		if(character.noteStyle != null && character.noteStyle.trim().length > 0)
 			Reflect.setField(json, "noteStyle", character.noteStyle.trim());
-		setOptionalString(json, "gameOverChar", character.gameOverChar);
+		if(character.gameOverChar != null && character.gameOverChar.trim().length > 0)
+			Reflect.setField(json, "gameOverChar", character.gameOverChar.trim());
+		Reflect.setField(json, "flip_x", flipSave);
+		Reflect.setField(json, "sing_duration", character.singDuration);
+		Reflect.setField(json, "scale", character.jsonScale);
+		Reflect.setField(json, "healthBar", character.healthColorArray);
+		Reflect.setField(json, "healthIcon", iconOut);
+		Reflect.setField(json, "offsets", character.positionArray);
+		Reflect.setField(json, "cameraOffsets", character.cameraPosition);
+		Reflect.setField(json, "animations", getCharacterFileAnimationsNew());
+
+		// Optional extras (omitted when empty)
 		setOptionalString(json, "gameOverSound", character.gameOverSound);
 		setOptionalString(json, "gameOverLoop", character.gameOverLoop);
 		setOptionalString(json, "gameOverEnd", character.gameOverEnd);
@@ -1824,8 +1866,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					Reflect.setField(entry, "playerOffsets", [anim.playerOffsets[0], anim.playerOffsets[1]]);
 			}
 
-			if(anim.loop == true)
-				Reflect.setField(entry, "looped", true);
+			// Always save looped true/false per animation
+			Reflect.setField(entry, "looped", anim.loop == true);
 
 			animations.push(entry);
 		}

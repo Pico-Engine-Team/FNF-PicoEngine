@@ -5,8 +5,8 @@ import funkin.data.WeekData;
 import funkin.data.objects.HealthIcon;
 
 import funkin.states.editors.components.Prompt;
-import funkin.data.objects.story.MenuItem;
-import funkin.data.objects.story.MenuCharacter;
+import funkin.states.menus.components.MenuItem;
+import funkin.states.menus.components.MenuCharacter;
 
 import openfl.utils.Assets;
 import openfl.net.FileReference;

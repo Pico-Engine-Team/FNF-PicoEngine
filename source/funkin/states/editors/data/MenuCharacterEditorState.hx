@@ -1,6 +1,6 @@
 package funkin.states.editors.data;
 
-import funkin.data.objects.story.MenuCharacter;
+import funkin.states.menus.components.MenuCharacter;
 import funkin.states.editors.components.Prompt;
 import funkin.utils.engines.psych.PsychJsonPrinter;
 
