@@ -4,8 +4,8 @@ import funkin.data.WeekData;
 import funkin.data.shaders.ColorSwap;
 
 import funkin.states.menus.MainMenuState;
-import funkin.states.menus.StoryModeMenuState;
-import funkin.states.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.data.StoryModeMenuState;
+import funkin.states.menus.data.FreeplayMenuState;
 
 import funkin.utils.engines.pico.EnginePerformance;
 import funkin.utils.engines.pico.AssetBootPreload;

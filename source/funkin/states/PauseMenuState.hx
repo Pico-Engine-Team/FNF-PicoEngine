@@ -7,8 +7,8 @@ import funkin.data.WeekData;
 import funkin.states.options.OptionsMenuState;
 import funkin.states.editors.data.ChartingState;
 
-import funkin.states.menus.StoryModeMenuState;
-import funkin.states.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.data.StoryModeMenuState;
+import funkin.states.menus.data.FreeplayMenuState;
 import funkin.utils.engines.pico.LocaleUtils;
 import flixel.util.FlxStringUtil;
 
@@ -232,8 +232,23 @@ class PauseMenuState extends MusicBeatSubstate
 		// (normal meta.json and variation metas like meta-pico.json each own their list)
 		if(getMetaDifficulties().length < 2)
 			items.remove('Change Difficulty');
+
+		// Practice Mode sits right under Change Difficulty (or under Restart if no Change Diff)
+		var practiceIdx:Int = items.indexOf('Change Difficulty');
+		if(practiceIdx < 0)
+			practiceIdx = items.indexOf('Restart Song');
+		if(practiceIdx >= 0)
+			items.insert(practiceIdx + 1, 'Practice Mode');
+		else
+			items.insert(2, 'Practice Mode');
+
 		if(PlayState.instance != null && PlayState.instance.practiceMode && !PlayState.instance.startingSong)
-			items.insert(3, 'Skip Time');
+		{
+			var skipAt:Int = items.indexOf('Practice Mode');
+			if(skipAt < 0) skipAt = items.indexOf('Change Difficulty');
+			if(skipAt < 0) skipAt = 2;
+			items.insert(skipAt + 1, 'Skip Time');
+		}
 
 		return items;
 	}
@@ -476,6 +491,29 @@ class PauseMenuState extends MusicBeatSubstate
 					regenMenu();
 				case "Restart Song":
 					restartSong();
+				case 'Practice Mode':
+					if(PlayState.instance != null)
+					{
+						PlayState.instance.practiceMode = !PlayState.instance.practiceMode;
+						if(practiceText != null)
+							practiceText.visible = PlayState.instance.practiceMode;
+						// Persist gameplay setting for consistency with Gameplay Changers key
+						try
+						{
+							if(Preferences.data != null)
+							{
+								if(Preferences.data.gameplaySettings == null)
+									Preferences.data.gameplaySettings = new Map<String, Dynamic>();
+								Preferences.data.gameplaySettings.set('practice', PlayState.instance.practiceMode);
+							}
+						}
+						catch(e:Dynamic) {}
+						// Rebuild menu so Skip Time appears/disappears with practice
+						menuItems = buildPauseMenuItems();
+						deleteSkipTimeText();
+						regenMenu();
+						FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+					}
 				case 'Skip Time':
 					if(curTime < Conductor.songPosition)
 					{

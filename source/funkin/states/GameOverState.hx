@@ -3,8 +3,8 @@ package funkin.states;
 import funkin.data.WeekData;
 import funkin.data.objects.CharactersData as Character;
 
-import funkin.states.menus.StoryModeMenuState;
-import funkin.states.menus.freeplay.FreeplayMenuState;
+import funkin.states.menus.data.StoryModeMenuState;
+import funkin.states.menus.data.FreeplayMenuState;
 
 import flixel.FlxObject;
 import flixel.FlxSubState;
