@@ -97,7 +97,7 @@ class Song {
 	public var pauseSong:String = 'pauseMenu/breakfast';
 	public var format:String = 'Pico Engine Chart';
 	public var formatChart:String = 'Pico Engine Chart';
-	public var generatedBy:String = 'Pico Engine v${MainMenuState.PicoVersion}';
+	public var generatedBy:String = 'Pico Engine v${MainMenuState.picoEngineVersion}';
 
 	public static inline var FORMAT_PICO_ENGINE:String = 'Pico Engine Chart';
 	public static inline var FORMAT_PICO_ENGINE_V2:String = 'Pico Engine Chart v2';
@@ -578,7 +578,7 @@ class Song {
 	}
 
 	public static function defaultGeneratedBy():String
-		return 'Pico Engine v${MainMenuState.PicoVersion}';
+		return 'Pico Engine v${MainMenuState.picoEngineVersion}';
 
 	/**
 	 * Convert Pico Engine Chart v2 (song_Data) → runtime SwagSong.

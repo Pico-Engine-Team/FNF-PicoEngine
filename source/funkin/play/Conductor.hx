@@ -58,7 +58,7 @@ class Conductor
 					lastChange = ev;
 			}
 		}
-		if(lastChange.stepCrochet == null || Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
+		if(Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
 			lastChange.stepCrochet = calculateCrochet(lastChange.bpm > 0 ? lastChange.bpm : bpm) / 4;
 
 		return lastChange;
@@ -80,7 +80,7 @@ class Conductor
 					lastChange = ev;
 			}
 		}
-		if(lastChange.stepCrochet == null || Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
+		if(Math.isNaN(lastChange.stepCrochet) || lastChange.stepCrochet <= 0)
 			lastChange.stepCrochet = calculateCrochet(lastChange.bpm > 0 ? lastChange.bpm : bpm) / 4;
 
 		return lastChange;
@@ -90,21 +90,21 @@ class Conductor
 		var step = beat * 4;
 		var lastChange = getBPMFromStep(step);
 		var b:Float = lastChange.bpm;
-		if(b == null || Math.isNaN(b) || b <= 0) b = bpm > 0 ? bpm : 100;
+		if(Math.isNaN(b) || b <= 0) b = bpm > 0 ? bpm : 100;
 		return lastChange.songTime + ((step - lastChange.stepTime) / (b / 60)/4) * 1000;
 	}
 
 	public static function getStep(time:Float){
 		var lastChange = getBPMFromSeconds(time);
 		var sc:Float = lastChange.stepCrochet;
-		if(sc == null || Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
+		if(Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
 		return lastChange.stepTime + (time - lastChange.songTime) / sc;
 	}
 
 	public static function getStepRounded(time:Float){
 		var lastChange = getBPMFromSeconds(time);
 		var sc:Float = lastChange.stepCrochet;
-		if(sc == null || Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
+		if(Math.isNaN(sc) || sc == 0) sc = stepCrochet != 0 ? stepCrochet : 150;
 		return lastChange.stepTime + Math.floor(time - lastChange.songTime) / sc;
 	}
 
@@ -121,7 +121,7 @@ class Conductor
 		bpmChangeMap = [];
 		if(song == null || song.notes == null) return;
 
-		var curBPM:Float = (song.bpm == null || Math.isNaN(song.bpm) || song.bpm <= 0) ? bpm : song.bpm;
+		var curBPM:Float = (Math.isNaN(song.bpm) || song.bpm <= 0) ? bpm : song.bpm;
 		if(curBPM <= 0) curBPM = 100;
 		var totalSteps:Int = 0;
 		var totalPos:Float = 0;
@@ -159,7 +159,7 @@ class Conductor
 	}
 
 	public static function set_bpm(newBPM:Float):Float {
-		var safe:Float = (newBPM == null || Math.isNaN(newBPM) || newBPM <= 0) ? 100 : newBPM;
+		var safe:Float = (Math.isNaN(newBPM) || newBPM <= 0) ? 100 : newBPM;
 		crochet = calculateCrochet(safe);
 		stepCrochet = crochet / 4;
 		// Assign once — Haxe stores without re-entering the setter from inside set_bpm

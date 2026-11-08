@@ -93,42 +93,49 @@ class Rank
 	}
 
 	/**
-	 * Freeplay score box (multi-line):
-	 *   Score: 2,000
-	 *   Accuracy: (100%)
-	 *   Rank: P+
-	 *   Misses: 0
-	 *   [Tab] Opponent Mod
-	 *   < Hard > (Pico)
+	 * Freeplay score line (Psych-style + Rank):
+	 *   Score: 0 (0.00, E)
+	 * Difficulty stays on diffText below scoreBG.
 	 */
 	public static function formatFreeplayBox(score:Int, accuracy:Float, misses:Int, ?difficulty:String = null, ?showOpponentMod:Bool = true):String
 	{
+		return formatFreeplayScoreLine(score, accuracy, misses);
+	}
+
+	/**
+	 * Single-line freeplay highscore (Psych PERSONAL BEST layout + Rank).
+	 * Example: Score: 12,345 (98.50, P+)
+	 */
+	public static function formatFreeplayScoreLine(score:Int, accuracy:Float, ?misses:Int = -1):String
+	{
 		var noPlay:Bool = (score <= 0 && (accuracy <= 0 || Math.isNaN(accuracy)));
-		var rank:String = noPlay ? 'N/A' : getRank(accuracy, misses);
-		var missStr:String = Std.string(Std.int(Math.max(0, misses)));
-		var accStr:String = '0';
-		if(!noPlay)
+		var rank:String = noPlay ? 'E' : getRank(accuracy, misses);
+		if (noPlay)
+			rank = 'E';
+
+		// Accuracy like Psych: always 2 decimals (0.00)
+		var accStr:String = '0.00';
+		if (!noPlay && accuracy > 0 && !Math.isNaN(accuracy))
 		{
 			var pct:Float = Math.max(0, Math.min(1, accuracy)) * 100;
-			if(Math.abs(pct - Math.round(pct)) < 0.05)
-				accStr = Std.string(Math.round(pct));
+			var factor:Float = 100;
+			var value:Float = Math.floor(pct * factor + 0.00001) / factor;
+			accStr = Std.string(value);
+			// ensure two decimals
+			if (accStr.indexOf('.') < 0)
+				accStr += '.00';
 			else
-				accStr = formatAccuracy(accuracy, 1);
+			{
+				var parts = accStr.split('.');
+				while (parts[1].length < 2)
+					parts[1] += '0';
+				if (parts[1].length > 2)
+					parts[1] = parts[1].substr(0, 2);
+				accStr = parts[0] + '.' + parts[1];
+			}
 		}
 
-		var text:String = 'Score: ' + formatScoreComma(score) + '\n'
-			+ 'Accuracy: (' + accStr + '%)\n'
-			+ 'Rank: ' + rank + '\n'
-			+ 'Misses: ' + missStr;
-
-		// Opponent Mod hint / status line
-		if(showOpponentMod)
-			text += '\n[Tab] Opponent Mod';
-
-		if(difficulty != null && difficulty.trim().length > 0)
-			text += '\n' + difficulty.trim();
-
-		return text;
+		return 'Score: ' + formatScoreComma(score) + ' (' + accStr + ', ' + rank + ')';
 	}
 
 
