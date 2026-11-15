@@ -1,5 +1,5 @@
 # Friday Night Funkin' Pico Engine
-![FNFModBanner](art/banner.png)
+![Banner](art/banner.png)
 <div align='center'>
 <table>
   <tr>
@@ -10,10 +10,10 @@
 </div>
 <p align="center"><img src="https://img.shields.io/badge/-HAXE-262626.svg?logo=haxe&style=for-the-badge">
 
-# You can also play this title at the following links
-- [Gamebana](https://gamebanana.com/tools/22943)
-- [GameJolt](https://gamejolt.com/games/funkin-engine/948902)
-- [itch.io (Legacy Build)](https://lucas-sanches.itch.io/funkin-pico)
+# Alternative Download
+- [Gamebana Download](https://gamebanana.com/tools/22943)
+- [GameJolt Download](https://gamejolt.com/games/funkin-engine/948902)
+- [itch.io Download (Legacy Build)](https://lucas-sanches.itch.io/funkin-pico)
 
 # About
 This project is a custom [Friday Night Funkin'](https://github.com/FunkinCrew/Funkin) engine based on [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) developed with a primary focus on delivering an optimized experience for creating Pico-centered mods.
